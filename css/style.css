@@ -278,3 +278,28 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
   .lab-projection{top:calc(var(--toolbar-height) + 155px)}
   #sidebar:not(.hidden)~#proj-label{display:none}
 }
+
+.history-buttons{display:flex;gap:4px;flex-shrink:0}
+.history-buttons button{width:32px;height:34px;border:1px solid #ffffff24;border-radius:7px;background:#ffffff08;color:#d8e4f5;font-size:22px;cursor:pointer;line-height:1}
+.history-buttons button:hover:enabled{background:#4488ff30;border-color:#81b5ff80}
+.history-buttons button:disabled{opacity:.27;cursor:default}
+.star-density{flex-wrap:wrap;padding-top:8px}.star-density>label{flex-basis:100%}.star-density input{flex:1}.star-density .val{min-width:42px}
+.keyboard-help{font-size:11px;color:#9dafca;margin:14px 0}.keyboard-help summary{cursor:pointer;color:#c8d7ef;padding:6px 0}.keyboard-help dl{display:grid;grid-template-columns:auto 1fr;gap:8px 12px;margin:8px 0}.keyboard-help dt{color:#dbe6f8}.keyboard-help dd{margin:0}.keyboard-help p{line-height:1.5}
+@media(max-width:400px){#app-toolbar{gap:4px;padding:8px 5px}.hdr-btns button{padding:6px 5px;font-size:10px}.history-buttons{gap:2px}.history-buttons button{width:26px}#app-toolbar #sb-toggle{flex-basis:29px}}
+
+.golden-scenes{margin:0 0 16px;padding-bottom:16px;border-bottom:1px solid #ffd16630}
+.golden-scenes h3{font-size:15px;color:#ffe3a3;margin:0 0 6px}
+.golden-scenes .golden-scene-launch{display:flex;flex-direction:column;gap:5px;width:100%;text-align:left;margin-top:8px;padding:11px 10px;border-radius:8px;background:linear-gradient(110deg,#ffd16613,#ffd16603)}
+.golden-scene-launch strong{font-weight:500;font-size:12px}.golden-scene-launch span{font-size:10px;color:#a9afbe;line-height:1.5}
+.golden-scene-launch:hover{border-color:#ffd166!important;background:#ffd16620!important}.golden-scene-launch[aria-pressed=true]{border-color:#ffcf6c;box-shadow:inset 3px 0 #ffcf6c}
+.golden-scene-ink{position:fixed;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
+.golden-story{position:fixed;right:16px;top:72px;width:310px;z-index:37;border:1px solid #cda75766;border-radius:12px;background:#101726f5;padding:15px;box-shadow:0 14px 40px #0005;backdrop-filter:blur(16px);color:#dce5ef}
+.golden-story-heading{display:flex;align-items:flex-start;gap:10px;justify-content:space-between}.golden-story h2{font-size:13px;font-weight:500;color:#ffe3a3;line-height:1.6;margin:0}.golden-story-heading button{font-size:22px;color:#a4b1c4;line-height:1;border:0;background:none;cursor:pointer}
+.golden-story-stage{font-size:12px;line-height:1.5;margin:12px 0 8px;color:#e4d0a1}.golden-story-formula{font-variant-numeric:tabular-nums;color:#ffe4a5;background:#ffd1660c;border-left:2px solid #ffd166;padding:9px;font-size:12px;line-height:1.6;margin:8px 0}.golden-story-note{font-size:11px;color:#a0b2ca;line-height:1.65;min-height:54px}
+.golden-story .lab-buttons{margin:10px 0 0}.golden-story .lab-range{font-size:11px}.golden-story .lab-buttons button{font-size:11px;padding:6px}.golden-story .lab-buttons button:first-child{flex:1}
+.golden-scene-length{position:fixed;z-index:34;background:#111c2eee;border:1px solid #66d9ff88;border-radius:5px;color:#8ee2ff;padding:5px 7px;font-size:11px;cursor:pointer;font-variant-numeric:tabular-nums;box-shadow:0 3px 12px #0005}.golden-scene-length.long{color:#ffe29a;border-color:#ffd16699}
+.golden-scene-ink[hidden],.golden-story[hidden],.golden-scene-length[hidden]{display:none}
+@media(max-width:1000px) and (min-width:701px){.golden-story{width:260px;right:10px;padding:12px}.golden-story-note{font-size:10px}}
+@media(max-width:700px){.golden-story{top:auto;bottom:12px;right:12px;width:min(350px,calc(100vw - 24px));padding:12px}.golden-story-note{min-height:0}.golden-story-stage{margin-top:8px}.golden-story .lab-range{margin:9px 0}.golden-story .lab-buttons{margin-top:8px}body:has(#sidebar:not(.hidden)) .golden-story,body:has(#sidebar:not(.hidden)) .golden-scene-length,body:has(#info.vis) .golden-story{display:none}}
+.golden-recursion-zoom{border:1px solid #ffd16644;border-radius:5px;background:#ffd1660c;color:#f0d79e;font-size:11px;margin:10px 5px 0 0;padding:7px;cursor:pointer}.golden-recursion-zoom:disabled{opacity:.35;cursor:default}.golden-recursion-zoom[hidden]{display:none}
+@media(max-width:700px){body:has(.golden-story:not([hidden])) #fs-btn{bottom:auto;top:68px;left:auto;right:12px}}

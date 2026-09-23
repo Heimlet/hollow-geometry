@@ -30,10 +30,10 @@ export function updateLab(dt) {
     const patch={};if(rot.mode==='whole')patch.angle=wrap(rot.angle+elapsed*rot.speed*rot.direction);
     if(['up','counter','independent'].includes(rot.mode))patch.up=wrap(rot.up+elapsed*(rot.mode==='independent'?rot.upSpeed*rot.upDirection:rot.speed*rot.direction));
     if(['down','counter','independent'].includes(rot.mode))patch.down=wrap(rot.down+elapsed*(rot.mode==='independent'?rot.downSpeed*rot.downDirection:rot.speed*rot.direction*(rot.mode==='counter'?-1:1)));
-    actions.lab('rotation',patch);
+    actions.tickLab('rotation',patch);
   }
-  if(lab.explode.direction) {const value=THREE.MathUtils.clamp(lab.explode.value+elapsed*lab.explode.direction/1.5,0,1);actions.lab('explode',{value,direction:value===0||value===1?0:lab.explode.direction});}
-  for(const c of ASSEMBLIES){const conf=lab.collections[c.id];if(conf.direction){const explode=THREE.MathUtils.clamp(conf.explode+elapsed*conf.direction/1.5,0,1);actions.lab('collections',{explode,direction:explode===0||explode===1?0:conf.direction},c.id);}}
+  if(lab.explode.direction) {const value=THREE.MathUtils.clamp(lab.explode.value+elapsed*lab.explode.direction/1.5,0,1);actions.tickLab('explode',{value,direction:value===0||value===1?0:lab.explode.direction});}
+  for(const c of ASSEMBLIES){const conf=lab.collections[c.id];if(conf.direction){const explode=THREE.MathUtils.clamp(conf.explode+elapsed*conf.direction/1.5,0,1);actions.tickLab('collections',{explode,direction:explode===0||explode===1?0:conf.direction},c.id);}}
   state=getState();lab=state.lab;rot=lab.rotation;
   if(generation!==levels[0]){dropDerived();generation=levels[0];for(const level of levels)for(const kind of ['hull','intersection'])derivedObjects.push(createDerived(level,kind));}
   const whole=rotation(rot.axis,rot.angle,rot.vector),qUp=rotation(rot.upAxis,rot.up,rot.vector),qDown=rotation(rot.downAxis,rot.down,rot.vector);

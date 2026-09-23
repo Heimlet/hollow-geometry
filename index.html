@@ -15,6 +15,10 @@
     <button disabled onclick="toggleAll(false)">Выкл. всё</button>
     <button disabled onclick="resetCamera()" title="Сбросить ракурс текущего раздела">⟲ Камера</button>
   </div>
+  <div class="history-buttons" aria-label="История действий">
+    <button id="undo" disabled aria-label="Отменить действие" title="Отменить · Ctrl / ⌘ Z">↶</button>
+    <button id="redo" disabled aria-label="Повторить действие" title="Повторить · Ctrl / ⌘ Shift Z">↷</button>
+  </div>
   <span id="view-context" title="Ракурс, масштаб и перспектива запоминаются для каждого раздела"></span>
 </header>
 <div id="sidebar">

@@ -3,7 +3,6 @@
  * Exports the core rendering objects used by all other modules.
  */
 import * as THREE from 'three';
-import { getState, subscribe } from './state.js';
 import { DEFAULT_HEIGHT, ORBIT_DISTANCE, viewHeight, frameCamera, configureProjection } from './projection.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -84,24 +83,3 @@ scene.add(new THREE.AmbientLight(0x445566, 0.8));
 const dl1 = new THREE.DirectionalLight(0xffeedd, 0.7); dl1.position.set(5, 8, 3);  scene.add(dl1);
 const dl2 = new THREE.DirectionalLight(0xaabbff, 0.4); dl2.position.set(-4, 2, -5); scene.add(dl2);
 scene.add(new THREE.PointLight(0xffffff, 0.4, 15));
-
-// ── Starfield ──
-{
-  const N = 2000, pos = new Float32Array(N * 3);
-  for (let i = 0; i < N; i++) {
-    const r  = 45 + Math.random() * 50;
-    const th = Math.random() * Math.PI * 2;
-    const ph = Math.acos(2 * Math.random() - 1);
-    pos[i * 3]     = r * Math.sin(ph) * Math.cos(th);
-    pos[i * 3 + 1] = r * Math.sin(ph) * Math.sin(th);
-    pos[i * 3 + 2] = r * Math.cos(ph);
-  }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const stars = new THREE.Points(g, new THREE.PointsMaterial({
-    color: 0xffffff, size: 0.12, transparent: true, opacity: 0.7, sizeAttenuation: true,
-  }));
-  scene.add(stars);
-  stars.visible = getState().display.stars;
-  subscribe(state => { stars.visible = state.display.stars; });
-}

@@ -12,7 +12,7 @@ export function onlyObjectVisible(state, id) {
   const ids = [...Object.keys(state.objects), 'merkaba_hull', 'merkaba_intersection'];
   const visible = ids.filter(key => objectVisible(state, key));
   return visible.length === 1 && visible[0] === objectId(id) && state.study.mode === 'none'
-    && !state.display.golden && !state.display.guide && !state.lab.layers.projection;
+    && state.goldenScene.id === 'none' && !state.display.golden && !state.display.guide && !state.lab.layers.projection;
 }
 export function assemblyAvailability(value, direction, hasObjects = true) {
   return {

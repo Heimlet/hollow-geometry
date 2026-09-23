@@ -14,6 +14,9 @@ import { drawProjectionGuide } from './guide.js';
 import { updateStudies } from './studies.js';
 import { updateGolden } from './golden.js';
 import { initPicking } from './picking.js';
+import { initShortcuts } from './shortcuts.js';
+import { updateStarfield } from './starfield.js';
+import { updateGoldenScenes } from './golden-scenes.js';
 
 // ── Build UI ──
 initUI();
@@ -34,6 +37,7 @@ window.resetCamera = () => {
 };
 
 document.querySelectorAll('.hdr-btns button').forEach(button=>button.disabled=false);
+initShortcuts();
 
 const updatePicking = initPicking(showInfo);
 
@@ -61,6 +65,8 @@ function animate() {
   updatePicking();
   updateGolden();
   updateStudies(dt);
+  updateStarfield();
+  updateGoldenScenes(dt);
   renderer.render(scene, camera);
   drawProjectionGuide();
   drawLabProjection();

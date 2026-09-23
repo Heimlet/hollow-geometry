@@ -6,6 +6,7 @@ import { objectId, derivedKind } from './scene-selectors.js';
  */
 import { OBJ_IDS } from './constants.js';
 import { getPreset } from './preset-data.js';
+import { GOLDEN_SCENES } from './golden-scene-data.js';
 export const ALL_IDS = [...OBJ_IDS, '_metatron_'];
 const opacity = { tetrahedron: .15, cube: .10, octahedron: .12, dodecahedron: .08,
   icosahedron: .12, merkaba_up: .12, merkaba_down: .12, cuboctahedron: .06, _metatron_: .4 };
@@ -21,12 +22,32 @@ export function initialState() {
   }])), recursion: { depth: 1, scale: .35 }, presetId: null,
   lab: initialLab(), viewContext: 'platonic',
   study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, turns: 3, size: 1, attached: false },
-  display: { autoRotate: false, speed: .15, stars: true, guide: false, golden: false } });
+  goldenScene: { id: 'none', progress: 0, running: false },
+  display: { autoRotate: false, speed: .15, stars: true, starCount: 2400, guide: false, golden: false } });
 }
 function requireValid(condition, message) { if (!condition) throw new Error(message); }
 export function reduce(state, action) {
   let next = state;
   switch (action.type) {
+    case 'golden-scene/start': {
+      const demo=GOLDEN_SCENES[action.id];requireValid(demo,'Unknown golden scene');
+      const objects=Object.fromEntries(ALL_IDS.map(id=>[id,{...state.objects[id],
+        visible:demo.objects.includes(id),edges:demo.objects.includes(id),faces:demo.objects.includes(id),
+        nodes:false,lines:false,...(demo.objects.includes(id)?{opacity:.035}:{})}]));
+      next={...state,objects,presetId:null,viewContext:'golden',recursion:{...state.recursion,depth:1},
+        lab:initialLab(),study:{...state.study,mode:'none',running:false},
+        display:{...state.display,golden:false,guide:false,autoRotate:false},
+        goldenScene:{id:action.id,progress:0,running:true}};break;
+    }
+    case 'golden-scene/change': {
+      requireValid(action.patch && Object.keys(action.patch).every(key=>['id','progress','running'].includes(key)) &&
+        (action.patch.id===undefined || action.patch.id==='none' || action.patch.id===state.goldenScene.id),'Use start to activate a golden scene');
+      const demo={...state.goldenScene,...action.patch};
+      requireValid((demo.id==='none'||GOLDEN_SCENES[demo.id]) && typeof demo.running==='boolean' &&
+        Number.isFinite(demo.progress)&&demo.progress>=0&&demo.progress<=1,'Invalid golden scene');
+      if(demo.id==='none')demo.running=false;
+      next={...state,goldenScene:demo};break;
+    }
     case 'object/visibility': {
       const id = objectId(action.id), kind = derivedKind(id);
       requireValid(typeof action.visible === 'boolean', 'Invalid visibility');
@@ -164,7 +185,8 @@ export function reduce(state, action) {
       next = { ...state, recursion }; break;
     }
     case 'display/change': {
-      requireValid(Object.entries(action.patch).every(([key, value]) => key === 'speed'
+      requireValid(Object.entries(action.patch).every(([key, value]) => key === 'starCount'
+        ? Number.isInteger(value) && value >= 200 && value <= 8000 : key === 'speed'
         ? Number.isFinite(value) && value >= 0 && value <= .5
         : ['autoRotate', 'stars', 'guide', 'golden'].includes(key) && typeof value === 'boolean'), 'Invalid display settings');
       next = { ...state, display: { ...state.display, ...action.patch } }; break;
@@ -182,6 +204,12 @@ export function reduce(state, action) {
     next={...next,lab:{...next.lab,rotation:{...next.lab.rotation,running:false},layers:{...next.lab.layers,source:false,hull:false,intersection:false,projection:false,hullFaces:false,hullEdges:false,intersectionFaces:false,intersectionEdges:false}}};
   }
   for(const pack of ASSEMBLIES)if(pack.members.every(id=>!next.objects[id].visible)&&(next.lab.collections[pack.id].direction||next.lab.collections[pack.id].explode))next={...next,lab:labChange(next.lab,'collections',{direction:0,explode:0},pack.id)};
+  // Guided geometry assumes canonical, co-centred sources. Editing the scene
+  // ends the guide atomically rather than leaving orphaned annotations behind.
+  if(state.goldenScene.id!=='none' && !action.type.startsWith('golden-scene/') && action.history!==false &&
+    (['objects/change','object/visibility','object/only','preset/select','recursion/change','assembly/change','lab/change','compound/solo','compound/restore'].includes(action.type) ||
+    action.type==='view/focus'&&action.id!=='golden' || action.type==='study/change' || action.type==='display/change'&&action.patch.golden===true))
+    next={...next,goldenScene:{...state.goldenScene,id:'none',running:false}};
   return freeze(next);
 }
 export function groupVisibility(state, ids) {
@@ -191,22 +219,54 @@ export function groupVisibility(state, ids) {
 export function createStore() {
   let state = initialState();
   const listeners = new Set();
-  let notifying = false;
+  const past = [], future = [];
+  let notifying = false, grouping = false, recorded = false;
+  const notify = (previous, action) => {
+    notifying = true;
+    try { listeners.forEach(listener => listener(state, previous, action)); }
+    finally { notifying = false; }
+  };
+  // Restored animation frames are stable until the user presses Play again.
+  const paused = snapshot => freeze({...snapshot,
+    goldenScene:{...snapshot.goldenScene,running:false}, study:{...snapshot.study,running:false},
+    lab:{...snapshot.lab,rotation:{...snapshot.lab.rotation,running:false},
+      explode:{...snapshot.lab.explode,direction:0},
+      collections:Object.fromEntries(Object.entries(snapshot.lab.collections).map(([id,c])=>[id,{...c,direction:0}]))}});
+  const travel = (from, to, type) => {
+    requireValid(!notifying, 'Subscribers must not dispatch; dispatch commands from controllers');
+    grouping = false; recorded = false;
+    if (!from.length) return;
+    const previous = state; to.push(previous); state = paused(from.pop());
+    notify(previous, {type});
+  };
   return {
     getState: () => state,
+    getHistory: () => ({canUndo:past.length>0,canRedo:future.length>0,undoCount:past.length,redoCount:future.length}),
+    beginHistoryGroup() { if (!grouping) { grouping = true; recorded = false; } },
+    endHistoryGroup() { grouping = false; recorded = false; },
+    undo: () => travel(past, future, 'history/undo'),
+    redo: () => travel(future, past, 'history/redo'),
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
     dispatch(action) {
       requireValid(!notifying, 'Subscribers must not dispatch; dispatch commands from controllers');
       const previous = state;
       state = reduce(state, action);
-      notifying = true;
-      try { listeners.forEach(listener => listener(state, previous, action)); }
-      finally { notifying = false; }
+      if (action.history !== false && JSON.stringify(state) !== JSON.stringify(previous)) {
+        if (!grouping || !recorded) {
+          past.push(previous); if (past.length > 100) past.shift();
+          recorded = true;
+        }
+        future.length = 0;
+      }
+      notify(previous, action);
     },
   };
 }
-export const { getState, dispatch, subscribe } = createStore();
+export const { getState, dispatch, subscribe, getHistory, beginHistoryGroup, endHistoryGroup, undo, redo } = createStore();
 export const actions = {
+  startGoldenScene: id => dispatch({type:'golden-scene/start',id}),
+  goldenScene: patch => dispatch({type:'golden-scene/change',patch}),
+  tickGoldenScene: patch => dispatch({type:'golden-scene/change',patch,history:false}),
   objectVisibility: (id, visible) => dispatch({type:'object/visibility',id,visible}),
   onlyObject: id => dispatch({type:'object/only',id}),
   focus: id => dispatch({ type: 'view/focus', id }),
@@ -214,7 +274,9 @@ export const actions = {
   solo: (id,member) => dispatch({type:'compound/solo',id,member}),
   restore: id => dispatch({type:'compound/restore',id}),
   lab: (section, patch, id) => dispatch({ type: 'lab/change', section, patch, id }),
+  tickLab: (section, patch, id) => dispatch({ type: 'lab/change', section, patch, id, history:false }),
   study: patch => dispatch({ type: 'study/change', patch }),
+  tickStudy: patch => dispatch({ type: 'study/change', patch, history:false }),
   objects: (ids, patch) => dispatch({ type: 'objects/change', ids, patch }),
   preset: id => dispatch({ type: 'preset/select', id }),
   clearPreset: () => dispatch({ type: 'preset/clear' }),

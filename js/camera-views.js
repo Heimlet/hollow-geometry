@@ -30,5 +30,5 @@ subscribe((state, previous, action) => {
   views.set(previous.viewContext, snapshot());
   // A preset starts its flight from the current view, then gradually flattens.
   // Merely opening its figure settings does not change the context or camera.
-  if (action.type !== 'preset/select') restore(views.get(state.viewContext) || defaultView());
+  if (!['preset/select','golden-scene/start'].includes(action.type)) restore(views.get(state.viewContext) || defaultView());
 });

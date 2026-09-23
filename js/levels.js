@@ -28,6 +28,7 @@ function applySettings(level, state) {
     const selected = presetFocus?.includes(id);
     object.fMat.opacity = presetFocus && !selected ? object.op * .08 : object.op;
     object.eMat.opacity = presetFocus ? (selected ? 1 : .04) : .85;
+    if(state.goldenScene.id!=='none')object.eMat.opacity=id==='dodecahedron'?.16:.08;
     object.fMat.emissiveIntensity = presetFocus ? (selected ? .2 : .01) : .05;
   }
   const meta = level.mc;
@@ -115,7 +116,7 @@ function buildLevels(state) {
 subscribe((state, previous) => {
   if (state.lab.collections.tetra5.mirror !== previous.lab.collections.tetra5.mirror || state.recursion.depth !== previous.recursion.depth || state.recursion.scale !== previous.recursion.scale) {
     buildLevels(state);
-  } else if (state.objects !== previous.objects || state.presetId !== previous.presetId) {
+  } else if (state.objects !== previous.objects || state.presetId !== previous.presetId || state.goldenScene.id!==previous.goldenScene.id) {
     levels.forEach(level => applySettings(level, state));
   }
 });

@@ -17,7 +17,21 @@ for(const scale of [1,.35,.0225]) {
     assert.ok(p[0].clone().add(p[2]).distanceTo(p[1].clone().add(p[3]))<scale*1e-5);
     assert.ok(Math.abs(p[1].clone().sub(p[0]).dot(p[3].clone().sub(p[0])))<scale*scale*1e-5);
   }
+  const triple=math.orthogonalGoldenRectangles(iv);assert.equal(triple.length,3);triple.forEach(check);
+  const normals=triple.map(r=>r.points[1].clone().sub(r.points[0]).cross(r.points[3].clone().sub(r.points[0])).normalize());
+  for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)assert.ok(Math.abs(normals[i].dot(normals[j]))<1e-5);
+  for(const vertex of iv)assert.equal(triple.flatMap(r=>r.points).filter(p=>p.distanceTo(vertex)<scale*1e-5).length,1);
   const faces=math.pentagonalFaces(dod,dv);assert.equal(faces.length,12);faces.forEach(check);
+  for(const face of faces){
+    const nested=math.nestedFaceStars(face.points,6),center=face.points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(5);
+    const normal=face.points[1].clone().sub(face.points[0]).cross(face.points[2].clone().sub(face.points[0])).normalize();
+    for(let n=0;n<nested.length;n++) {
+      const edge=nested[n][0].distanceTo(nested[n][1]);
+      assert.ok(Math.abs(nested[n][0].distanceTo(nested[n][2])/edge-PHI)<2e-5);
+      for(const p of nested[n])assert.ok(Math.abs(p.clone().sub(center).dot(normal))<scale*1e-5);
+      if(n)assert.ok(Math.abs(nested[n-1][0].distanceTo(center)/nested[n][0].distanceTo(center)-PHI**2)<2e-5);
+    }
+  }
   const centers=faces.map(face=>face.points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(5));
   const dualRectangles=math.goldenRectangles(centers);assert.equal(dualRectangles.length,15);dualRectangles.forEach(check);
   faces.forEach(face=>{const division=math.pentagramDivision(face.points);assert.ok(division);check(division);});

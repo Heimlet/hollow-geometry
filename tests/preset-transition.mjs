@@ -35,3 +35,10 @@ actions.focus('platonic');sameView(platonic);
 scene.setDepth(.6);const perspective=savedView();actions.focus('tetra10');actions.focus('platonic');sameView(perspective);
 actions.preset('tetra5-axis-3');now+=300;presets.updateCamAnim();actions.focus('platonic');const interrupted=savedView();now+=5000;presets.updateCamAnim();sameView(interrupted);assert.equal(presets.isCamAnimating(),false);
 console.log('PASS: per-section view restores pan, up, orientation, ortho zoom and perspective; presets fly from current view; animations/global toggles do not steal context');
+
+// Inspection flights can target an actual face centre without moving the model.
+const {Vector3}=await import(three), target=new Vector3(.8,1.1,2.5);
+presets.flyCamera(new Vector3(1,2,3).normalize().multiplyScalar(30),.65,1500,target);
+now+=750;presets.updateCamAnim();assert.ok(scene.controls.target.distanceTo(target)>0);
+now+=2000;presets.updateCamAnim();assert.ok(scene.controls.target.distanceTo(target)<1e-9);assert.ok(Math.abs(scene.getViewHeight()-.65)<1e-9);assert.equal(scene.projectionDepth,0);
+console.log('PASS: animated detail inspection preserves an explicit 3D target and exact final scale');

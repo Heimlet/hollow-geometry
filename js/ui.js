@@ -14,6 +14,7 @@ import { PRESETS, getPreset } from './preset-data.js';
 import { activatePreset } from './presets.js';
 import { initStudiesUI } from './studies.js';
 import { initGoldenUI } from './golden.js';
+import { initGoldenScenesUI } from './golden-scenes.js';
 import { registerSetting, settingLink, linkText, initSettingsNavigation, openSetting } from './settings-links.js';
 
 // ── Helpers ──
@@ -177,6 +178,7 @@ export function initUI() {
   groupsEl.before(panel);
   initGoldenUI(groupsEl);
   initStudiesUI(document.getElementById('setting-display-golden'));
+  initGoldenScenesUI(document.getElementById('setting-display-golden'));
   const ortho = panel.querySelector('#mode-ortho'), perspective = panel.querySelector('#mode-perspective');
   const depth = panel.querySelector('#camera-depth'), value = panel.querySelector('#depth-value');
   ortho.addEventListener('click', () => setProjectionMode('orthographic'));
@@ -292,6 +294,12 @@ export function initUI() {
       settingBindings.push(() => { speed.value = getState().display.speed; vs.textContent = getState().display.speed.toFixed(2); });
       c.append(speed, vs); dd.appendChild(c); }
     { const c = document.createElement('div'); c.className = 'ctrl'; c.innerHTML = '<label>Звёзды</label>'; c.appendChild(mkTgl(true, v => actions.display({ stars: v }), () => getState().display.stars)); dd.appendChild(c); }
+    { const c=document.createElement('div'); c.className='ctrl star-density'; c.innerHTML='<label>Количество звёзд</label>';
+      const value=document.createElement('span');value.className='val';
+      const count=mkSl(getState().display.starCount,200,8000,200,starCount=>actions.display({starCount}));count.setAttribute('aria-label','Количество звёзд');
+      settingBindings.push(()=>{count.value=getState().display.starCount;count.disabled=!getState().display.stars;value.textContent=getState().display.starCount.toLocaleString('ru');});c.append(count,value);dd.append(c); }
+    const keys=document.createElement('details');keys.className='keyboard-help';
+    keys.innerHTML='<summary>Горячие клавиши</summary><dl><dt>Ctrl / ⌘ Z</dt><dd>Отменить настройки</dd><dt>Ctrl / ⌘ Shift Z</dt><dd>Повторить</dd><dt>Ctrl Y</dt><dd>Повторить</dd><dt>S</dt><dd>Звёзды</dd><dt>G</dt><dd>Направляющая</dd><dt>H</dt><dd>Скрыть / открыть меню</dd><dt>R</dt><dd>Сбросить камеру</dd></dl><p>Один жест ползунка — одно действие. При отмене построения, сборка и вращение Меркабы ставятся на паузу. Клавиши работают и в русской раскладке.</p>';dd.append(keys);
     const g = document.createElement('div'); g.className = 'grp';
     const h = document.createElement('div'); h.className = 'grp-hdr';
     h.innerHTML = '<span class="arr">▶</span><span class="ico">⚙</span><span class="ttl">Отображение</span>';
@@ -329,7 +337,7 @@ export function initUI() {
   });
   const displayGroup = document.getElementById('setting-display');
   displayGroup.querySelectorAll('.ctrl').forEach((control, index) => {
-    const key = ['autoRotate', 'speed', 'stars'][index]; const label = control.querySelector('label');
+    const key = ['autoRotate', 'speed', 'stars', 'starCount'][index]; const label = control.querySelector('label');
     registerSetting(`display.${key}`, control, label.textContent);
     label.replaceChildren(settingLink(label.textContent, `display.${key}`));
   });

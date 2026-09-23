@@ -64,3 +64,35 @@ export function edgeDivisions(points, edgeGeometry) {
   }
   return results;
 }
+
+/** Choose a complete orthogonal triple, not three arbitrary golden rectangles. */
+export function orthogonalGoldenRectangles(vertices) {
+  const rectangles=goldenRectangles(vertices);
+  const normal=r=>r.points[1].clone().sub(r.points[0]).cross(r.points[3].clone().sub(r.points[0])).normalize();
+  const normals=rectangles.map(normal), eps=vertices[0].length()*1e-5;
+  for(let a=0;a<rectangles.length;a++)for(let b=a+1;b<rectangles.length;b++)for(let c=b+1;c<rectangles.length;c++) {
+    if([normals[a].dot(normals[b]),normals[a].dot(normals[c]),normals[b].dot(normals[c])].some(dot=>Math.abs(dot)>1e-5))continue;
+    const triple=[rectangles[a],rectangles[b],rectangles[c]],points=triple.flatMap(r=>r.points);
+    if(vertices.every(v=>points.filter(p=>v.distanceTo(p)<eps).length===1))return triple;
+  }
+  return [];
+}
+
+/** Every inner pentagon is computed by intersecting actual 3D diagonals. */
+export function nestedFaceStars(face, count=6) {
+  let points=face.map(p=>p.clone());
+  const center=points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(5);
+  const u=points[0].clone().sub(center).normalize(),normal=points[1].clone().sub(points[0]).cross(points[2].clone().sub(points[0])).normalize(),v=normal.clone().cross(u);
+  const layers=[];
+  for(let level=0;level<count;level++) {
+    layers.push(points);
+    const inner=points.map((a,i)=>{
+      const b=points[(i+2)%5],c=points[(i+1)%5],d=points[(i+3)%5];
+      const edge=b.clone().sub(a),other=d.clone().sub(c),delta=c.clone().sub(a),cross=edge.clone().cross(other);
+      return a.clone().addScaledVector(edge,delta.cross(other).dot(cross)/cross.lengthSq());
+    });
+    inner.sort((a,b)=>Math.atan2(a.clone().sub(center).dot(v),a.clone().sub(center).dot(u))-Math.atan2(b.clone().sub(center).dot(v),b.clone().sub(center).dot(u)));
+    points=inner;
+  }
+  return layers;
+}

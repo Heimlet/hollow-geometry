@@ -125,7 +125,7 @@ All user-visible text is in **Russian**. Keep it that way.
 ## Geometry laboratory
 
 See [docs/implementation-plan.md](docs/implementation-plan.md) for implemented scope
-and [docs/state-model.md](docs/state-model.md) for invariants and all 11 checks.
+and [docs/state-model.md](docs/state-model.md) for invariants and all 12 checks.
 
 - `compound-data.js`: stable compound/component IDs; new components are regular objects in the store.
 - `polyhedra-math.js`: pure convex hull/intersection, compound coordinates, symmetry and exploded-layout math.
@@ -138,3 +138,8 @@ Do not mutate source vertices during animation. Picking, guides, labels and deri
 layers must follow the current world transforms. Hidden render sources remain
 available for Intersection; disabling the whole compound cascades through its layers.
 Use `actions.assembly(...)` for atomic component activation and assembly animation.
+
+- `golden-scene-data.js` / `golden-scenes.js`: three guided φ constructions tied to real model coordinates; local pentagram recursion is distinct from whole-scene recursion.
+- `starfield.js`: camera-independent apparent star density; settings live in `display`.
+- `shortcuts.js`: history grouping per gesture and keyboard shortcuts. Store history covers scene settings, not free camera gestures. Use `tickLab`, `tickStudy`, `tickGoldenScene` for frame updates, never regular user commands.
+- `tests/history.mjs`: undo/redo, transaction grouping, animation exclusion, guided-scene lifetime. There are now 12 regression suites.

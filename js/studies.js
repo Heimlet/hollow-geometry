@@ -85,7 +85,7 @@ export function initStudiesUI(parent) {
 }
 export function updateStudies(dt) {
   let s=getState().study;
-  if(s.running){const progress=s.progress+Math.min(dt,.05)*s.speed;actions.study({progress:Math.min(1,progress),running:progress<1});s=getState().study;}
+  if(s.running){const progress=s.progress+Math.min(dt,.05)*s.speed;actions.tickStudy({progress:Math.min(1,progress),running:progress<1});s=getState().study;}
   frame();rebuild();group.visible=s.mode!=='none';if(badge)badge.hidden=!group.visible;ink.hidden=!group.visible;annotations.forEach(a=>a.hidden=!group.visible);if(!group.visible)return;
   let endpoints=[],lengths=[];
   if(s.mode==='spiral') {

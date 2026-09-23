@@ -21,13 +21,13 @@ export function cancelCameraAnimation() { camAnim = null; }
 window.addEventListener('camera-manual-change', cancelCameraAnimation);
 controls.addEventListener('start', cancelCameraAnimation);
 
-export function flyCamera(to, height, dur = 1200) {
+export function flyCamera(to, height, dur = 1200, target = new THREE.Vector3()) {
   settleControls();
   camAnim = { from: camera.position.clone(), target: controls.target.clone(),
     fromHeight: getViewHeight(), height, to: to.clone(),
     direction: camera.position.clone().sub(controls.target).normalize(),
     rotation: new THREE.Quaternion().setFromUnitVectors(camera.position.clone().sub(controls.target).normalize(), to.clone().normalize()),
-    depth: projectionDepth, distance: camera.position.distanceTo(controls.target), t0: performance.now(), dur };
+    depth: projectionDepth, distance: camera.position.distanceTo(controls.target), toTarget:target.clone(), t0: performance.now(), dur };
 }
 
 /** Call once per frame to animate camera. */
@@ -36,7 +36,7 @@ export function updateCamAnim() {
   if (!camAnim) return;
   const frame = transitionAt(performance.now() - camAnim.t0, camAnim.dur, 900, camAnim.depth);
   if (!frame.flattening || !camAnim.arrived) {
-    controls.target.copy(camAnim.target).multiplyScalar(1 - frame.move);
+    controls.target.lerpVectors(camAnim.target, camAnim.toTarget, frame.move);
     const rotation = new THREE.Quaternion().slerp(camAnim.rotation, frame.move);
     camera.position.copy(camAnim.direction).applyQuaternion(rotation)
       .multiplyScalar(THREE.MathUtils.lerp(camAnim.distance, camAnim.to.length(), frame.move)).add(controls.target);
