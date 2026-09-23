@@ -69,6 +69,9 @@ function animate() {
   controls.update(dt);
   updateLab(dt);
   updateTourStage(dt);
+  // OrbitControls changes the pose before WebGLRenderer refreshes matrixWorld.
+  // Canvas overlays and raycasting must use that same, current-frame pose.
+  camera.updateMatrixWorld(true);
   applyTourEffects();
   applyTourTransition(dt);
   updatePicking();

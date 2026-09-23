@@ -426,3 +426,10 @@ remains available independently of long input lag.
 A continuation chapter follows the same spiral from quarter-turn 6 through 14,
 zooming about the shared fixed point by φ⁸. The eight new subdivisions remain
 readable instead of collapsing to a dot; chapter IDs keep reading links stable.
+
+Camera pose and `matrixWorld` are synchronized immediately after OrbitControls /
+tour-camera updates, before raycasting and canvas overlays. Waiting for the later
+WebGL render leaves those overlays one frame behind during manual dragging.
+`render-sync.mjs` executes the actual main loop with real orthographic/perspective
+matrices: 120 orbit/zoom frames agree, while removing the synchronization reproduces
+the previous mismatch as a negative control.
