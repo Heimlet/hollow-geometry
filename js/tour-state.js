@@ -14,6 +14,7 @@ export function enterTourStep(state,id,index=0,auto=state.tour.auto) {
     nodes:key==='_metatron_'&&ids.includes(key),lines:key==='_metatron_'&&ids.includes(key)&&recipe.lines!==false,
     opacity:key==='_metatron_'?(recipe.effect==='network'?.48:.3):recipe.golden?.035:.11}]));
   const lab=initialLab();
+  if(recipe.rotationAxis)Object.assign(lab.rotation,{axis:recipe.rotationAxis,upAxis:recipe.rotationAxis,downAxis:recipe.rotationAxis});
   Object.assign(lab.layers,{source:ids.includes('merkaba_up')&&recipe.source!==false,
     hull:!!recipe.hull,hullEdges:!!recipe.hull,hullFaces:!!recipe.hull,
     intersection:!!recipe.intersection,intersectionEdges:!!recipe.intersection,intersectionFaces:!!recipe.intersection});
@@ -40,11 +41,10 @@ export function frameTour(state,elapsed) {
     lab={...lab,rotation:{...lab.rotation,mode:tradition?'tradition':'counter',running:false,
       up:wrapAngle(elapsed*1.15*(tradition?34:18)),down:wrapAngle(-elapsed*1.15*(tradition?21:18))}};
   }
-  if(recipe.effect==='relative') {
-    // One fixed tetrahedron makes the changing shared volume easy to follow.
-    // 120° about its vertex axis returns the moving tetrahedron to the same set of vertices.
-    lab={...lab,rotation:{...lab.rotation,mode:'down',running:false,up:0,
-      down:120*smooth((p-.1)/.8)}};
+  if(recipe.effect==='counterCycle') {
+    // A half turn around the cube's vertical face axis restores each tetrahedron.
+    const angle=180*smooth((p-.05)/.9);
+    lab={...lab,rotation:{...lab.rotation,mode:'counter',running:false,up:angle,down:-angle}};
   }
   if(recipe.golden)goldenScene={id:recipe.golden,progress:(recipe.goldenFrom||0)+((recipe.goldenTo??1)-(recipe.goldenFrom||0))*smooth(Math.min(1,p/(recipe.buildUntil||1))),running:false};
   return {...state,lab,goldenScene,tour:{...state.tour,elapsed}};

@@ -70,7 +70,7 @@ export function applyTourEffects() {
   const state=getState(),recipe=tourStep(state)?.scene;
   nodeStudy.update(levels[0]?.mc,recipe?.nodeStudy,tourProgress(state));
   fruitScene.update(recipe?.fruit,tourProgress(state),camera.position.clone().sub(controls.target).normalize());
-  torusScene.update(recipe?.torus,tourProgress(state),state.tour.elapsed);
+  torusScene.update(recipe?.torus,tourProgress(state),state.tour.elapsed,{axis:!!recipe?.axisGuide});
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
   for(const level of levels) {
@@ -144,7 +144,7 @@ export function initTours() {
     document.body.classList.toggle('mode-simple',simple);document.body.classList.toggle('mode-advanced',!simple);document.body.classList.toggle('touring',simple&&active);
     welcome.hidden=!simple||active;player.hidden=!simple||!active;
     reading.hidden=!(tourStep(state)?.scene.reading||TOURS[state.tour.id]?.reading);
-    reading.textContent=tourStep(state)?.scene.reading==='vortex'?'Вихревое движение · формулы и физика':'О торе: тело, космос, физика';
+    reading.textContent=tourStep(state)?.scene.readingLabel||(tourStep(state)?.scene.reading==='vortex'?'Вихревое движение · формулы и физика':'О торе: тело, космос, физика');
     toursButton.setAttribute('aria-pressed',simple);advanced.setAttribute('aria-pressed',!simple);gentle.setAttribute('aria-pressed',state.display.gentleOrbit);
     advanced.textContent=active?'Покинуть тур':'Лаборатория';advanced.title=active?'Покинуть тур и перейти в лабораторию':'Открыть лабораторию';
     player.dataset.playback=state.tour.phase==='complete'?'complete':state.tour.playing?'playing':'paused';

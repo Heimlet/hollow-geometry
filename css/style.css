@@ -480,3 +480,6 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .knowledge-citations{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 20px}.knowledge-citations a{font-size:11px;color:#8bb5c9;text-underline-offset:3px}
 
 .knowledge-body .knowledge-formula{white-space:pre-wrap;font:500 clamp(16px,4.5vw,20px)/1.8 Georgia,serif;color:#edcf93;background:#edc78009;border-left:2px solid #c9ad7166;padding:10px 14px;margin:12px 0}
+.knowledge-illustration{padding:14px 16px;margin:16px 0;border:1px solid #87c4db44;border-radius:10px;background:#74badb09}
+.knowledge-illustration>a{color:#a8dbee;font-size:13px;line-height:1.6;text-underline-offset:3px}.knowledge-illustration>a:first-child{font-weight:600}
+.knowledge-body .knowledge-illustration p{font-size:12px;color:#a2b6c8;line-height:1.6;margin:8px 0}

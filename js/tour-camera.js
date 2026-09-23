@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TORUS_AXIS,torusBounds } from './torus-math.js';
+import { TORUS_AXIS,TORUS_POLE,torusBounds } from './torus-math.js';
 import { fruitVolume } from './fruit-life.js';
 import { camera,controls,projectionDepth,getViewHeight,setViewHeight,setDepth,setCameraFrameOffset,settleControls } from './scene.js';
 import { levels } from './levels.js';
@@ -20,6 +20,7 @@ function scenePoints() {
   if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (['flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
   const points=[];
   if(tourStep(getState())?.scene.torus)points.push(...torusFramePoints);
+  else if(tourStep(getState())?.scene.axisGuide)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));
   for(const level of levels){
     for(const object of Object.values(level.objs)) {
       if(!object.group.visible)continue;

@@ -1,6 +1,6 @@
 /** One reusable, independent 3D miniature for reading cards. The miniature owns its geometry snapshots. */
 import * as THREE from 'three';
-import {TORUS,TORUS_AXIS,torusCurve} from './torus-math.js';
+import {TORI,TORUS_AXIS,torusCurve} from './torus-math.js';
 import {fruitVolume} from './fruit-life.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { levels } from './levels.js';
@@ -48,9 +48,12 @@ export function mountKnowledgePreview(parent,topic,title) {
   for(const id of ids) {
     if(id==='_torus_') {
       const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));
-      const surface=new THREE.Mesh(new THREE.TorusGeometry(TORUS.major,TORUS.tube,32,96),new THREE.MeshPhongMaterial({color:0x77cbdc,transparent:true,opacity:.22,depthWrite:false,shininess:80}));surface.quaternion.copy(q);group.add(surface);
-      for(const [u,v,color]of [[2,3,0xf3cb86],[-2,3,0x90dcec]]){const points=torusCurve(u,v,480).map(p=>new THREE.Vector3(...p).applyQuaternion(q));group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,toneMapped:false})));}
-      caption.textContent='Два обхода, две встречные нити · поверните миниатюру';
+      TORI.forEach((shape,index)=>{
+        const color=index?0xb7a3ff:0x76dcb8;
+        const surface=new THREE.Mesh(new THREE.TorusGeometry(shape.major,shape.tube,32,96).scale(1,1,shape.height/shape.tube),new THREE.MeshPhongMaterial({color,transparent:true,opacity:.11,depthWrite:false,shininess:80}));surface.quaternion.copy(q);group.add(surface);
+        const points=torusCurve(index?-2:2,3,480,index*Math.PI,shape).map(p=>new THREE.Vector3(...p).applyQuaternion(q));group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,toneMapped:false})));
+      });
+      caption.textContent='Две близкие оболочки вокруг общей вертикали · поверните миниатюру';
     } else if(id==='_fruit_') {
       const f=fruitVolume(),u=new THREE.Vector3(1,0,-1).normalize(),v=new THREE.Vector3(-1,2,-1).normalize();
       for(const center of f.centers){
@@ -74,10 +77,10 @@ export function mountKnowledgePreview(parent,topic,title) {
   }
   for(const child of group.children)child.geometry.setDrawRange(0,Infinity);
   group.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(group),center=box.getCenter(new THREE.Vector3());radius=box.getBoundingSphere(new THREE.Sphere()).radius;
-  if(topic==='torus')radius=TORUS.major+TORUS.tube;
+  if(topic==='torus')radius=Math.max(...TORI.map(s=>Math.max(s.major+s.tube,s.height)));
   group.position.copy(center).negate();camera.zoom=1;camera.up.set(0,1,0);camera.position.set(1,1,1).normalize().multiplyScalar(radius*5);controls.target.set(0,0,0);
   if(topic==='pentagram')camera.position.set(0,0,radius*5);
-  if(topic==='torus')camera.position.set(3,.2,4).normalize().multiplyScalar(radius*5);
+  if(topic==='torus')camera.position.set(3,1,6).normalize().multiplyScalar(radius*5);
   controls.enableDamping=false;controls.update();controls.enableDamping=true;controls.enabled=true;active=true;width=height=0;
 }
 export function updateKnowledgePreview() {

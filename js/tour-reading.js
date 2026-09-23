@@ -70,6 +70,13 @@ export function initTourReading() {
     const entry=KNOWLEDGE[key];body.replaceChildren();pendingDemo=null;
     body.append(el('p',entry.kicker,'tour-eyebrow'));const heading=el('h2',entry.title);heading.id='knowledge-title';heading.tabIndex=-1;body.append(heading);mountKnowledgePreview(body,key,entry.title);body.append(el('p',entry.lead,'knowledge-lead'));
     entry.sections.forEach(([title,copy,references=[],formula])=>{const section=el('section');section.append(el('h3',title));if(formula)section.append(el('p',formula,'knowledge-formula'));section.append(el('p',copy));
+      for(const item of entry.illustrations||[])if(item.section===title){
+        const card=el('aside',null,'knowledge-illustration'),link=el('a',`${item.label} ↗`);
+        link.href=item.url;link.target='_blank';link.rel='noopener noreferrer';link.title='Иллюстрация откроется в новой вкладке';
+        card.append(link,el('p',item.caption));
+        if(item.source){const source=el('a','Подпись и источник изображения');source.href=item.source;source.target='_blank';source.rel='noopener noreferrer';card.append(source);}
+        section.append(card);
+      }
       if(references.length){const citations=el('div',null,'knowledge-citations');for(const index of references){const [label,url]=entry.sources[index],a=el('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';citations.append(a);}section.append(citations);}
       body.append(section);READING_DEMOS.filter(d=>d.topic===key&&d.section===title).forEach(d=>watchButton(section,d));if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
     if(entry.related.length){const related=el('div',null,'knowledge-related');related.append(el('h3','Связанные идеи'));entry.related.forEach(id=>{const b=button(related,KNOWLEDGE[id].title,()=>actions.readTopic(id));b.dataset.topic=id;});body.append(related);}
