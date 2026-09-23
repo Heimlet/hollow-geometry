@@ -8,6 +8,7 @@ import { getState, actions, subscribe, groupVisibility } from './state.js';
 import { projectionDepth, setDepth, setProjectionMode } from './scene.js';
 import { PRESETS, getPreset } from './preset-data.js';
 import { activatePreset } from './presets.js';
+import { initStudiesUI } from './studies.js';
 import { initGoldenUI } from './golden.js';
 import { registerSetting, settingLink, linkText, initSettingsNavigation } from './settings-links.js';
 
@@ -125,6 +126,7 @@ export function initUI() {
     <p class="camera-help">Перетаскивание — вращать · Колесо — масштаб<br>Правая кнопка — сдвиг · ⟲ — сброс камеры<br>Клик по пересечению — выбор фигуры · Esc — снять выделение</p>`;
   groupsEl.before(panel);
   initGoldenUI(groupsEl);
+  initStudiesUI(document.getElementById('setting-display-golden'));
   const ortho = panel.querySelector('#mode-ortho'), perspective = panel.querySelector('#mode-perspective');
   const depth = panel.querySelector('#camera-depth'), value = panel.querySelector('#depth-value');
   ortho.addEventListener('click', () => setProjectionMode('orthographic'));

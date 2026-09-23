@@ -9,6 +9,7 @@ import { levels } from './levels.js';
 import { updateCamAnim, isCamAnimating, deactivatePreset, isPresetActive, cancelCameraAnimation } from './presets.js';
 import { initUI, showInfo } from './ui.js';
 import { drawProjectionGuide } from './guide.js';
+import { updateStudies } from './studies.js';
 import { updateGolden } from './golden.js';
 import { initPicking } from './picking.js';
 
@@ -36,7 +37,8 @@ const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
+  const dt = clock.getDelta();
+  const t = clock.elapsedTime;
 
   updateCamAnim();
   controls.autoRotate = getState().display.autoRotate && !isCamAnimating();
@@ -52,6 +54,7 @@ function animate() {
   controls.update();
   updatePicking();
   updateGolden();
+  updateStudies(dt);
   renderer.render(scene, camera);
   drawProjectionGuide();
 }

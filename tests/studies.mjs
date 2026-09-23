@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
+const url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
+const constants=url(await readFile(new URL('../js/constants.js',import.meta.url),'utf8'));
+const {PHI}=await import(constants);
+const source=(await readFile(new URL('../js/studies-math.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(pathToFileURL(process.argv[2]).href)).replace("'./constants.js'",JSON.stringify(constants));
+const {spiralPoint,rectangleSquares,nestedStars}=await import(url(source));
+for(let theta=-20;theta<10;theta+=.13)assert.ok(Math.abs(spiralPoint(theta+Math.PI/2).length()/spiralPoint(theta).length()-PHI)<1e-12);
+const squares=rectangleSquares(8);
+squares.forEach(({points:p,side},i)=>{for(let j=0;j<4;j++)assert.ok(Math.abs(p[j].distanceTo(p[(j+1)%4])-side)<1e-10);if(i)assert.ok(Math.abs(squares[i-1].side/side-PHI)<1e-12);});
+const area=squares.reduce((sum,s)=>sum+s.side**2,0);assert.ok(Math.abs(area+(3/PHI**8)**2*PHI-9*PHI)<1e-10);
+const stars=nestedStars(8);stars.forEach((p,i)=>{p.forEach(v=>assert.ok(Math.abs(v.length()-2.5/PHI**(2*i))<1e-10));});
+console.log('PASS: exact spiral growth, square lengths and area conservation, nested star scale φ²');

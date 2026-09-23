@@ -5,6 +5,7 @@ import { scene, camera, canvas, controls, getViewHeight } from './scene.js';
 import { levels } from './levels.js';
 import { subscribe } from './state.js';
 import { uniqueHits } from './pick-targets.js';
+import { inspectStudyAt } from './studies.js';
 import { inspectGoldenAt } from './golden.js';
 import { settingLink } from './settings-links.js';
 
@@ -73,7 +74,7 @@ export function initPicking(showInfo) {
   canvas.addEventListener('click', event => {
     start = null;
     if (dragged) return;
-    if (inspectGoldenAt(event.clientX,event.clientY)) { selected = null; hovered = null; preview = null; return; }
+    if (inspectStudyAt(event.clientX,event.clientY) || inspectGoldenAt(event.clientX,event.clientY)) { selected = null; hovered = null; preview = null; return; }
     const hits = hitsAt(event.clientX, event.clientY);
     if (!hits.length) { selected = null; hovered = null; return; }
     if (hits.length === 1) { select(hits[0]); return; }

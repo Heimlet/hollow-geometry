@@ -16,12 +16,22 @@ export function initialState() {
   return freeze({ objects: Object.fromEntries(ALL_IDS.map(id => [id, {
     visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: opacity[id],
   }])), recursion: { depth: 1, scale: .35 }, presetId: null,
+  study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, attached: false },
   display: { autoRotate: false, speed: .15, stars: true, guide: false, golden: false } });
 }
 function requireValid(condition, message) { if (!condition) throw new Error(message); }
 export function reduce(state, action) {
   let next = state;
   switch (action.type) {
+    case 'study/change': {
+      const study = {...state.study, ...action.patch};
+      requireValid(['none','spiral','rectangle','pentagram'].includes(study.mode) &&
+        study.progress >= 0 && study.progress <= 1 && Number.isFinite(study.progress) &&
+        study.steps >= 1 && study.steps <= 8 && Number.isInteger(study.steps) &&
+        study.speed >= .01 && study.speed <= .5 && typeof study.running === 'boolean' && typeof study.attached === 'boolean', 'Invalid study');
+      if(study.mode === 'none') study.running = false;
+      next = {...state,study}; break;
+    }
     case 'objects/change': {
       requireValid(action.ids?.length && action.ids.every(id => ALL_IDS.includes(id)), 'Unknown object');
       const patch = action.patch;
@@ -99,6 +109,7 @@ export function createStore() {
 }
 export const { getState, dispatch, subscribe } = createStore();
 export const actions = {
+  study: patch => dispatch({ type: 'study/change', patch }),
   objects: (ids, patch) => dispatch({ type: 'objects/change', ids, patch }),
   preset: id => dispatch({ type: 'preset/select', id }),
   clearPreset: () => dispatch({ type: 'preset/clear' }),

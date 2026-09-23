@@ -207,3 +207,4 @@ export function inspectGoldenAt(x,y) {
   if (!hits.length) return false;
   explain(); return true;
 }
+export function getGoldenFinding() { return current; }

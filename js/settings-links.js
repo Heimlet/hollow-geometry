@@ -25,6 +25,7 @@ export function openSetting(key, source) {
   }
   sidebar.classList.remove('hidden'); document.body.classList.add('settings-navigation');
   for (let el = target.element; el && el !== sidebar; el = el.parentElement) {
+    if (el.matches('details')) el.open = true;
     if (el.matches('.grp-body, .obj-ctrls')) {
       el.classList.add('open'); el.previousElementSibling?.setAttribute('aria-expanded', 'true');
       if (el.matches('.grp-body')) el.previousElementSibling?.classList.add('open');
