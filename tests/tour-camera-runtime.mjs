@@ -54,3 +54,13 @@ actions.tickTour(8);rig.updateTourCamera(.025,330,440);
 assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())>.2,'The second chapter gradually leaves the flat viewpoint');
 console.log('PASS: static Flower of Life from the first render, fixed orthographic framing, continuous second-chapter reveal');
 console.log('PASS: free orbit keeps time running, return flight preserves playback and restores scripted direction, reading freezes, guided camera locks, exact finale and clean exit');
+// The expanded finale must also fit in depth, not only in the screen rectangle.
+const {TOURS}=await import(await load('tour-data')),{torusBounds}=await import(await load('torus-math'));
+actions.startTour('torus');const finalIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-whole');actions.tourStep(finalIndex);rig.queueTourShot();
+actions.seekTour(TOURS.torus.steps[finalIndex].seconds);for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
+assert.equal(scene.projectionDepth,0);
+for(const [x,y,z] of torusBounds()){
+ const projected=new Vector3(x,z,-y).multiplyScalar(9).project(scene.camera);
+ assert.ok(projected.z>=-1&&projected.z<=1,'Expanded torus remains between the orthographic clipping planes');
+}
+console.log('PASS: ninefold enlarged finale remains fully visible after perspective flattens');

@@ -93,6 +93,9 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   controls.target.copy(target);camera.up.set(0,1,0);camera.position.copy(target).addScaledVector(direction,30);
   setViewHeight(height);
   if(Math.abs(projectionDepth-depth)>1e-6 || (depth===0&&projectionDepth!==0))setDepth(depth,{automatic:true});
+  // Orthographic scale is independent of distance. Keep an enlarged finale
+  // wholly in front of the near plane, including when Depth reaches zero.
+  if(camera.isOrthographicCamera){const radius=points.reduce((max,p)=>Math.max(max,p.distanceTo(target)),0);camera.position.copy(target).addScaledVector(direction,Math.max(30,radius*1.3));}
   controls.update();camera.updateMatrixWorld(true);
   if(finish&&!flight)finishedKey=chapterKey;
 }
