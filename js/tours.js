@@ -4,6 +4,7 @@ import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
 import { tourFaceOpacity,recursionMoment,tourObjectAlpha } from './tour-effects.js';
+import { growthScale } from './torus-math.js';
 import { createTorusScene } from './torus-scene.js';
 import { createFruitScene } from './fruit-scene.js';
 import { createMetatronStudy } from './metatron-study.js';
@@ -38,7 +39,7 @@ function clearEffects() {
     level.mc.lines.geometry.setDrawRange(0,Infinity);
     for(const object of Object.values(level.objs)) {object.edges.geometry.setDrawRange(0,Infinity);object.fMat.opacity=object.op;}
   }
-  for(const owner of derivedObjects)owner.object.fMat.opacity=owner.object.op;
+  for(const owner of derivedObjects){owner.object.fMat.opacity=owner.object.op;owner.object.group.scale.setScalar(1);}
   refreshLevelAppearance();effectActive=false;
 }
 export function resetTourCamera() {
@@ -52,6 +53,8 @@ export function updateTours(dt) {
 export function updateTourStage(dt) {
   const state=getState(),recipe=tourStep(state)?.scene;
   if(recipe?.effect==='recursion')for(const level of levels){level.group.scale.setScalar(recursionMoment(tourProgress(state),level.idx,state.recursion.scale).scale);level.group.updateMatrixWorld(true);}
+  const scale=recipe?.growth?growthScale(tourProgress(state)):recipe?.worldScale||1;
+  if(recipe?.growth||recipe?.worldScale){for(const level of levels){level.group.scale.setScalar(scale);level.group.updateMatrixWorld(true);}for(const owner of derivedObjects){owner.object.group.scale.setScalar(scale);owner.object.group.updateMatrixWorld(true);}}
   const bounds=player?.getBoundingClientRect();
   updateTourCamera(dt,bounds?.height||220,bounds?.width||440);
   if(!getState().tour.id||!status)return;
@@ -71,7 +74,7 @@ export function applyTourEffects() {
   const state=getState(),recipe=tourStep(state)?.scene;
   nodeStudy.update(levels[0]?.mc,recipe?.nodeStudy,tourProgress(state));
   fruitScene.update(recipe?.fruit,tourProgress(state),camera.position.clone().sub(controls.target).normalize());
-  torusScene.update(recipe?.torus,tourProgress(state),state.tour.elapsed,{axis:!!recipe?.axisGuide});
+  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':null),tourProgress(state),state.tour.elapsed,{axis:!!recipe?.axisGuide,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:recipe?.growth?growthScale(tourProgress(state)):recipe?.worldScale||1});
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
   for(const level of levels) {
@@ -90,7 +93,10 @@ export function applyTourEffects() {
       if(!recipe.golden)object.eMat.opacity=.97*layerAlpha;
     }
   }
-  for(const owner of derivedObjects)if(owner.object.vis)owner.object.fMat.opacity=tourFaceOpacity({...recipe,...recipe.derived?.[owner.kind]},p);
+  for(const owner of derivedObjects)if(owner.object.vis){
+    const alpha=recipe.cubeWitness&&owner.kind==='hull'?smooth((Math.abs(Math.cos(2*state.lab.rotation.up*Math.PI/180))-.9)/.1):1;
+    owner.object.fMat.opacity=tourFaceOpacity({...recipe,...recipe.derived?.[owner.kind]},p)*alpha;owner.object.eMat.opacity=.85*alpha;
+  }
 }
 export function initTours() {
   const mode=el('nav',null,'experience-mode');mode.setAttribute('aria-label','Режим интерфейса');
@@ -157,7 +163,7 @@ export function initTours() {
       chapter.textContent=`${tour.name} · ${state.tour.index+1} / ${tour.steps.length}`;
       previous.disabled=state.tour.index===0;next.disabled=state.tour.index===tour.steps.length-1;
       document.getElementById('info').classList.remove('vis');options.open=false;
-      queueTourShot();
+      queueTourShot({holdTimeline:!step.scene.continuousMotion});
     }
     if(currentTour!==state.tour.id) {
       currentTour=state.tour.id;chapters.replaceChildren();progress.replaceChildren();

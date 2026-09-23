@@ -43,7 +43,11 @@ export function frameTour(state,elapsed) {
   }
   if(recipe.effect==='counterCycle') {
     // A half turn around the cube's vertical face axis restores each tetrahedron.
-    const angle=180*smooth((p-.05)/.9);
+    const from=recipe.rotationFrom??0,to=recipe.rotationTo??180;
+    // Match angular velocity at chapter boundaries while retaining exact cube alignments.
+    const slope=8*step.seconds/(to-from||1);
+    const phase=recipe.continuousMotion?smooth(p)+slope*(p-smooth(p)):smooth((p-.05)/((recipe.rotationUntil??.95)-.05));
+    const angle=from+(to-from)*phase;
     lab={...lab,rotation:{...lab.rotation,mode:'counter',running:false,up:angle,down:-angle}};
   }
   if(recipe.golden)goldenScene={id:recipe.golden,progress:(recipe.goldenFrom||0)+((recipe.goldenTo??1)-(recipe.goldenFrom||0))*smooth(Math.min(1,p/(recipe.buildUntil||1))),running:false};

@@ -19,7 +19,7 @@ export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
   if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (['opening','spheres','flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
   const points=[];
-  if(tourStep(getState())?.scene.torus)points.push(...torusFramePoints);
+  if(tourStep(getState())?.scene.torus){const r=tourStep(getState()).scene;points.push(...torusFramePoints.map(p=>p.clone().multiplyScalar(r.growth?9:r.worldScale||1)));}
   else if(tourStep(getState())?.scene.axisGuide)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));
   for(const level of levels){
     for(const object of Object.values(level.objs)) {
