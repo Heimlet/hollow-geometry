@@ -95,6 +95,7 @@ function alignFinding() {
   const normal = normalOf(finding);
   if (normal.dot(camera.position.clone().sub(controls.target)) < 0) normal.negate();
   const center = finding.points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(finding.points.length);
+  actions.focus('golden');
   actions.clearPreset();
   actions.display({autoRotate:false});
   setDepth(0); settleControls();

@@ -25,6 +25,7 @@ window.toggleAll = on => actions.objects(ALL_IDS, { visible: on });
 window.resetCamera = () => {
   cancelCameraAnimation();
   setDepth(0);
+  camera.up.set(0, 1, 0);
   camera.position.set(7, 5, 9).normalize().multiplyScalar(30);
   controls.target.set(0, 0, 0);
   setViewHeight(11);

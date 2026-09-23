@@ -1,7 +1,7 @@
 import { getPreset } from './preset-data.js';
 /** All transform consumers read these same per-frame results. */
 import * as THREE from 'three';
-import { COMPOUNDS, compoundOf } from './compound-data.js';
+import { ASSEMBLIES, assemblyOf } from './exploration-data.js';
 import { CR, INFO } from './constants.js';
 import { getState, actions } from './state.js';
 import { levels } from './levels.js';
@@ -33,14 +33,14 @@ export function updateLab(dt) {
     actions.lab('rotation',patch);
   }
   if(lab.explode.direction) {const value=THREE.MathUtils.clamp(lab.explode.value+elapsed*lab.explode.direction/1.5,0,1);actions.lab('explode',{value,direction:value===0||value===1?0:lab.explode.direction});}
-  for(const c of COMPOUNDS){const conf=lab.collections[c.id];if(conf.direction){const explode=THREE.MathUtils.clamp(conf.explode+elapsed*conf.direction/1.5,0,1);actions.lab('collections',{explode,direction:explode===0||explode===1?0:conf.direction},c.id);}}
+  for(const c of ASSEMBLIES){const conf=lab.collections[c.id];if(conf.direction){const explode=THREE.MathUtils.clamp(conf.explode+elapsed*conf.direction/1.5,0,1);actions.lab('collections',{explode,direction:explode===0||explode===1?0:conf.direction},c.id);}}
   state=getState();lab=state.lab;rot=lab.rotation;
   if(generation!==levels[0]){dropDerived();generation=levels[0];for(const level of levels)for(const kind of ['hull','intersection'])derivedObjects.push(createDerived(level,kind));}
   const whole=rotation(rot.axis,rot.angle,rot.vector),qUp=rotation(rot.upAxis,rot.up,rot.vector),qDown=rotation(rot.downAxis,rot.down,rot.vector);
   const visible=[];for(const level of levels)for(const [id,o]of [...Object.entries(level.objs),['_metatron_',level.mc]])if(o.vis)visible.push({id,level,object:o});
   const positions=[];
   if(lab.explode.value===0){sceneLayout.clear();scenePlane.copy(camera.quaternion);}
-  for(const pack of COMPOUNDS){if(lab.collections[pack.id].explode===0)componentPlanes.delete(pack.id);else if(!componentPlanes.has(pack.id))componentPlanes.set(pack.id,(pack.id==='merkaba'?whole.clone().invert():new THREE.Quaternion()).multiply(camera.quaternion));}
+  for(const pack of ASSEMBLIES){if(lab.collections[pack.id].explode===0)componentPlanes.delete(pack.id);else if(!componentPlanes.has(pack.id))componentPlanes.set(pack.id,(pack.id==='merkaba'?whole.clone().invert():new THREE.Quaternion()).multiply(camera.quaternion));}
   if(lab.explode.scope==='scene'&&lab.explode.value>0) {
     if(!sceneLayout.size)visible.forEach((v,i)=>sceneLayout.set(`${v.id}:${v.level.idx}`,explodedOffset(i,visible.length,CR,1)));
     for(const entry of visible) {
@@ -51,7 +51,7 @@ export function updateLab(dt) {
     }
   }
   for(const level of levels)for(const [id,object] of [...Object.entries(level.objs),['_metatron_',level.mc]]) {
-    const pack=compoundOf(id),conf=pack&&lab.collections[pack.id],key=`${id}:${level.idx}`;
+    const pack=assemblyOf(id),conf=pack&&lab.collections[pack.id],key=`${id}:${level.idx}`;
     let offset=new THREE.Vector3();
     if(lab.explode.scope==='scene'&&object.vis)offset=(sceneLayout.get(key)||new THREE.Vector3()).clone().multiplyScalar(lab.explode.value).applyQuaternion(scenePlane);
     else if(pack&&object.vis)offset=explodedOffset(pack.members.indexOf(id),pack.members.length,CR*level.scale,conf.explode).applyQuaternion(componentPlanes.get(pack.id)||new THREE.Quaternion());
@@ -81,9 +81,10 @@ export function updateLab(dt) {
   }
   if(statusNode){const owners=derivedObjects.filter(o=>o.level===0&&o.object.vis), text=owners.map(o=>`${o.kind==='hull'?'Оболочка':'Пересечение'}: ${o.data?.vertices.length||0} вершин · ${o.data?.faces.length||0} граней${!o.data?.volume?(o.data?.contact?' · касание, объём 0':' · нет общего объёма'):''}`).join('\n');if(statusNode.textContent!==text)statusNode.textContent=text;}
 }
-export function fitVisible() {
-  const box=new THREE.Box3();for(const level of levels){for(const o of Object.values(level.objs))if(o.group.visible)box.expandByObject(o.group);if(level.mc.vis)box.expandByObject(level.mc.group);}
-  for(const owner of derivedObjects)if(owner.object.vis)box.expandByObject(owner.object.group);
+export function fitVisible(ids) {
+  const included=id=>!Array.isArray(ids)||ids.includes(id);
+  const box=new THREE.Box3();for(const level of levels){for(const [id,o] of Object.entries(level.objs))if(included(id)&&o.group.visible)box.expandByObject(o.group);if(included('_metatron_')&&level.mc.vis)box.expandByObject(level.mc.group);}
+  for(const owner of derivedObjects)if((!Array.isArray(ids)||ids.includes('merkaba_up'))&&owner.object.vis)box.expandByObject(owner.object.group);
   if(box.isEmpty())return;
   window.dispatchEvent(new Event('camera-manual-change'));
   const sidebar=document.getElementById('sidebar');

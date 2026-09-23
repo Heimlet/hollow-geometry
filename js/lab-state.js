@@ -1,9 +1,9 @@
-import { COMPOUNDS } from './compound-data.js';
+import { ASSEMBLIES } from './exploration-data.js';
 export function initialLab() {return {
   rotation:{axis:'y',upAxis:'y',downAxis:'y',upSpeed:25,downSpeed:25,upDirection:1,downDirection:-1,vector:[0,1,0],angle:0,up:0,down:0,speed:25,direction:1,mode:'counter',running:false},
   layers:{hull:false,intersection:false,projection:false,source:false,hullFaces:false,hullEdges:false,intersectionFaces:false,intersectionEdges:false,hullOpacity:.12,intersectionOpacity:.45,axis:'star'},
   explode:{value:0,direction:0,links:true,scope:'scene'},
-  collections:Object.fromEntries(COMPOUNDS.map(c=>[c.id,{explode:0,direction:0,mirror:false,restore:null}]))
+  collections:Object.fromEntries(ASSEMBLIES.map(c=>[c.id,{explode:0,direction:0,mirror:false,restore:null}]))
 };}
 export function labChange(lab,section,patch,id) {
   const fail=()=>{throw new Error('Invalid laboratory settings');};

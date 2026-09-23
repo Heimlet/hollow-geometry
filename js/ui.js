@@ -1,4 +1,5 @@
 import { COMPOUNDS } from './compound-data.js';
+import { VIEW_CONTEXTS, contextForObjects } from './exploration-data.js';
 import { initLabUI } from './lab-ui.js';
 /**
  * Sidebar UI — groups, toggles, sliders, preset buttons.
@@ -12,12 +13,52 @@ import { PRESETS, getPreset } from './preset-data.js';
 import { activatePreset } from './presets.js';
 import { initStudiesUI } from './studies.js';
 import { initGoldenUI } from './golden.js';
-import { registerSetting, settingLink, linkText, initSettingsNavigation } from './settings-links.js';
+import { registerSetting, settingLink, linkText, initSettingsNavigation, openSetting } from './settings-links.js';
 
 // ── Helpers ──
 
 function tog(el) { el.classList.toggle('open'); }
 function cHex(c) { return '#' + new THREE.Color(c).getHexString(); }
+function presetSettings(preset, text = '⚙ Фигура') {
+  const key = preset.obj.length === 1 ? `object.${preset.obj[0]}` : `group.${contextForObjects(preset.obj)}`;
+  const link = settingLink(text, key);link.classList.add('preset-settings');
+  link.title = `Отображение: ${preset.obj.map(id => INFO[id === '_metatron_' ? 'metatron' : id]?.name || id).join(', ')}`;
+  link.setAttribute('aria-label', `Настройки фигур: ${preset.name}`);
+  return link;
+}
+
+function initExplorationNavigation() {
+  const nav = document.getElementById('section-nav');
+  for (const [name, key, context] of [['◐ Проекции', 'presets'], ['⬡ Платоновы', 'group.platonic', 'platonic'],
+    ['◈ Составные', 'group.compound'], ['φ Пропорции', 'display.golden', 'golden']]) {
+    const button = document.createElement('button');button.textContent = name;
+    button.addEventListener('click', () => { if (context) actions.focus(context);openSetting(key, button); });
+    nav.append(button);
+  }
+  for (const view of VIEW_CONTEXTS) {
+    const group = document.getElementById(`setting-group-${view.id}`);
+    if (!group) continue;
+    group.dataset.viewContext = view.id;
+    // Explicit interaction with a collection restores its view. Text references
+    // and preset settings links only navigate; they never interrupt a projection.
+    group.addEventListener('click', event => {
+      if (event.target.closest('.ibtn, [data-pid]') || (event.target.closest('a') && !event.target.closest('.ttl, .nm'))) return;
+      actions.focus(view.id);
+    }, { capture: true });
+  }
+  const render = state => {
+    document.getElementById('view-context').textContent = VIEW_CONTEXTS.find(v => v.id === state.viewContext)?.name || '';
+    const count = Object.values(state.objects).filter(o => o.visible).length;
+    document.getElementById('scene-status').textContent = count ? `На сцене: ${count} · уровней: ${state.recursion.depth}` : 'Сцена пуста · выберите проекцию или включите фигуру';
+    document.querySelectorAll('[data-view-context]').forEach(group => group.classList.toggle('current-context', group.dataset.viewContext === state.viewContext));
+  };
+  render(getState());subscribe((state, previous) => {
+    if (state.viewContext !== previous.viewContext || state.objects !== previous.objects || state.recursion !== previous.recursion) render(state);
+  });
+  const sidebar = document.getElementById('sidebar'), menu = document.getElementById('sb-toggle');
+  const sync = () => menu.setAttribute('aria-expanded', !sidebar.classList.contains('hidden'));
+  new MutationObserver(sync).observe(sidebar, { attributes: true, attributeFilter: ['class'] });sync();
+}
 
 const settingBindings = [];
 function syncSettingsUI() { settingBindings.forEach(sync => sync()); }
@@ -75,6 +116,7 @@ function buildObjRow(id, label, color) {
   dot.style.background = cHex(color); dot.style.color = cHex(color);
   const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = label;
   const ib = document.createElement('button'); ib.className = 'ibtn'; ib.textContent = 'i';
+  ib.title = `О фигуре: ${label}`;ib.setAttribute('aria-label', ib.title);
   ib.addEventListener('click', e => { e.stopPropagation(); showInfo(id); });
   const vt = mkTgl(true, v => actions.objects([id], { visible: v }), () => getState().objects[id].visible);
   hdr.append(dot, nm, ib, vt); row.appendChild(hdr);
@@ -150,6 +192,7 @@ export function initUI() {
     const d = document.createElement('span'); d.className = 'dot'; d.style.background = cHex(COLORS.metatron); d.style.color = cHex(COLORS.metatron);
     const n = document.createElement('span'); n.className = 'nm'; n.textContent = 'Куб Метатрона';
     const ib = document.createElement('button'); ib.className = 'ibtn'; ib.textContent = 'i'; ib.addEventListener('click', () => showInfo('metatron'));
+    ib.title = 'О фигуре: Куб Метатрона';ib.setAttribute('aria-label', ib.title);
     const vt = mkTgl(true, v => actions.objects(['_metatron_'], { visible: v }), () => getState().objects._metatron_.visible);
     h.append(d, n, ib, vt); div.appendChild(h);
     const ct = document.createElement('div'); ct.className = 'obj-ctrls';
@@ -187,14 +230,15 @@ export function initUI() {
       b.innerHTML = `<span class="p-icon">${p.icon}</span><span class="p-name">${p.name}</span>`;
       b.title = p.desc;
       b.addEventListener('click', () => activatePreset(p));
-      grid.appendChild(b);
+      const card = document.createElement('div');card.className = 'preset-card';
+      card.append(b, presetSettings(p));grid.appendChild(card);
     });
     const g = document.createElement('div'); g.className = 'grp';
     const h = document.createElement('div'); h.className = 'grp-hdr';
     h.innerHTML = '<span class="arr">▶</span><span class="ico">◐</span><span class="ttl">2D Проекции</span>';
     const bd = document.createElement('div'); bd.className = 'grp-body'; bd.appendChild(grid);
     const hint = document.createElement('p'); hint.className = 'preset-hint';
-    hint.textContent = 'Пресет включает нужные фигуры и контуры. Ручная настройка фигур завершает режим проекции.';
+    hint.textContent = 'Нажмите на проекцию, чтобы включить; повторно — выйти. «Фигура» открывает её отображение. Изменение тумблеров завершает режим проекции.';
     bd.appendChild(hint);
     h.addEventListener('click', e => { if (e.target.closest('a')) return; h.classList.toggle('open'); tog(bd); });
     g.append(h, bd); groupsEl.prepend(g);
@@ -294,6 +338,7 @@ export function initUI() {
   });
   initLabUI(groupsEl);
   initSettingsNavigation();
+  initExplorationNavigation();
   linkText(document.querySelector('.sb-head h1'));
   panel.querySelectorAll('.camera-hint, .camera-help').forEach(el => linkText(el));
   groupsEl.querySelectorAll('.lab-section .camera-hint').forEach(el=>linkText(el));
@@ -333,7 +378,7 @@ export function initUI() {
       close.setAttribute('aria-label', 'Выйти из проекции'); close.addEventListener('click', actions.clearPreset);
       label.appendChild(close);
       linkText(label);
-      const settings = settingLink('Настройки проекции', 'presets'); label.appendChild(settings);
+      label.appendChild(presetSettings(preset, '⚙ Отображение'));
     }
     document.querySelectorAll('.preset-btn').forEach(button => {
       button.classList.toggle('active', button.dataset.pid === id);

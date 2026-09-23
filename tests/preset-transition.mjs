@@ -18,3 +18,20 @@ now=2100;presets.updateCamAnim();assert.ok(scene.camera.isOrthographicCamera);as
 scene.setDepth(.8);actions.preset('triangle');now+=1400;presets.updateCamAnim();scene.setDepth(.5);now+=5000;presets.updateCamAnim();assert.equal(scene.projectionDepth,.5);assert.equal(presets.isCamAnimating(),false);
 actions.preset('star6');scene.controls.dispatchEvent({type:'start'});now+=5000;presets.updateCamAnim();assert.equal(scene.projectionDepth,.5);
 console.log('PASS: real preset effects retain depth during flight, flatten without self-cancelling, preserve scale and stop on manual depth/orbit');
+
+// Reproduce the navigation regression with real camera projection math:
+// pan/zoom/tilt a Platonic view, explore a compound, then return via a toggle.
+const {getState,ALL_IDS}=await import(await load('state'));
+function savedView(){return {target:scene.controls.target.clone(),up:scene.camera.up.clone(),direction:scene.camera.position.clone().sub(scene.controls.target).normalize(),height:scene.getViewHeight(),depth:scene.projectionDepth};}
+function sameView(expected){const actual=savedView();for(const k of ['target','up','direction'])assert.ok(actual[k].distanceTo(expected[k])<1e-9,k);for(const k of ['height','depth'])assert.ok(Math.abs(actual[k]-expected[k])<1e-9,k);}
+actions.focus('platonic');scene.controls.target.set(2,-1,.5);scene.camera.up.set(0,0,1);scene.camera.position.set(9,6,8);scene.setViewHeight(17);scene.camera.zoom=2;scene.controls.update();const platonic=savedView();
+actions.preset('cube5-axis-5');sameView(platonic); // No early depth or framing jump.
+now+=2500;presets.updateCamAnim();scene.setDepth(.7);scene.controls.target.set(-4,2,1);scene.camera.position.addScalar(3);scene.setViewHeight(31);scene.controls.update();const compound=savedView();
+actions.objects(['cube'],{visible:true});assert.equal(getState().viewContext,'platonic');sameView(platonic);assert.equal(presets.isCamAnimating(),false);
+actions.focus('cube5');sameView(compound);
+actions.lab('collections',{explode:.2},'platonic');sameView(compound);assert.equal(getState().viewContext,'cube5'); // Animation must not steal focus.
+actions.objects(ALL_IDS,{visible:false});sameView(compound);assert.equal(getState().viewContext,'cube5');
+actions.focus('platonic');sameView(platonic);
+scene.setDepth(.6);const perspective=savedView();actions.focus('tetra10');actions.focus('platonic');sameView(perspective);
+actions.preset('tetra5-axis-3');now+=300;presets.updateCamAnim();actions.focus('platonic');const interrupted=savedView();now+=5000;presets.updateCamAnim();sameView(interrupted);assert.equal(presets.isCamAnimating(),false);
+console.log('PASS: per-section view restores pan, up, orientation, ortho zoom and perspective; presets fly from current view; animations/global toggles do not steal context');

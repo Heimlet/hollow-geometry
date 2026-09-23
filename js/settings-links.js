@@ -41,7 +41,7 @@ export function openSetting(key, source) {
   target.element.classList.add('setting-destination'); target.element.tabIndex = -1;
   document.getElementById('settings-nav-name').textContent = `Настройки: ${target.name}`;
   // Disable accordion transition during navigation so scroll/focus has a stable destination.
-  target.element.scrollIntoView({ block: 'center', behavior: 'instant' });
+  target.element.scrollIntoView({ block: target.element.matches('.grp, .compound-catalog, .golden-panel') ? 'start' : 'center', behavior: 'instant' });
   target.element.focus({ preventScroll: true });
   return true;
 }

@@ -4,6 +4,7 @@
  * so the 3D wireframe projects into a recognisable 2D shape.
  */
 import * as THREE from 'three';
+import './camera-views.js';
 import { TimedHint } from './preset-hints.js';
 import { scene, camera, controls, projectionDepth, setDepth, setViewHeight, getViewHeight, settleControls } from './scene.js';
 import { transitionAt } from './camera-transition.js';

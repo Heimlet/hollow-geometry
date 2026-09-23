@@ -1,7 +1,8 @@
-import { COMPOUNDS } from './compound-data.js';
-import { getState,actions,groupVisibility } from './state.js';
+import { ASSEMBLIES } from './exploration-data.js';
+import { INFO } from './constants.js';
+import { getState,actions } from './state.js';
 import { el,button,check,slider,select,bind } from './lab-controls.js';
-import { registerSetting,settingLink } from './settings-links.js';
+import { registerSetting } from './settings-links.js';
 import { fitVisible, setLabStatus } from './lab.js';
 const axisOptions=[['x','X'],['y','Y'],['z','Z'],['diagonal','Диагональ [1,1,1]'],['custom','Свой вектор']];
 function section(parent,title,key) {const d=el('details',null,'lab-section');d.append(el('summary',title));parent.append(d);if(key)registerSetting(key,d,title);return d;}
@@ -9,31 +10,33 @@ function view(pack,order) {actions.preset(`${pack.id}-axis-${order}`);}
 
 export function initLabUI(groups) {
   const explode=section(document.getElementById('setting-display').querySelector('.grp-body'),'Взрывная схема · Explode','lab.explode');
-  select(explode,'Область разнесения',[['scene','Фигуры и уровни'],['components','Компоненты соединений']],()=>getState().lab.explode.scope,scope=>actions.lab('explode',{scope,direction:0}));
+  select(explode,'Область разнесения',[['scene','Вся сцена и уровни'],['components','Тела внутри коллекций']],()=>getState().lab.explode.scope,scope=>actions.lab('explode',{scope,direction:0}));
   slider(explode,'Explode',0,1,.001,()=>getState().lab.explode.value,value=>actions.lab('explode',{value,direction:0,scope:'scene'}),v=>`${Math.round(v*100)}%`);
   const row=el('div',null,'lab-buttons');explode.append(row);
   button(row,'Разнести всё',()=>actions.lab('explode',{scope:'scene',direction:1}));button(row,'Собрать всё',()=>actions.lab('explode',{scope:'scene',direction:-1}));button(row,'Пауза разнесения',()=>actions.lab('explode',{direction:0}));button(row,'Вместить',fitVisible);
   check(explode,'Линии связи',()=>getState().lab.explode.links,links=>actions.lab('explode',{links}));
   explode.append(el('p','0% — общий центр. Для больших схем нажмите «Вместить». Разнесение переносит тела, сохраняя их ориентацию. Смена области сбрасывает разнесение предыдущей области.','camera-hint'));
-  for(const pack of COMPOUNDS) {
-    const host=document.querySelector(`[data-compound="${pack.id}"] > .grp-body`);
-    const appearance=section(host,'Оформление всех компонентов',`compound.${pack.id}.appearance`);
+  for(const pack of ASSEMBLIES) {
+    const host=document.getElementById(`setting-group-${pack.id}`).querySelector(':scope > .grp-body');
+    const appearance=section(host,'Отображение всех тел',`compound.${pack.id}.appearance`);
     for(const [key,title]of [['edges','Все рёбра'],['faces','Все грани']])check(appearance,`${title} · ${pack.name}`,()=>{const values=pack.members.map(id=>getState().objects[id][key]);return values.every(Boolean)?true:values.some(Boolean)?'mixed':false;},value=>actions.objects(pack.members,{[key]:value}));
     slider(appearance,`Прозрачность всех тел · ${pack.name}`,0,1,.01,()=>pack.members.reduce((sum,id)=>sum+getState().objects[id].opacity,0)/pack.members.length,opacity=>actions.objects(pack.members,{opacity}),v=>`${Math.round(v*100)}% в среднем`);
-    const assembly=section(host,'Сборка и ракурсы',`compound.${pack.id}`);
+    const assembly=section(host,'Сборка и разборка',`compound.${pack.id}`);assembly.open=true;host.prepend(assembly);
     const rows=el('div',null,'lab-buttons');assembly.append(rows);
-    for(const order of pack.id==='merkaba'?[2,3]:[2,3,5]){const b=button(rows,`Ось ${order} · ${pack.id==='merkaba'?'Меркаба':pack.name}`,()=>view(pack,order));b.className='preset-btn lab-axis';b.dataset.pid=`${pack.id}-axis-${order}`;}
+    for(const order of pack.id==='platonic'?[]:pack.id==='merkaba'?[2,3]:[2,3,5]){const b=button(rows,`Ось ${order}`,()=>view(pack,order));b.setAttribute('aria-label',`Ось ${order} · ${pack.name}`);b.className='preset-btn lab-axis';b.dataset.pid=`${pack.id}-axis-${order}`;}
     slider(assembly,`Разборка · ${pack.name}`,0,1,.001,()=>getState().lab.collections[pack.id].explode,explode=>actions.assembly(pack.id,{explode,direction:0}),v=>`${Math.round(v*100)}%`);
     const buttons=el('div',null,'lab-buttons');assembly.append(buttons);
     button(buttons,'Разобрать',()=>actions.assembly(pack.id,{direction:1}));
     button(buttons,'Собрать',()=>actions.assembly(pack.id,{direction:-1}));
     button(buttons,'Пауза сборки',()=>actions.lab('collections',{direction:0},pack.id));
     button(buttons,'Сброс сборки',()=>actions.lab('collections',{explode:0,direction:0},pack.id));
-    button(buttons,'Вместить',fitVisible);
+    button(buttons,'Вместить',()=>fitVisible(pack.members));
+    assembly.append(el('p','Раздвигает включённые тела. Если все скрыты — включает коллекцию. 0% точно возвращает тела в общий центр.','camera-hint'));
     if(pack.id==='tetra5')check(assembly,'Зеркальная пятёрка тетраэдров',()=>getState().lab.collections.tetra5.mirror,mirror=>actions.lab('collections',{mirror},pack.id));
-    const componentChoice=el('select');componentChoice.setAttribute('aria-label',`Один компонент · ${pack.name}`);pack.members.forEach((id,i)=>{const option=el('option',`Компонент ${i+1}`);option.value=id;componentChoice.append(option);});assembly.append(componentChoice);
-    button(assembly,'Только выбранный',()=>actions.solo(pack.id,componentChoice.value));
-    const restore=button(assembly,'Вернуть выбор',()=>actions.restore(pack.id));bind(()=>restore.disabled=!getState().lab.collections[pack.id].restore);
+    const solo=section(host,'Выделить одно тело');
+    const componentChoice=el('select');componentChoice.setAttribute('aria-label',`Одно тело · ${pack.name}`);pack.members.forEach((id,i)=>{const option=el('option',pack.id==='platonic'?INFO[id].name:`${pack.kind==='cube'?'Куб':'Тетраэдр'} ${i+1}`);option.value=id;componentChoice.append(option);});solo.append(componentChoice);
+    button(solo,'Только выбранный',()=>actions.solo(pack.id,componentChoice.value));
+    const restore=button(solo,'Вернуть выбор',()=>actions.restore(pack.id));bind(()=>restore.disabled=!getState().lab.collections[pack.id].restore);
     if(pack.id==='merkaba')initMerkaba(host);
   }
 }

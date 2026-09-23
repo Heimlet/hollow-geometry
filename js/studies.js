@@ -75,7 +75,7 @@ export function initStudiesUI(parent) {
   button(row,'Шаг →',()=>actions.study({progress:Math.min(1,getState().study.progress+1/getState().study.steps),running:false}));
   button(row,'Сброс φ',()=>actions.study({progress:0,running:false}));
   button(row,'Ракурс построения',()=>{
-    actions.clearPreset();actions.display({autoRotate:false});frame();setDepth(0);settleControls();controls.target.copy(group.position);
+    actions.focus('golden');actions.clearPreset();actions.display({autoRotate:false});frame();setDepth(0);settleControls();controls.target.copy(group.position);
     camera.up.set(0,1,0).applyQuaternion(group.quaternion);camera.position.copy(group.position).add(new THREE.Vector3(0,0,30).applyQuaternion(group.quaternion));setViewHeight(7*group.scale.x/Math.min(1,innerWidth/innerHeight));controls.update();
   });
   button(row,'Объяснить построение',explain);measure=el('p',null,'golden-measurements');box.append(measure);

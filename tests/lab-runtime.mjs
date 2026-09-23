@@ -29,3 +29,17 @@ actions.assembly('tetra5',{explode:.7});assert.equal(commits,1);assert.equal(get
 actions.lab('explode',{scope:'scene',value:.4});assert.equal(getState().lab.collections.tetra5.explode,0);
 actions.assembly('cube5',{explode:.3});assert.equal(getState().lab.explode.value,0);unsubscribe();
 console.log('PASS: atomic assembly reveals members and mutually exclusive explode scopes reset inactive offsets');
+
+// Platonic bodies use the same assembly engine, including recursion and cascades.
+const {PLATONIC}=await import(await load('exploration-data'));
+actions.objects(ALL_IDS,{visible:false});actions.recursion({depth:3});
+actions.assembly('platonic',{direction:1});for(let i=0;i<100;i++)updateLab(1/60);
+assert.equal(getState().lab.collections.platonic.explode,1);assert.equal(getState().lab.collections.platonic.direction,0);
+for(const level of levels)for(const id of PLATONIC.members){const o=level.objs[id];assert.ok(o.vis);assert.ok(o.group.position.length()>0);assert.equal(o.group.quaternion.angleTo(new (await import(three)).Quaternion()),0);}
+actions.assembly('platonic',{direction:-1});for(let i=0;i<100;i++)updateLab(1/60);
+for(const level of levels)for(const id of PLATONIC.members)assert.equal(level.objs[id].group.position.length(),0);
+actions.objects(PLATONIC.members,{visible:false});actions.objects(['cube','icosahedron'],{visible:true});actions.assembly('platonic',{explode:.6});updateLab(0);
+assert.deepEqual(PLATONIC.members.filter(id=>getState().objects[id].visible),['cube','icosahedron']);
+const placed=levels[0].objs.cube.group.position.clone();actions.objects(['icosahedron'],{visible:false});updateLab(0);assert.equal(levels[0].objs.cube.group.position.distanceTo(placed),0);
+actions.objects(PLATONIC.members,{visible:false});assert.equal(getState().lab.collections.platonic.explode,0);assert.ok(PLATONIC.members.every(id=>!getState().objects[id].faces&&!getState().objects[id].edges));
+console.log('PASS: Platonic animation reaches endpoints, preserves orientation, restores exact origin at all levels, preserves partial selection and cascades off');
