@@ -433,3 +433,30 @@ WebGL render leaves those overlays one frame behind during manual dragging.
 `render-sync.mjs` executes the actual main loop with real orthographic/perspective
 matrices: 120 orbit/zoom frames agree, while removing the synchronization reproduces
 the previous mismatch as a negative control.
+
+
+## Continuous finale and the cube witness
+
+The finale has 13 chapters. Chapter six holds the canonical pair for about six
+seconds: its hull is the outer cube, its intersection the octahedron, and the
+highlighted small cube joins the octahedron's face centres (side ratio 1:3).
+`cubeWitnessPhase` eases the angular velocity to zero and back; entry/exit speed
+still matches the neighbouring chapters.
+
+Chapters seven through thirteen share `expansionFrom` / `expansionDuration`.
+`expansionAt` is the single scale frame for source bodies, hull/intersection,
+torus shells, vertex markers and the camera. The clock does not restart on chapter
+changes, reading, pause, or backward/forward seeking. Camera framing slightly lags
+growth while its retreat remains monotonic in unnormalised world coordinates.
+
+Expansion is stored logarithmically. Once the source reaches nine render units,
+a common change of units bounds coordinates without changing any screen-space
+relationships. Five pooled cube/torus reference contours flow through the visible
+scales; their endpoints fade before recycling. No geometry or materials are
+allocated by a growth frame. The continuous part uses one transition identity,
+so rotating originals never crossfade into frozen copies at chapter boundaries.
+All temporary scales and teaching layers are restored on leaving the sequence.
+
+`tests/torus.mjs` checks the held canonical pose, exact contacts, shared growth
+clock, pool continuity, long-run resource identity, seeking and cleanup.
+The camera runtime suite also checks the final orthographic clipping planes.

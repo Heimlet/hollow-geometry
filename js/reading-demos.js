@@ -3,6 +3,8 @@ import {TOURS} from './tour-data.js';
 export const READING_DEMOS=[
   {topic:'torus',section:'От двух тетраэдров к тору',label:'Проследить путь вершин и рождение поверхности',tour:'torus',chapter:'torus-orbits'},
   {topic:'torus',section:'От внутреннего куба к внешнему',label:'Увидеть переход между вложенными кубами',tour:'torus',chapter:'torus-expansion'},
+  {topic:'torus',section:'От внутреннего куба к внешнему',label:'Рассмотреть кубы и октаэдр в точном положении',tour:'torus',chapter:'torus-hull'},
+  {topic:'torus',section:'Вселенная без края',label:'Вернуться к финалу: пространство без края',tour:'torus',chapter:'torus-cosmos'},
   {topic:'torus',section:'Что скрывает плоский рисунок',label:'Увидеть квадрат и шестиугольник одного куба',tour:'projections',chapter:'cube-square'},
   {topic:'torus',section:'Что скрывает плоский рисунок',label:'Увидеть тела за Звездой Давида',tour:'merkaba',chapter:'star-reveal'},
   {topic:'phi',section:'Убрать кусок — и получить ту же форму',label:'Посмотреть деление прямоугольников и спирали',tour:'golden',chapter:'rectangle-division'},

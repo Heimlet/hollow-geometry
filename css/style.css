@@ -531,3 +531,5 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .knowledge-illustration{padding:14px 16px;margin:16px 0;border:1px solid #87c4db44;border-radius:10px;background:#74badb09}
 .knowledge-illustration>a{color:#a8dbee;font-size:13px;line-height:1.6;text-underline-offset:3px}.knowledge-illustration>a:first-child{font-weight:600}
 .knowledge-body .knowledge-illustration p{font-size:12px;color:#a2b6c8;line-height:1.6;margin:8px 0}
+
+.tour-premise{margin:4px 0 23px;color:#c8c6da;font-size:clamp(15px,2.2vw,20px);font-weight:400;line-height:1.5;letter-spacing:.01em;max-width:32em}

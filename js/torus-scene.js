@@ -1,6 +1,6 @@
 /** Two illustrative shells share the exact vertical axis of the live Merkaba. */
 import * as THREE from 'three';
-import {TORI,TORUS_AXIS,TORUS_POLE,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,torusPoint,torusCurve} from './torus-math.js';
+import {TORI,TORUS_AXIS,TORUS_POLE,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,torusPoint,torusCurve,expansionReferences,cubeWitnessInk} from './torus-math.js';
 const tau=Math.PI*2,phi=(1+Math.sqrt(5))/2;
 const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
 export function createTorusScene(scene) {
@@ -19,7 +19,17 @@ export function createTorusScene(scene) {
   const reference=new THREE.Group();reference.name='Fixed scale reference';root.add(reference);
   const corners=ORBIT_SEEDS.map(s=>s.point);
   for(let i=0;i<8;i++)for(let j=i+1;j<8;j++)if(corners[i].filter((v,k)=>v!==corners[j][k]).length===1)stroke(reference,[corners[i],corners[j]],0xe5ca8d,.24,1.2);
-  const nextCages=[1,3,9].map(scale=>{const group=reference.clone();group.name=`Next cube · ${scale}`;group.scale.setScalar(scale);root.add(group);group.traverse(o=>{if(o.material)o.material=o.material.clone();});return {group,scale};});
+  const innerCube=reference.clone();innerCube.name='Cube through octahedron face centres';innerCube.scale.setScalar(1/3);root.add(innerCube);
+  innerCube.traverse(o=>{if(o.material){o.material=o.material.clone();o.material.color.set(0xffd277);o.material.linewidth=2.6;}});
+  const innerVertices=corners.map(p=>{const head=new THREE.Mesh(new THREE.SphereGeometry(.045,10,8),new THREE.MeshBasicMaterial({color:0xffe1a0,transparent:true}));head.position.set(...p.map(x=>x/3));root.add(head);return head;});
+  // A fixed pool, not an ever-growing collection. Invisible endpoints are
+  // recycled when the next scale enters; matching contours never jump.
+  const nextCages=Array.from({length:5},(_,index)=>{
+    const group=reference.clone();group.name=`Scale echo · ${index}`;root.add(group);group.traverse(o=>{if(o.material)o.material=o.material.clone();});
+    const halo=new THREE.Group();halo.name=`Torus scale echo · ${index}`;root.add(halo);
+    for(let i=0;i<2;i++)stroke(halo,torusCurve(0,1,96).map(([x,y,z])=>i?[y,x,z]:[x,y,z]),0x76dcb8,0,1.1);
+    return {group,halo};
+  });
   const shells=TORI.map((shape,index)=>{
     const group=new THREE.Group();group.name=index?'Outer torus · hull':'Inner torus · intersection';root.add(group);
     const color=index?0xb7a3ff:0x76dcb8;
@@ -48,12 +58,23 @@ export function createTorusScene(scene) {
     vertexShader:`varying vec3 tint;void main(){tint=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=8.;}`,
     fragmentShader:`uniform float alpha;varying vec3 tint;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(tint,alpha*exp(-5.*d*d));}`});
   const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.frustumCulled=false;root.add(dots);
-  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1}={}) {
-    const cage=kind==='cage',growing=kind==='growth',orbit=kind==='traces'||cage||growing,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole';
+  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null}={}) {
+    const cage=kind==='cage',growing=kind==='growth',orbit=kind==='traces'||cage||growing,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
     root.visible=!!kind||axis;pole.visible=axis||!!kind;pole.scale.setScalar(scale);
     reference.visible=cage;reference.scale.setScalar(scale);
     reference.children.forEach(line=>line.material.opacity=.1+.75*ease((Math.abs(Math.cos(rotation*2))-.9)/.1));
-    nextCages.forEach(({group,scale:level})=>{group.visible=growing;const proximity=Math.exp(-18*Math.log(scale/level)**2),reveal=level===1?1:ease((p-(level===3?.12:.55))/.12);group.traverse(o=>{if(o.material)o.material.opacity=reveal*(.18+.5*proximity);});});
+    const witness=cage?cubeWitnessInk(p):0;
+    innerCube.visible=witness>0;innerCube.scale.setScalar(scale/3);
+    innerCube.children.forEach(line=>line.material.opacity=witness*.95);
+    innerVertices.forEach((head,i)=>{head.visible=witness>0;head.material.opacity=witness;head.scale.setScalar(scale);head.position.set(...corners[i].map(x=>x*scale/3));});
+    const echoes=expansionReferences(expansion?.level||0,scale),haloInk=expansion?ease(expansion.time/7):0;
+    nextCages.forEach(({group,halo},i)=>{
+      const echo=echoes[i];group.visible=!!expansion;halo.visible=!!expansion;
+      group.scale.setScalar(echo.scale);halo.scale.setScalar(echo.scale);
+      const alpha=echo.alpha*(.13+.27*Math.exp(-8*Math.log(echo.scale/scale)**2));
+      group.children.forEach(line=>line.material.opacity=alpha);
+      halo.children.forEach(line=>line.material.opacity=echo.alpha*.17*haloInk);
+    });
     traces.visible=orbit||birth;traces.scale.setScalar(scale);
     orbitLines.forEach(({seed,line,head})=>{
       const portion=kind==='traces'?Math.min(1,(rotation-startRotation)/Math.PI):1;
@@ -61,24 +82,25 @@ export function createTorusScene(scene) {
       line.material.opacity=(birth?1-ease((p-.4)/.32):1)*.52;
       head.visible=orbit;head.position.set(...orbitPoint(seed,rotation));
     });
-    shells.forEach(s=>{s.group.visible=!!kind&&!orbit&&!growing;s.group.scale.setScalar(scale);});
+    shells.forEach(s=>{s.group.visible=!!kind&&!cage;s.group.scale.setScalar(scale);});
     dots.visible=!!kind&&!orbit&&!growing&&!growth;dots.scale.setScalar(scale);
     if(!kind)return;
     const fraction=growth?ease((p-.08)/.84):1;
     shells.forEach((s,index)=>{
       // First extend one meridian through the vertex trails, then sweep it
       // around their shared axis. The surface is exactly the swept ellipse.
-      const sweep=birth?ease((p-.25-index*.12)/.6):1,ink=birth?ease((p-.26-index*.12)/.18):1;
+      const scaffold=growing||kind==='traces';
+      const sweep=birth?ease((p-.25-index*.12)/.6):1,ink=birth?ease((p-.26-index*.12)/.18):scaffold?haloInk:1;
       s.material.uniforms.reveal.value=sweep;
-      s.material.uniforms.alpha.value=ink*(growth?.075:whole?.13:.18);
-      s.meridians.forEach((line,i)=>{line.visible=i/8<=sweep;line.material.opacity=ink*(growth?.028:.06);});
-      s.parallels.forEach(line=>{line.geometry.setDrawRange(0,2*Math.floor(192*sweep));line.material.opacity=ink*(growth?.04:.1);});
+      s.material.uniforms.alpha.value=ink*(scaffold?.025:growth?.075:whole?.13:.18);
+      s.meridians.forEach((line,i)=>{line.visible=birth||i/8<=sweep;line.material.opacity=birth?(i/8<=sweep?ink*.06:0)+(1-ink)*(i%2===0?.24:0):ink*(scaffold?(i%2===0?.24:0):growth?.028:.06);});
+      s.parallels.forEach(line=>{line.geometry.setDrawRange(0,2*Math.floor(192*sweep));line.material.opacity=ink*(scaffold?.1:growth?.04:.1);});
       s.brush.visible=birth;s.brush.rotation.z=tau*sweep;
       s.brush.geometry.setDrawRange(0,2*Math.floor(128*ease((p-index*.12)/.24)));
       s.brush.material.opacity=(1-ease((p-.89)/.11))*.88;
       s.path.geometry.setDrawRange(0,2*Math.floor(768*(kind==='weave'?ease(p/.82):1)));
-      s.path.material.opacity=birth?.5*ease((p-.87)/.13):growth?.6*(1-ease(p/.2)):whole?.45:.6;
-      s.golden.material.opacity=growth?.46:whole?.46*(1-ease(p/.24)):0;
+      s.path.material.opacity=scaffold?0:birth?.5*ease((p-.87)/.13):growth?.6*(1-ease(p/.2)):whole?.45:.6;
+      s.golden.material.opacity=growth?.46:kind==='whole'?.46*(1-ease(p/.24)):0;
       s.golden.geometry.setDrawRange(0,2*Math.floor(3072*fraction));
       s.head.visible=growth;s.head.position.set(...torusPoint(s.side*tau*18*fraction,tau*18*phi*fraction+index*Math.PI,s.shape));
     });

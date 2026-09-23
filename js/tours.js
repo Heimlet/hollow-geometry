@@ -4,7 +4,7 @@ import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
 import { tourFaceOpacity,recursionMoment,tourObjectAlpha } from './tour-effects.js';
-import { growthScale } from './torus-math.js';
+import { expansionAt,cubeWitnessInk } from './torus-math.js';
 import { createTorusScene } from './torus-scene.js';
 import { createFruitScene } from './fruit-scene.js';
 import { createMetatronStudy } from './metatron-study.js';
@@ -24,7 +24,7 @@ const fruitScene=createFruitScene(scene);
 const torusScene=createTorusScene(scene);
 let transitionKey=null,lastGolden=null,fadeInk=false;
 export function applyTourTransition(dt) {
-  const state=getState(),key=state.tour.id?`${state.tour.id}:${state.tour.index}`:null;
+  const state=getState(),key=state.tour.id?`${state.tour.id}:${tourStep(state)?.scene.continuousMotion?'continuous':state.tour.index}`:null;
   if(key!==transitionKey){if(tourStep(state)?.scene.camera?.cut)transition.reset();fadeInk=lastGolden!==state.goldenScene.id;lastGolden=state.goldenScene.id;transitionKey=key;}
   const blend=transition.apply(key,key?captureVisibleParts(levels,derivedObjects,traditionalFields):new Map(),dt,state.tour.playing);
   document.body.style.setProperty('--tour-ink-opacity',fadeInk?blend:1);
@@ -53,8 +53,8 @@ export function updateTours(dt) {
 export function updateTourStage(dt) {
   const state=getState(),recipe=tourStep(state)?.scene;
   if(recipe?.effect==='recursion')for(const level of levels){level.group.scale.setScalar(recursionMoment(tourProgress(state),level.idx,state.recursion.scale).scale);level.group.updateMatrixWorld(true);}
-  const scale=recipe?.growth?growthScale(tourProgress(state)):recipe?.worldScale||1;
-  if(recipe?.growth||recipe?.worldScale){for(const level of levels){level.group.scale.setScalar(scale);level.group.updateMatrixWorld(true);}for(const owner of derivedObjects){owner.object.group.scale.setScalar(scale);owner.object.group.updateMatrixWorld(true);}}
+  const expansion=expansionAt(recipe,tourProgress(state)),scale=expansion.scale;
+  if(expansion.active||recipe?.worldScale){for(const level of levels){level.group.scale.setScalar(scale);level.group.updateMatrixWorld(true);}for(const owner of derivedObjects){owner.object.group.scale.setScalar(scale);owner.object.group.updateMatrixWorld(true);}}
   const bounds=player?.getBoundingClientRect();
   updateTourCamera(dt,bounds?.height||220,bounds?.width||440);
   if(!getState().tour.id||!status)return;
@@ -74,7 +74,8 @@ export function applyTourEffects() {
   const state=getState(),recipe=tourStep(state)?.scene;
   nodeStudy.update(levels[0]?.mc,recipe?.nodeStudy,tourProgress(state));
   fruitScene.update(recipe?.fruit,tourProgress(state),camera.position.clone().sub(controls.target).normalize());
-  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':null),tourProgress(state),state.tour.elapsed,{axis:!!recipe?.axisGuide,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:recipe?.growth?growthScale(tourProgress(state)):recipe?.worldScale||1});
+  const expansion=expansionAt(recipe,tourProgress(state));
+  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':null),tourProgress(state),expansion.active?expansion.time:state.tour.elapsed,{axis:!!recipe?.axisGuide,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null});
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
   for(const level of levels) {
@@ -94,7 +95,7 @@ export function applyTourEffects() {
     }
   }
   for(const owner of derivedObjects)if(owner.object.vis){
-    const alpha=recipe.cubeWitness&&owner.kind==='hull'?smooth((Math.abs(Math.cos(2*state.lab.rotation.up*Math.PI/180))-.9)/.1):1;
+    const alpha=recipe.cubeWitness&&owner.kind==='hull'?Math.max(cubeWitnessInk(p),smooth((Math.abs(Math.cos(2*state.lab.rotation.up*Math.PI/180))-.9)/.1)):1;
     owner.object.fMat.opacity=tourFaceOpacity({...recipe,...recipe.derived?.[owner.kind]},p)*alpha;owner.object.eMat.opacity=.85*alpha;
   }
 }
@@ -126,7 +127,8 @@ export function initTours() {
     const meta=el('span',`${tour.reading==='torus'?'Финал · ':''}${minutes(id)} · ${tour.steps.length} глав`,'tour-meta');
     card.append(icon,el('strong',tour.name),el('span',tour.description,'tour-description'),meta,el('span','↗','tour-card-play'));
   }
-  welcome.append(musicRow,grid);mountTorusPreface(welcome);document.body.append(welcome);
+  const premise=el('p','Геометрия не развивается — она раскрывается.','tour-premise');
+  welcome.append(musicRow,premise,grid);mountTorusPreface(welcome);document.body.append(welcome);
   player=el('section',null,'tour-player');player.hidden=true;player.setAttribute('aria-label','Управление путешествием');
   const progress=el('nav',null,'tour-progress');progress.setAttribute('aria-label','Прогресс по главам');
   const head=el('div',null,'tour-player-head'),chapter=el('span',null,'tour-eyebrow');
