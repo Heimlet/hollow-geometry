@@ -14,6 +14,10 @@ export const READING_DEMOS=[
   {topic:'fruit',section:'Один, шесть, ещё шесть',label:'Смотреть тур «Плод и Цветок жизни»',tour:'fruit',chapter:'first-circle'},
   {topic:'fruit',section:'Как из кругов рождается куб Метатрона',label:'Увидеть переход от кругов к линиям',tour:'fruit',chapter:'fruit-network'},
   {topic:'metatron',section:'Что именно построено в этой сцене',label:'Увидеть Плод жизни в объёме',tour:'fruit',chapter:'first-circle'},
+  {topic:'vortex',section:'Два тетраэдра — два движения',label:'Посмотреть встречное вращение внутри тора',tour:'torus',chapter:'torus-weave'},
+  {topic:'torus',section:'Меркаба в центре',label:'Посмотреть, как вокруг звезды рождается тор',tour:'torus',chapter:'torus-birth'},
+  {topic:'torus',section:'Формы рождаются из движения',label:'Повернуть тетраэдр и увидеть новые тела',tour:'torus',chapter:'torus-intersection'},
+  {topic:'torus',section:'Два повтора — неповторяющийся путь',label:'Увидеть путь с отношением скоростей φ',tour:'torus',chapter:'torus-golden'},
 ];
 export function resolveReadingDemo(demo) {
   const tour=TOURS[demo.tour],index=tour?.steps.findIndex(step=>step.id===demo.chapter);

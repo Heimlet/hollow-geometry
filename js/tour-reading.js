@@ -15,9 +15,14 @@ export function linkTourText(root,context) {
   }
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
   while(walker.nextNode())if(!walker.currentNode.parentElement.closest('a,button'))nodes.push(walker.currentNode);
-  for(const node of nodes)if(context!=='phi'&&node.textContent.includes('φ')) {
-    const fragment=document.createDocumentFragment(),parts=node.textContent.split('φ');
-    parts.forEach((part,i)=>{if(i){const b=el('button','φ','tour-topic');b.type='button';b.dataset.topic='phi';b.title='φ: чем это интересно';fragment.append(b);}fragment.append(part);});node.replaceWith(fragment);
+  for(const node of nodes){
+    const matcher=/(?<![\p{L}\p{N}])(φ|тор(?:а|у|ом|е|ы|ов)?|вихрев(?:ое|ого|ому|ым|ом) движени(?:е|я|ю|ем|и))(?![\p{L}\p{N}])/giu;
+    const matchedTopic=text=>text==='φ'?'phi':/^вихрев/i.test(text)?'vortex':'torus';
+    const matches=[...node.textContent.matchAll(matcher)].filter(m=>matchedTopic(m[0])!==context);
+    if(!matches.length)continue;
+    const fragment=document.createDocumentFragment();let end=0;
+    for(const match of matches){fragment.append(node.textContent.slice(end,match.index));const b=el('button',match[0],'tour-topic');b.type='button';b.dataset.topic=matchedTopic(match[0]);b.title=KNOWLEDGE[b.dataset.topic].title;fragment.append(b);end=match.index+match[0].length;}
+    fragment.append(node.textContent.slice(end));node.replaceWith(fragment);
   }
 }
 function phyllotaxis(parent) {
@@ -64,13 +69,16 @@ export function initTourReading() {
     if(!key){hideKnowledgePreview();if(dialog.open)dialog.close();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});return;}
     const entry=KNOWLEDGE[key];body.replaceChildren();pendingDemo=null;
     body.append(el('p',entry.kicker,'tour-eyebrow'));const heading=el('h2',entry.title);heading.id='knowledge-title';heading.tabIndex=-1;body.append(heading);mountKnowledgePreview(body,key,entry.title);body.append(el('p',entry.lead,'knowledge-lead'));
-    entry.sections.forEach(([title,copy])=>{const section=el('section');section.append(el('h3',title),el('p',copy));body.append(section);READING_DEMOS.filter(d=>d.topic===key&&d.section===title).forEach(d=>watchButton(section,d));if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
+    entry.sections.forEach(([title,copy,references=[],formula])=>{const section=el('section');section.append(el('h3',title));if(formula)section.append(el('p',formula,'knowledge-formula'));section.append(el('p',copy));
+      if(references.length){const citations=el('div',null,'knowledge-citations');for(const index of references){const [label,url]=entry.sources[index],a=el('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';citations.append(a);}section.append(citations);}
+      body.append(section);READING_DEMOS.filter(d=>d.topic===key&&d.section===title).forEach(d=>watchButton(section,d));if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
     if(entry.related.length){const related=el('div',null,'knowledge-related');related.append(el('h3','Связанные идеи'));entry.related.forEach(id=>{const b=button(related,KNOWLEDGE[id].title,()=>actions.readTopic(id));b.dataset.topic=id;});body.append(related);}
     if(entry.sources.length){const sources=el('div',null,'knowledge-sources');sources.append(el('h3','Источники и дальше'));for(const [title,url]of entry.sources){const a=el('a',title);a.href=url;a.target='_blank';a.rel='noopener noreferrer';sources.append(a);}body.append(sources);}
     body.querySelectorAll('p').forEach(paragraph=>linkTourText(paragraph,key));
     close.setAttribute('aria-label',state.tour.id&&state.tour.phase!=='complete'?'Закрыть справку и продолжить тур':'Закрыть справку');
     resume.textContent=state.tour.id?(state.tour.phase==='complete'?'Вернуться к финалу':'Продолжить тур'):'Вернуться';
     leave.textContent=state.tour.id?'Покинуть тур и перейти в лабораторию':'Открыть в лаборатории';
+    leave.hidden=!entry.setting;
     if(!dialog.open){returnFocus=document.activeElement;dialog.showModal();}
     body.scrollTop=action.type==='knowledge/back'?(scrollPositions.get(key)||0):0;heading.focus({preventScroll:true});
   }

@@ -1,5 +1,6 @@
 /** One reusable, independent 3D miniature for reading cards. The miniature owns its geometry snapshots. */
 import * as THREE from 'three';
+import {TORUS,TORUS_AXIS,torusCurve} from './torus-math.js';
 import {fruitVolume} from './fruit-life.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { levels } from './levels.js';
@@ -8,6 +9,7 @@ import { COMPOUNDS } from './compound-data.js';
 import { PLATONIC_TYPES } from './mirror-data.js';
 const figures={tetrahedron:['tetrahedron'],cube:['cube'],octahedron:['octahedron'],dodecahedron:['dodecahedron'],icosahedron:['icosahedron'],cuboctahedron:['cuboctahedron'],merkaba:['merkaba_up','merkaba_down'],platonic:PLATONIC_TYPES,compounds:COMPOUNDS.find(c=>c.id==='tetra5').members,projection:['cube'],metatron:['_metatron_']};
 figures.fruit=['_fruit_'];
+figures.torus=['_torus_'];
 figures.pentagram=['_pentagram_'];
 let renderer,scene,camera,controls,group,container,active=false,radius=1,width=0,height=0;
 function init() {
@@ -44,7 +46,12 @@ export function mountKnowledgePreview(parent,topic,title) {
   renderer.domElement.setAttribute('aria-label',`Объёмная миниатюра: ${title}. Вращение перетаскиванием или клавишами со стрелками.`);
   container.append(renderer.domElement,caption);parent.append(container);
   for(const id of ids) {
-    if(id==='_fruit_') {
+    if(id==='_torus_') {
+      const q=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));
+      const surface=new THREE.Mesh(new THREE.TorusGeometry(TORUS.major,TORUS.tube,32,96),new THREE.MeshPhongMaterial({color:0x77cbdc,transparent:true,opacity:.22,depthWrite:false,shininess:80}));surface.quaternion.copy(q);group.add(surface);
+      for(const [u,v,color]of [[2,3,0xf3cb86],[-2,3,0x90dcec]]){const points=torusCurve(u,v,480).map(p=>new THREE.Vector3(...p).applyQuaternion(q));group.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color,toneMapped:false})));}
+      caption.textContent='Два обхода, две встречные нити · поверните миниатюру';
+    } else if(id==='_fruit_') {
       const f=fruitVolume(),u=new THREE.Vector3(1,0,-1).normalize(),v=new THREE.Vector3(-1,2,-1).normalize();
       for(const center of f.centers){
         const sphere=new THREE.Mesh(new THREE.SphereGeometry(f.radius,24,16),new THREE.MeshPhongMaterial({color:0x9bd9ef,transparent:true,opacity:.12,depthWrite:false}));sphere.position.set(...center);group.add(sphere);
@@ -67,8 +74,10 @@ export function mountKnowledgePreview(parent,topic,title) {
   }
   for(const child of group.children)child.geometry.setDrawRange(0,Infinity);
   group.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(group),center=box.getCenter(new THREE.Vector3());radius=box.getBoundingSphere(new THREE.Sphere()).radius;
+  if(topic==='torus')radius=TORUS.major+TORUS.tube;
   group.position.copy(center).negate();camera.zoom=1;camera.up.set(0,1,0);camera.position.set(1,1,1).normalize().multiplyScalar(radius*5);controls.target.set(0,0,0);
   if(topic==='pentagram')camera.position.set(0,0,radius*5);
+  if(topic==='torus')camera.position.set(3,.2,4).normalize().multiplyScalar(radius*5);
   controls.enableDamping=false;controls.update();controls.enableDamping=true;controls.enabled=true;active=true;width=height=0;
 }
 export function updateKnowledgePreview() {

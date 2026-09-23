@@ -474,3 +474,9 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .knowledge-tour-confirm button:last-child{background:#e7c487;color:#252330;font-weight:700}
 
 .tour-menu-tools{align-items:center;justify-content:space-between;gap:16px}.tour-menu-tools .phi-library{width:auto;margin:0;text-align:left}.tour-menu-tools .tour-playlist{flex-shrink:0}
+
+.tour-player .tour-reading-shortcut{display:block;margin-top:10px;padding:6px 0;color:#9edee6;background:none;border:0;font-size:11px;text-align:left;text-decoration:underline;text-underline-offset:4px}
+.tour-player .tour-reading-shortcut[hidden]{display:none}
+.knowledge-citations{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 20px}.knowledge-citations a{font-size:11px;color:#8bb5c9;text-underline-offset:3px}
+
+.knowledge-body .knowledge-formula{white-space:pre-wrap;font:500 clamp(16px,4.5vw,20px)/1.8 Georgia,serif;color:#edcf93;background:#edc78009;border-left:2px solid #c9ad7166;padding:10px 14px;margin:12px 0}

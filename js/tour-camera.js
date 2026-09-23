@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { TORUS_AXIS,torusBounds } from './torus-math.js';
 import { fruitVolume } from './fruit-life.js';
 import { camera,controls,projectionDepth,getViewHeight,setViewHeight,setDepth,setCameraFrameOffset,settleControls } from './scene.js';
 import { levels } from './levels.js';
@@ -10,12 +11,15 @@ import { goldenSceneView } from './golden-scenes.js';
 import { cancelCameraAnimation } from './presets.js';
 import { shotAt,stageViewport,fitTourFrame } from './tour-camera-math.js';
 let pending=false,flight=null,base=null,active=false,viewport=null,finishedKey=null,holdTimeline=true;
+const torusOrientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));
+const torusFramePoints=torusBounds().map(p=>new THREE.Vector3(...p).applyQuaternion(torusOrientation));
 export function queueTourShot(options={}){cancelCameraAnimation();settleControls();pending=true;flight=null;holdTimeline=options.holdTimeline!==false;}
 export function cancelTourShot(){pending=false;flight=null;}
 export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
   if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (['flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
   const points=[];
+  if(tourStep(getState())?.scene.torus)points.push(...torusFramePoints);
   for(const level of levels){
     for(const object of Object.values(level.objs)) {
       if(!object.group.visible)continue;

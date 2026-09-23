@@ -40,6 +40,12 @@ export function frameTour(state,elapsed) {
     lab={...lab,rotation:{...lab.rotation,mode:tradition?'tradition':'counter',running:false,
       up:wrapAngle(elapsed*1.15*(tradition?34:18)),down:wrapAngle(-elapsed*1.15*(tradition?21:18))}};
   }
+  if(recipe.effect==='relative') {
+    // One fixed tetrahedron makes the changing shared volume easy to follow.
+    // 120° about its vertex axis returns the moving tetrahedron to the same set of vertices.
+    lab={...lab,rotation:{...lab.rotation,mode:'down',running:false,up:0,
+      down:120*smooth((p-.1)/.8)}};
+  }
   if(recipe.golden)goldenScene={id:recipe.golden,progress:(recipe.goldenFrom||0)+((recipe.goldenTo??1)-(recipe.goldenFrom||0))*smooth(Math.min(1,p/(recipe.buildUntil||1))),running:false};
   return {...state,lab,goldenScene,tour:{...state.tour,elapsed}};
 }

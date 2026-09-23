@@ -3,7 +3,7 @@ import {initialState,reduce,createStore,ALL_IDS} from '../js/state.js';
 import {TOURS,tourDuration} from '../js/tour-data.js';
 import {PLATONIC_TYPES,pairOf} from '../js/mirror-data.js';
 import {advanceRotation} from '../js/merkaba-motion.js';
-assert.equal(Object.keys(TOURS).length,9);
+assert.equal(Object.keys(TOURS).length,10);
 let chapters=0;
 for(const [id,tour]of Object.entries(TOURS)) {
   assert.ok(tourDuration(id)>100,id);

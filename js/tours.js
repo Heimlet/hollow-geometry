@@ -4,6 +4,7 @@ import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
 import { tourFaceOpacity,recursionMoment,tourObjectAlpha } from './tour-effects.js';
+import { createTorusScene } from './torus-scene.js';
 import { createFruitScene } from './fruit-scene.js';
 import { createMetatronStudy } from './metatron-study.js';
 import { derivedObjects,traditionalFields } from './lab.js';
@@ -18,6 +19,7 @@ let player, effectActive=false, status, animationState, cameraState,returnCamera
 const transition=createTourTransition(scene);
 const nodeStudy=createMetatronStudy(scene);
 const fruitScene=createFruitScene(scene);
+const torusScene=createTorusScene(scene);
 let transitionKey=null,lastGolden=null,fadeInk=false;
 export function applyTourTransition(dt) {
   const state=getState(),key=state.tour.id?`${state.tour.id}:${state.tour.index}`:null;
@@ -60,7 +62,7 @@ export function updateTourStage(dt) {
   if(cameraState.textContent!==control)cameraState.textContent=control;
   cameraState.dataset.locked=String(s.locked);
   returnCamera.disabled=!!(s.locked||s.flight);
-  const message=cue|| (s.reading?'Сцена остановлена на время чтения.':s.flight?'Переход к следующему ракурсу.':s.locked?'Ручное вращение заблокировано. «Пауза и осмотр» освобождает камеру.':getState().tour.playing?'Тур продолжается. Вращайте свободно; ↶ вернёт ракурс этой главы.':'Вращайте фигуру. ↶ вернёт ракурс, «Продолжить тур» — движение.');
+  const message=cue|| (s.reading?'Сцена остановлена на время чтения.':s.flight?'Переход к следующему ракурсу.':s.locked?'Ручное вращение заблокировано. «Пауза и осмотр» освобождает камеру.':getState().tour.playing?'Тур продолжается. Вращайте свободно; ↶ вернёт ракурс этой главы.':getState().tour.phase==='complete'?'Путешествие завершено. Вращайте сцену; ↶ вернёт финальный ракурс.':'Вращайте фигуру. ↶ вернёт ракурс, «Продолжить тур» — движение.');
   const projection=projectionDepth>0?` · Перспектива ${Math.round(projectionDepth*100)}%`:' · Точная ортография';
   if(status.textContent!==message+projection)status.textContent=message+projection;
 }
@@ -68,6 +70,7 @@ export function applyTourEffects() {
   const state=getState(),recipe=tourStep(state)?.scene;
   nodeStudy.update(levels[0]?.mc,recipe?.nodeStudy,tourProgress(state));
   fruitScene.update(recipe?.fruit,tourProgress(state),camera.position.clone().sub(controls.target).normalize());
+  torusScene.update(recipe?.torus,tourProgress(state),state.tour.elapsed);
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
   for(const level of levels) {
@@ -86,7 +89,7 @@ export function applyTourEffects() {
       if(!recipe.golden)object.eMat.opacity=.97*layerAlpha;
     }
   }
-  for(const owner of derivedObjects)if(owner.object.vis)owner.object.fMat.opacity=tourFaceOpacity(recipe,p);
+  for(const owner of derivedObjects)if(owner.object.vis)owner.object.fMat.opacity=tourFaceOpacity({...recipe,...recipe.derived?.[owner.kind]},p);
 }
 export function initTours() {
   const mode=el('nav',null,'experience-mode');mode.setAttribute('aria-label','Режим интерфейса');
@@ -113,7 +116,7 @@ export function initTours() {
     const card=button(grid,'',()=>actions.startTour(id));card.className='tour-card';card.style.setProperty('--tour-color',tour.color);
     card.setAttribute('aria-label',`Смотреть: ${tour.name}`);
     const icon=el('span',null,'tour-icon');icon.append(tourIcon(id,tour.icon));icon.setAttribute('aria-hidden','true');
-    const meta=el('span',`${minutes(id)} · ${tour.steps.length} глав`,'tour-meta');
+    const meta=el('span',`${tour.reading==='torus'?'Финал · ':''}${minutes(id)} · ${tour.steps.length} глав`,'tour-meta');
     card.append(icon,el('strong',tour.name),el('span',tour.description,'tour-description'),meta,el('span','↗','tour-card-play'));
   }
   welcome.append(musicRow,grid);document.body.append(welcome);
@@ -121,6 +124,7 @@ export function initTours() {
   const progress=el('nav',null,'tour-progress');progress.setAttribute('aria-label','Прогресс по главам');
   const head=el('div',null,'tour-player-head'),chapter=el('span',null,'tour-eyebrow');
   head.append(chapter);const phi=button(head,'φ',()=>actions.readTopic('phi'));phi.setAttribute('aria-label','φ — чем это интересно');button(head,'Все туры',()=>actions.stopTour());
+  const reading=button(player,'О торе: тело, космос, физика',()=>actions.readTopic(tourStep(getState())?.scene.reading||TOURS[getState().tour.id]?.reading));reading.className='tour-reading-shortcut';reading.hidden=true;
   const title=el('h2'),text=el('p',null,'tour-narration'),controlsRow=el('div',null,'tour-controls');
   const previous=button(controlsRow,'←',()=>actions.tourStep(getState().tour.index-1));previous.setAttribute('aria-label','Предыдущая глава');
   const play=button(controlsRow,'Пауза',()=>actions.tourControl({playing:!getState().tour.playing}));play.className='tour-play';
@@ -133,12 +137,14 @@ export function initTours() {
   const chapters=el('div',null,'tour-chapters');options.append(chapters);
   status=el('p',null,'tour-status');
   const states=el('div',null,'tour-states');animationState=el('span');cameraState=el('span');states.append(animationState,cameraState);
-  player.append(progress,head,title,text,controlsRow,states,status,options,inspect);document.body.append(player);
+  player.append(progress,head,title,text,reading,controlsRow,states,status,options,inspect);document.body.append(player);
   let currentKey='',currentTour='';
   function render(state,previousState,action={}) {
     const simple=state.ui.mode==='simple',active=!!state.tour.id;
     document.body.classList.toggle('mode-simple',simple);document.body.classList.toggle('mode-advanced',!simple);document.body.classList.toggle('touring',simple&&active);
     welcome.hidden=!simple||active;player.hidden=!simple||!active;
+    reading.hidden=!(tourStep(state)?.scene.reading||TOURS[state.tour.id]?.reading);
+    reading.textContent=tourStep(state)?.scene.reading==='vortex'?'Вихревое движение · формулы и физика':'О торе: тело, космос, физика';
     toursButton.setAttribute('aria-pressed',simple);advanced.setAttribute('aria-pressed',!simple);gentle.setAttribute('aria-pressed',state.display.gentleOrbit);
     advanced.textContent=active?'Покинуть тур':'Лаборатория';advanced.title=active?'Покинуть тур и перейти в лабораторию':'Открыть лабораторию';
     player.dataset.playback=state.tour.phase==='complete'?'complete':state.tour.playing?'playing':'paused';
