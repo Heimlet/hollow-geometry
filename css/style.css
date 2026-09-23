@@ -340,6 +340,7 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .tour-card:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 90% 0,color-mix(in srgb,var(--tour-color) 11%,transparent),transparent 70%);pointer-events:none}
 .tour-card:hover{transform:translateY(-4px);border-color:var(--tour-color);background:#17233bec}.tour-card:focus-visible{outline-color:var(--tour-color)}
 .tour-icon{font-family:Georgia,'Times New Roman',serif;font-size:49px;line-height:1.1;color:var(--tour-color);height:56px;filter:drop-shadow(0 0 16px color-mix(in srgb,var(--tour-color) 22%,transparent))}
+.tour-icon svg{display:block;width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .tour-card strong{font-size:15px;font-weight:500;line-height:1.3}.tour-description{font-size:11px;line-height:1.6;color:#91a6c4}.tour-meta{font-size:10px;color:var(--tour-color);margin-top:auto;padding-top:7px;letter-spacing:.3px}.tour-card-play{position:absolute;top:21px;right:20px;color:#748da9;font-size:19px}
 .tour-player{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);width:min(720px,calc(100vw - 120px));z-index:50;padding:18px 22px 14px;border:1px solid #8faace36;border-radius:15px;background:#0c1426ed;backdrop-filter:blur(22px);box-shadow:0 18px 60px #0007;color:#dce6f4}
 .tour-progress{position:absolute;left:14px;right:14px;top:0;height:2px;background:#a9c7ee14;overflow:hidden}.tour-progress span{display:block;height:100%;background:#bbdcff;box-shadow:0 0 10px #89baff}

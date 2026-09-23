@@ -11,6 +11,7 @@ import { captureVisibleParts,createTourTransition } from './tour-transitions.js'
 import { scene,projectionDepth } from './scene.js';
 import { cancelCameraAnimation } from './presets.js';
 import { el, button } from './lab-controls.js';
+import { tourIcon } from './tour-icons.js';
 import { initTourReading,linkTourText } from './tour-reading.js';
 import { queueTourShot,cancelTourShot,tourCameraBusy,updateTourCamera,tourCameraStatus } from './tour-camera.js';
 let player, effectActive=false, status, animationState, cameraState,returnCamera;
@@ -108,7 +109,7 @@ export function initTours() {
   for(const [id,tour]of Object.entries(TOURS)) {
     const card=button(grid,'',()=>actions.startTour(id));card.className='tour-card';card.style.setProperty('--tour-color',tour.color);
     card.setAttribute('aria-label',`Смотреть: ${tour.name}`);
-    const icon=el('span',tour.icon,'tour-icon');icon.setAttribute('aria-hidden','true');
+    const icon=el('span',null,'tour-icon');icon.append(tourIcon(id,tour.icon));icon.setAttribute('aria-hidden','true');
     const meta=el('span',`${minutes(id)} · ${tour.steps.length} глав`,'tour-meta');
     card.append(icon,el('strong',tour.name),el('span',tour.description,'tour-description'),meta,el('span','↗','tour-card-play'));
   }
