@@ -5,6 +5,7 @@ import { el,button,check,slider,select,bind } from './lab-controls.js';
 import { registerSetting } from './settings-links.js';
 import { fitVisible, setLabStatus } from './lab.js';
 import { assemblyAvailability, objectVisible } from './scene-selectors.js';
+import { MERKABA_SOURCE } from './merkaba-motion.js';
 const axisOptions=[['x','X'],['y','Y'],['z','Z'],['diagonal','Диагональ [1,1,1]'],['custom','Свой вектор']];
 function section(parent,title,key) {const d=el('details',null,'lab-section');d.append(el('summary',title));parent.append(d);if(key)registerSetting(key,d,title);return d;}
 function view(pack,order) {actions.preset(`${pack.id}-axis-${order}`);}
@@ -49,7 +50,10 @@ function initMerkaba(host) {
   for(const [key,title] of [['hull','Выпуклая оболочка'],['intersection','Пересечение'],['projection','2D-панель Меркабы'],['source','Исходные тетраэдры']]){const input=check(research,title,()=>getState().lab.layers[key],v=>actions.lab('layers',{[key]:v}));if(key==='source')registerSetting('lab.source',input.parentElement,title);}
   const status=el('p',null,'lab-topology');research.append(status);setLabStatus(status);
   const spin=section(research,'Вращение тел','lab.rotation');
-  select(spin,'Режим вращения',[['whole','Вся Меркаба'],['up','Тетраэдр ▲'],['down','Тетраэдр ▼'],['counter','Встречное'],['independent','Независимое']],()=>getState().lab.rotation.mode,mode=>actions.lab('rotation',{mode}));
+  select(spin,'Режим вращения',[['tradition','Традиция Друнвало · 34:21'],['whole','Вся Меркаба'],['up','Тетраэдр ▲'],['down','Тетраэдр ▼'],['counter','Два тетраэдра навстречу'],['independent','Независимое']],()=>getState().lab.rotation.mode,mode=>actions.lab('rotation',{mode,up:0,down:0}));
+  const tradition=el('p','В схеме Друнвало одна целая звезда неподвижна, ещё две целые звезды вращаются навстречу в отношении 34:21. Голубая — против часовой, золотая — по часовой при взгляде со стороны положительной оси. Это визуализация конкретного эзотерического учения; скорости здесь условные. ','camera-hint');
+  const source=el('a','Источник, с. 6–7');source.href=MERKABA_SOURCE;source.target='_blank';source.rel='noopener';tradition.append(source);spin.append(tradition);
+  bind(()=>tradition.hidden=getState().lab.rotation.mode!=='tradition');
   check(spin,'Вращать Меркабу',()=>getState().lab.rotation.running,running=>actions.lab('rotation',{running}));
   select(spin,'Общая ось',axisOptions,()=>getState().lab.rotation.axis,axis=>actions.lab('rotation',{axis,...(getState().lab.rotation.mode==='independent'?{}:{upAxis:axis,downAxis:axis})}));
   select(spin,'Направление вращения',[['1','Положительное'],['-1','Отрицательное']],()=>String(getState().lab.rotation.direction),value=>actions.lab('rotation',{direction:+value}));
@@ -57,6 +61,7 @@ function initMerkaba(host) {
   slider(spin,'Угол всей Меркабы',-180,180,.1,()=>getState().lab.rotation.angle,angle=>actions.lab('rotation',{angle,running:false}),v=>`${v.toFixed(1)}°`);
   for(const [key,title]of[['up','▲'],['down','▼']]) {
     const d=section(spin,`Тетраэдр ${title}`);
+    bind(()=>d.hidden=getState().lab.rotation.mode==='tradition');
     select(d,`Ось ${title}`,axisOptions,()=>getState().lab.rotation[key+'Axis'],axis=>actions.lab('rotation',{[key+'Axis']:axis}));
     slider(d,`Угол ${title}`,-180,180,.1,()=>getState().lab.rotation[key],v=>actions.lab('rotation',{[key]:v,running:false}),v=>`${v.toFixed(1)}°`);
     slider(d,`Скорость ${title}`,0,180,1,()=>getState().lab.rotation[key+'Speed'],v=>actions.lab('rotation',{[key+'Speed']:v}),v=>`${v}°/с`);

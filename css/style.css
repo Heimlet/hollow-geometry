@@ -303,3 +303,72 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 @media(max-width:700px){.golden-story{top:auto;bottom:12px;right:12px;width:min(350px,calc(100vw - 24px));padding:12px}.golden-story-note{min-height:0}.golden-story-stage{margin-top:8px}.golden-story .lab-range{margin:9px 0}.golden-story .lab-buttons{margin-top:8px}body:has(#sidebar:not(.hidden)) .golden-story,body:has(#sidebar:not(.hidden)) .golden-scene-length,body:has(#info.vis) .golden-story{display:none}}
 .golden-recursion-zoom{border:1px solid #ffd16644;border-radius:5px;background:#ffd1660c;color:#f0d79e;font-size:11px;margin:10px 5px 0 0;padding:7px;cursor:pointer}.golden-recursion-zoom:disabled{opacity:.35;cursor:default}.golden-recursion-zoom[hidden]{display:none}
 @media(max-width:700px){body:has(.golden-story:not([hidden])) #fs-btn{bottom:auto;top:68px;left:auto;right:12px}}
+
+/* Small common appearance controls; contained controls are visually inset. */
+.appearance-buttons{display:inline-flex;gap:2px;flex-shrink:0;margin:0 4px}
+.appearance-buttons button,.mirror-button{display:inline-flex;align-items:center;justify-content:center;width:23px;height:25px;padding:0;border:1px solid transparent;border-radius:5px;background:transparent;color:#7186a2;font-size:16px;cursor:pointer;flex-shrink:0}
+.appearance-buttons button[aria-pressed=true],.mirror-button[aria-pressed=true]{color:#b7dfff;background:#7ab8ff13;border-color:#9bcfff28}
+.appearance-buttons button[aria-pressed=mixed]{color:#bcafe1;border-bottom-color:#b7a3ff}
+.appearance-buttons button:hover:enabled,.mirror-button:hover{background:#9bcfff24;color:#fff}
+.appearance-buttons button:disabled{opacity:.28;cursor:default}
+.obj-hdr{gap:4px;flex-wrap:wrap}.obj-hdr .nm{min-width:70px;font-size:12px}.obj-hdr .appearance-buttons{margin:0}
+.grp-hdr .ttl{min-width:0}.grp-hdr .ico{margin-right:3px}.grp-hdr .arr{margin-right:3px;width:9px}
+#setting-group-platonic>.grp-body>.lab-section,.compound-catalog .lab-section{margin:8px 12px 8px 24px;padding:5px 10px 8px;border-left:2px solid #6f92c72e;border-radius:0 7px 7px 0;background:#8cbbff04}
+.obj-ctrls.open{margin:5px 0 3px 8px;padding-left:12px;border-left:2px solid #6f92c72e}
+.lab-section .lab-section{margin-left:10px;padding-left:10px;border-left:1px solid #ffffff16}
+.metatron-types{margin:10px 12px 12px 24px;padding:10px;border:1px solid #91caff26;border-radius:8px;background:#8cbcff04}
+.metatron-types h3{font-size:12px;color:#c2dbf5;margin-bottom:8px}.metatron-type{display:flex;gap:4px;align-items:center}.metatron-type .lab-check{flex:1}.metatron-type .appearance-buttons{margin:0}.metatron-type .settings-link{font-size:11px}.metatron-types .lab-buttons button{font-size:11px;padding:6px}
+/* Tours are the entry point. The laboratory retains its existing tools. */
+.experience-mode{position:fixed;right:14px;top:9px;z-index:230;display:flex;align-items:center;gap:5px;height:38px}
+.experience-mode button,.tour-player button{font:inherit;cursor:pointer;color:#b7c6db;background:#ffffff06;border:1px solid #ffffff1b;border-radius:8px;padding:8px 13px;font-size:12px;white-space:nowrap}
+.experience-mode button:hover,.tour-player button:hover:enabled{background:#a4cfff18;color:white;border-color:#a4cfff55}
+.experience-mode button[aria-pressed=true]{color:#edf4ff;background:#abc9ff17;border-color:#c8dcff44}
+.experience-brand{display:none;font-size:16px;color:#edf4ff;font-weight:500;letter-spacing:.3px}
+.mode-simple #sidebar,.mode-simple #app-toolbar,.mode-simple .golden-story{display:none}
+.mode-simple .experience-mode{left:0;right:0;top:0;height:64px;padding:12px 24px;background:linear-gradient(#080d1ce8,#080d1c00)}
+.mode-simple .experience-brand{display:block;margin-right:auto}.mode-simple #fs-btn{bottom:18px;left:18px;top:auto;right:auto}
+.mode-advanced #app-toolbar{padding-right:310px}
+.mode-simple:has(.tour-menu:not([hidden])) #c{opacity:.7}
+.tour-menu{position:fixed;inset:64px 0 0;z-index:20;overflow:auto;padding:32px max(24px,calc((100vw - 1100px)/2)) 36px;background:radial-gradient(ellipse at 50% 10%,#10213e44,transparent 70%);scrollbar-width:thin;scrollbar-color:#384a65 transparent}
+.tour-intro{margin-bottom:28px}.tour-eyebrow{font-size:10px;letter-spacing:1.7px;color:#90a6c5;text-transform:uppercase}
+.tour-intro h1{font-weight:450;letter-spacing:-1.3px;font-size:clamp(26px,3.1vw,43px);line-height:1.18;margin:12px 0;color:#ecf2fc}.tour-lead{font-size:14px;line-height:1.6;color:#95aac9}
+.tour-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.tour-card{position:relative;display:flex;align-items:flex-start;flex-direction:column;gap:10px;min-height:225px;text-align:left;padding:22px 18px 17px;border:1px solid #a2bde426;border-radius:16px;background:linear-gradient(145deg,#1b2845ca,#0a1124e8);color:#dce6f4;cursor:pointer;box-shadow:0 8px 32px #0002;transition:transform .25s,border-color .25s,background .25s;overflow:hidden}
+.tour-card:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 90% 0,color-mix(in srgb,var(--tour-color) 11%,transparent),transparent 70%);pointer-events:none}
+.tour-card:hover{transform:translateY(-4px);border-color:var(--tour-color);background:#17233bec}.tour-card:focus-visible{outline-color:var(--tour-color)}
+.tour-icon{font-family:Georgia,'Times New Roman',serif;font-size:49px;line-height:1.1;color:var(--tour-color);height:56px;filter:drop-shadow(0 0 16px color-mix(in srgb,var(--tour-color) 22%,transparent))}
+.tour-card strong{font-size:15px;font-weight:500;line-height:1.3}.tour-description{font-size:11px;line-height:1.6;color:#91a6c4}.tour-meta{font-size:10px;color:var(--tour-color);margin-top:auto;padding-top:7px;letter-spacing:.3px}.tour-card-play{position:absolute;top:21px;right:20px;color:#748da9;font-size:19px}.tour-menu-note{font-size:12px;line-height:1.7;color:#849ab9;text-align:center;margin:22px 0 0}
+.tour-player{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);width:min(720px,calc(100vw - 120px));z-index:50;padding:18px 22px 14px;border:1px solid #8faace36;border-radius:15px;background:#0c1426ed;backdrop-filter:blur(22px);box-shadow:0 18px 60px #0007;color:#dce6f4}
+.tour-progress{position:absolute;left:14px;right:14px;top:0;height:2px;background:#a9c7ee14;overflow:hidden}.tour-progress span{display:block;height:100%;background:#bbdcff;box-shadow:0 0 10px #89baff}
+.tour-player-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.tour-player-head .tour-eyebrow{font-size:9px;line-height:1.6;letter-spacing:1px}.tour-player-head button{background:none;border:0;padding:2px;font-size:11px;color:#89a4c8}
+.tour-player h2{font-size:20px;line-height:1.3;letter-spacing:-.3px;font-weight:500;margin-bottom:8px}.tour-narration{font-size:13px;line-height:1.7;color:#a8bbd3;max-height:130px;overflow:auto;scrollbar-width:thin}.tour-narration .settings-link{text-decoration-color:#6c8aad80;color:inherit}.tour-narration .settings-link:hover{color:#c7e4ff}
+.tour-controls{display:flex;gap:6px;align-items:center;margin-top:14px}.tour-controls .tour-play{min-width:150px;background:#b3d4ff1e;border-color:#b3d4ff5c;color:#e4efff}.tour-controls button:disabled{opacity:.25;cursor:default}.tour-controls .tour-inspect{margin-left:auto;background:transparent;font-size:11px}
+.tour-status{font-size:10px;line-height:1.5;color:#738eae;margin-top:9px}.tour-options{margin-top:7px;color:#88a1c1;font-size:10px}.tour-options summary{cursor:pointer;width:max-content;padding:4px 0}.tour-options .lab-check{font-size:11px}.tour-chapters{display:grid;grid-template-columns:1fr 1fr;gap:5px;max-height:150px;overflow:auto;padding:3px}.tour-chapters button{font-size:10px;white-space:normal;text-align:left}.tour-chapters button[aria-current=step]{border-color:#a7d4ff88;color:#daedff}
+.tour-menu[hidden],.tour-player[hidden]{display:none}.touring .golden-story{display:none!important}
+.touring #info{top:75px;bottom:auto;max-height:35vh}.mode-simple #object-picker{z-index:130}
+.mode-simple:has(.tour-menu:not([hidden])) #info,.mode-simple:has(.tour-menu:not([hidden])) .golden-scene-length{display:none}
+/* Desktop-only keyboard help. */
+.shortcut-dock{display:none;position:fixed;right:18px;bottom:18px;z-index:210}
+.shortcut-question{width:33px;height:33px;border:1px solid #8facd14d;border-radius:50%;background:#0b1426e8;color:#bcd7fc;font-size:17px;cursor:pointer;position:relative}
+.shortcut-question:after{content:'';position:absolute;inset:-1px;border:1px solid #a8cfff7a;border-radius:50%;animation:shortcut-pulse 3.6s ease-out infinite;pointer-events:none}
+@keyframes shortcut-pulse{0%,30%{transform:scale(1);opacity:.65}85%,100%{transform:scale(1.55);opacity:0}}
+#shortcut-panel{position:absolute;bottom:45px;right:0;width:310px;background:#0c1427f5;border:1px solid #a1bfe444;border-radius:12px;padding:18px;box-shadow:0 12px 35px #0009;backdrop-filter:blur(16px)}
+#shortcut-panel h2{font-size:14px;font-weight:500;margin-bottom:14px}#shortcut-panel dl{display:grid;grid-template-columns:110px 1fr;gap:12px 10px;font-size:11px;line-height:1.4}#shortcut-panel dt{color:#cbdffa}#shortcut-panel dd{color:#91a8c7}#shortcut-panel[hidden]{display:none}
+@media(min-width:701px) and (hover:hover) and (pointer:fine){.shortcut-dock{display:block}}
+@media(prefers-reduced-motion:reduce){.shortcut-question:after{animation:none}.tour-card{transition:none}}
+@media(max-width:1100px){.mode-advanced #view-context{display:none}.tour-card{padding:18px 14px;min-height:230px}.tour-intro{margin-bottom:22px}.tour-menu{padding-top:22px}}
+@media(max-width:850px){.tour-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tour-card{min-height:200px}.tour-menu{padding:24px 28px 40px}.mode-advanced #app-toolbar{padding-right:0}.mode-advanced .experience-mode{top:56px;right:0;left:0;justify-content:flex-end;background:#0d1222f5;height:44px;padding:4px 10px;border-bottom:1px solid #ffffff18}.mode-advanced #sidebar{top:100px;height:calc(100% - 100px)}.mode-advanced #proj-label{top:110px}.mode-advanced .golden-story{top:110px}}
+@media(max-width:700px){
+  .mode-simple .experience-mode{padding:10px 14px;height:60px;gap:4px}.experience-brand{font-size:13px;letter-spacing:0}.experience-mode button{font-size:11px;padding:7px 9px}.mode-simple .experience-mode button:last-child{width:31px;padding:7px 0;font-size:0}.mode-simple .experience-mode button:last-child:before{content:'≈';font-size:19px;line-height:13px}
+  .tour-menu{inset:60px 0 0;padding:22px 18px 36px}.tour-intro h1{font-size:29px;max-width:310px;letter-spacing:-.7px}.tour-lead{font-size:12px}.tour-grid{gap:10px}.tour-card{padding:15px 12px;min-height:224px;gap:9px;border-radius:12px}.tour-card strong{font-size:13px}.tour-icon{font-size:43px;height:48px}.tour-description{font-size:10px;line-height:1.6}.tour-card-play{right:12px;top:17px}.tour-meta{font-size:9px}.tour-menu-note{font-size:11px}
+  .tour-player{width:calc(100vw - 24px);bottom:12px;padding:14px 15px 12px;border-radius:12px}.tour-player h2{font-size:17px}.tour-narration{font-size:12px;line-height:1.65;max-height:120px}.tour-player-head .tour-eyebrow{font-size:8px;letter-spacing:.5px}.tour-player-head button{font-size:10px}.tour-controls{gap:5px;margin-top:11px}.tour-controls button{font-size:11px;padding:8px 10px}.tour-controls .tour-play{min-width:115px}.tour-controls .tour-inspect{font-size:0;min-width:30px;padding:8px}.tour-controls .tour-inspect:before{content:'⚙';font-size:15px}.tour-chapters{grid-template-columns:1fr}.touring #fs-btn{top:66px;left:12px;bottom:auto}.touring #info{top:70px;max-height:30vh}
+  .mode-simple:has(#sidebar:not(.hidden)) .golden-scene-length{display:block}.mode-simple .golden-scene-length[hidden]{display:none}
+  .mode-advanced .golden-story{top:auto}
+}
+@media(max-height:620px) and (min-width:701px){.tour-player{padding:10px 18px;bottom:12px;width:680px}.tour-player h2{font-size:16px}.tour-narration{font-size:11px;max-height:85px}.tour-status{display:none}.tour-controls{margin-top:8px}.tour-options{margin-top:3px}}
+
+.mode-simple:has(.tour-menu:not([hidden])) :is(.golden-scene-length,.golden-scene-ink,.study-ink,.study-badge,.golden-length,#golden-badge,#projection-guide,.lab-projection,#proj-label,#object-label,#object-picker){display:none!important}
+
+.tour-reset{display:none;top:72px;left:18px;font-size:20px}.touring .tour-reset{display:flex}
+@media(max-width:360px){.tour-controls{gap:4px}.tour-controls .tour-play{min-width:103px}.tour-controls button{padding:8px}.tour-player{padding-left:12px;padding-right:12px}.mode-simple .experience-mode{padding-left:12px;padding-right:12px}.experience-brand{font-size:11px}.experience-mode button{padding-left:7px;padding-right:7px}}
+.touring #fs-btn{left:auto;right:18px;top:72px;bottom:auto}

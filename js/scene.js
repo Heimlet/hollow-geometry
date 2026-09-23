@@ -3,6 +3,7 @@
  * Exports the core rendering objects used by all other modules.
  */
 import * as THREE from 'three';
+import { getState, subscribe } from './state.js';
 import { DEFAULT_HEIGHT, ORBIT_DISTANCE, viewHeight, frameCamera, configureProjection } from './projection.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -24,7 +25,7 @@ export let projectionDepth = 0;
 let lastDepth = 0.65;
 frameCamera(camera, DEFAULT_HEIGHT, innerWidth / innerHeight);
 camera.near = 0.01; camera.far = 500;
-camera.position.set(7, 5, 9).normalize().multiplyScalar(ORBIT_DISTANCE);
+camera.position.set(1, 1, 1).normalize().multiplyScalar(ORBIT_DISTANCE);
 camera.updateProjectionMatrix();
 
 export const controls = new OrbitControls(camera, canvas);
@@ -35,6 +36,12 @@ controls.maxDistance = Infinity;
 controls.minZoom = 0.05;
 controls.maxZoom = 100;
 controls.update();
+function syncOrbit() {
+  const gentle=getState().display.gentleOrbit;
+  controls.rotateSpeed=gentle?.42:1;controls.zoomSpeed=gentle?.65:1;controls.panSpeed=gentle?.65:1;
+  controls.dampingFactor=gentle?.085:.07;controls.minPolarAngle=gentle?.06:0;controls.maxPolarAngle=Math.PI-(gentle?.06:0);
+}
+syncOrbit();subscribe((state,previous)=>{if(state.display.gentleOrbit!==previous.display.gentleOrbit)syncOrbit();});
 
 export function getViewHeight() { return viewHeight(camera, controls.target); }
 export function setViewHeight(height) {

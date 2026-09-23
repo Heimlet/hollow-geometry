@@ -8,7 +8,9 @@ import { levels } from './levels.js';
 import { scene, camera, controls, setViewHeight } from './scene.js';
 import { SObj, tetraVerts } from './geometry.js';
 import { hull, intersection, packGeometry, packEdges, explodedOffset } from './polyhedra-math.js';
+import { advanceRotation } from './merkaba-motion.js';
 export const derivedObjects=[];
+export const traditionalFields=[];
 let generation=null;
 const links=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x7a90ad,transparent:true,opacity:.3}));scene.add(links);
 let linkSignature='', sceneLayout=new Map(), scenePlane=new THREE.Quaternion(), componentPlanes=new Map(), statusNode;
@@ -22,21 +24,37 @@ function createDerived(level,kind) {
   return {id,kind,object,level:level.idx,key:`${id}:${level.idx}`,edges:object.edges,signature:'',data:null};
 }
 function dropDerived() {for(const owner of derivedObjects){scene.remove(owner.object.group);owner.object.mesh.geometry.dispose();owner.edges.geometry.dispose();owner.object.fMat.dispose();owner.object.eMat.dispose();}derivedObjects.length=0;}
+function rebuildFields() {
+  for(const field of traditionalFields){scene.remove(field.group);field.group.traverse(o=>o.material?.dispose());}traditionalFields.length=0;
+  for(const level of levels)for(const [index,key]of ['up','down'].entries()) {
+    const group=new THREE.Group(),color=index?0xffd166:0x72dfff;
+    for(const id of ['merkaba_up','merkaba_down']) {
+      const source=level.objs[id];
+      group.add(new THREE.Mesh(source.mesh.geometry,new THREE.MeshBasicMaterial({color,transparent:true,opacity:.035,side:THREE.DoubleSide,depthWrite:false})),
+        new THREE.LineSegments(source.edges.geometry,new THREE.LineBasicMaterial({color,transparent:true,opacity:.7})));
+    }
+    scene.add(group);traditionalFields.push({group,level:level.idx,key});
+  }
+}
 export function updateLab(dt) {
   let state=getState(),lab=state.lab,rot=lab.rotation;
-  const elapsed=Math.min(dt,.05),wrap=v=>((v+180)%360+360)%360-180;
+  const elapsed=Math.min(dt,.05);
   const active=state.objects.merkaba_up.visible||state.objects.merkaba_down.visible;
   if(rot.running&&active) {
-    const patch={};if(rot.mode==='whole')patch.angle=wrap(rot.angle+elapsed*rot.speed*rot.direction);
-    if(['up','counter','independent'].includes(rot.mode))patch.up=wrap(rot.up+elapsed*(rot.mode==='independent'?rot.upSpeed*rot.upDirection:rot.speed*rot.direction));
-    if(['down','counter','independent'].includes(rot.mode))patch.down=wrap(rot.down+elapsed*(rot.mode==='independent'?rot.downSpeed*rot.downDirection:rot.speed*rot.direction*(rot.mode==='counter'?-1:1)));
-    actions.tickLab('rotation',patch);
+    actions.tickLab('rotation',advanceRotation(rot,elapsed));
   }
   if(lab.explode.direction) {const value=THREE.MathUtils.clamp(lab.explode.value+elapsed*lab.explode.direction/1.5,0,1);actions.tickLab('explode',{value,direction:value===0||value===1?0:lab.explode.direction});}
   for(const c of ASSEMBLIES){const conf=lab.collections[c.id];if(conf.direction){const explode=THREE.MathUtils.clamp(conf.explode+elapsed*conf.direction/1.5,0,1);actions.tickLab('collections',{explode,direction:explode===0||explode===1?0:conf.direction},c.id);}}
   state=getState();lab=state.lab;rot=lab.rotation;
-  if(generation!==levels[0]){dropDerived();generation=levels[0];for(const level of levels)for(const kind of ['hull','intersection'])derivedObjects.push(createDerived(level,kind));}
-  const whole=rotation(rot.axis,rot.angle,rot.vector),qUp=rotation(rot.upAxis,rot.up,rot.vector),qDown=rotation(rot.downAxis,rot.down,rot.vector);
+  if(generation!==levels[0]){dropDerived();rebuildFields();generation=levels[0];for(const level of levels)for(const kind of ['hull','intersection'])derivedObjects.push(createDerived(level,kind));}
+  const whole=rotation(rot.axis,rot.angle,rot.vector),qUp=rotation(rot.upAxis,rot.mode==='tradition'?0:rot.up,rot.vector),qDown=rotation(rot.downAxis,rot.mode==='tradition'?0:rot.down,rot.vector);
+  for(const field of traditionalFields) {
+    field.group.visible=active&&lab.layers.source&&lab.explode.value===0&&lab.collections.merkaba.explode===0&&rot.mode==='tradition'&&(rot.running||rot.up!==0||rot.down!==0);
+    field.group.quaternion.copy(whole).multiply(rotation(rot.axis,rot[field.key],rot.vector));
+    for(const child of field.group.children)child.visible=child.isMesh
+      ?state.objects.merkaba_up.faces||state.objects.merkaba_down.faces
+      :state.objects.merkaba_up.edges||state.objects.merkaba_down.edges;
+  }
   const visible=[];for(const level of levels)for(const [id,o]of [...Object.entries(level.objs),['_metatron_',level.mc]])if(o.vis)visible.push({id,level,object:o});
   const positions=[];
   if(lab.explode.value===0){sceneLayout.clear();scenePlane.copy(camera.quaternion);}
@@ -67,7 +85,7 @@ export function updateLab(dt) {
     const level=levels[owner.level],visibleLayer=active&&lab.layers[owner.kind];owner.object.vis=visibleLayer;if(!visibleLayer)continue;
     const up=level.objs.merkaba_up,down=level.objs.merkaba_down,inv=whole.clone().invert();
     const upOffset=up.group.position.clone().applyQuaternion(inv),downOffset=down.group.position.clone().applyQuaternion(inv);
-    const signature=[rot.up,rot.down,rot.upAxis,rot.downAxis,rot.vector.join(','),upOffset.toArray(),downOffset.toArray()].join('|');
+    const signature=[rot.mode==='tradition'?0:rot.up,rot.mode==='tradition'?0:rot.down,rot.upAxis,rot.downAxis,rot.vector.join(','),upOffset.toArray(),downOffset.toArray()].join('|');
     if(signature!==owner.signature) {
       owner.signature=signature;
       const a=tetraVerts(CR*level.scale,false).map(p=>new THREE.Vector3(...p).applyQuaternion(qUp).add(upOffset)),b=tetraVerts(CR*level.scale,true).map(p=>new THREE.Vector3(...p).applyQuaternion(qDown).add(downOffset));

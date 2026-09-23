@@ -42,3 +42,9 @@ presets.flyCamera(new Vector3(1,2,3).normalize().multiplyScalar(30),.65,1500,tar
 now+=750;presets.updateCamAnim();assert.ok(scene.controls.target.distanceTo(target)>0);
 now+=2000;presets.updateCamAnim();assert.ok(scene.controls.target.distanceTo(target)<1e-9);assert.ok(Math.abs(scene.getViewHeight()-.65)<1e-9);assert.equal(scene.projectionDepth,0);
 console.log('PASS: animated detail inspection preserves an explicit 3D target and exact final scale');
+
+// A context change is not a manual orbit gesture. Tour pause controllers may
+// dispatch in gesture handlers, so programmatic context changes use another event.
+let manualDuringTour=0;window.addEventListener('camera-manual-change',()=>{if(getState().tour.id)manualDuringTour++;});
+actions.startTour('metatron');assert.equal(manualDuringTour,0);assert.equal(getState().tour.playing,true);
+console.log('PASS: programmatic camera context transitions do not dispatch manual tour pauses');

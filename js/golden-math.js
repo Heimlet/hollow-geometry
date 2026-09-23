@@ -96,3 +96,11 @@ export function nestedFaceStars(face, count=6) {
   }
   return layers;
 }
+
+export function rectangleSpiral(rectangle,theta) {
+  const p=rectangle.points,origin=p[0].clone().lerp(p[2],.5);
+  const longEdge=p[0].distanceTo(p[1])>p[0].distanceTo(p[3])?p[1]:p[3];
+  const u=longEdge.clone().sub(p[0]).normalize(),normal=p[1].clone().sub(p[0]).cross(p[3].clone().sub(p[0])).normalize(),v=normal.cross(u);
+  const radius=rectangle.short*.47*PHI**(2*theta/Math.PI);
+  return origin.addScaledVector(u,radius*Math.cos(theta)).addScaledVector(v,radius*Math.sin(theta));
+}

@@ -53,3 +53,18 @@ assert.equal(derivedObjects.filter(o=>o.object.vis).length,1);
 assert.ok(Object.values(levels[0].objs).every(o=>!o.group.visible));
 actions.onlyObject('cube');updateLab(0);assert.equal(levels[0].objs.cube.group.visible,true);assert.ok(derivedObjects.every(o=>!o.object.vis));
 console.log('PASS: isolating a derived solid preserves its shape and hides all render sources; ordinary isolation hides derived layers');
+
+// A reflected tetrahedron is the missing set of cube vertices, at every level.
+const THREE=await import(three), {traditionalFields}=await import(await load('lab'));
+actions.objects(ALL_IDS,{visible:false});actions.metatronType('tetrahedron',true);actions.recursion({depth:3});updateLab(0);
+const vertices=o=>{const a=o.mesh.geometry.attributes.position,p=[];for(let i=0;i<a.count;i++){const v=new THREE.Vector3().fromBufferAttribute(a,i);if(!p.some(q=>q.distanceTo(v)<1e-5))p.push(v);}return p;};
+for(const level of levels){const a=vertices(level.objs.tetrahedron),b=vertices(level.objs.tetrahedron_mirror);assert.equal(a.length,4);assert.equal(b.length,4);for(const v of a)assert.ok(b.some(q=>q.clone().add(v).length()<1e-5));assert.ok(level.objs.tetrahedron_mirror.vis);}
+for(const id of ['cube','octahedron','dodecahedron','icosahedron']){const points=vertices(levels[0].objs[id]);for(const p of points)assert.ok(points.some(q=>p.clone().add(q).length()<1e-5));}
+actions.metatronType('cube',true);updateLab(0);assert.ok(levels.every(l=>!l.objs.tetrahedron_mirror.vis&&l.objs.cube.vis));
+actions.objects(ALL_IDS,{visible:false});actions.objects(['merkaba_up'],{visible:true});actions.lab('rotation',{mode:'tradition',up:0,down:0,running:true,angle:0});updateLab(.05);
+assert.equal(getState().objects.merkaba_down.visible,true);assert.equal(traditionalFields.length,6);
+assert.ok(traditionalFields.every(f=>f.group.visible&&f.group.children.length===4));
+assert.ok(levels.every(l=>l.objs.merkaba_up.group.quaternion.angleTo(new THREE.Quaternion())<1e-12));
+actions.assembly('merkaba',{explode:1});updateLab(0);assert.ok(traditionalFields.every(f=>!f.group.visible));
+actions.objects(ALL_IDS,{visible:false});updateLab(0);assert.ok(traditionalFields.every(f=>!f.group.visible));
+console.log('PASS: central reflections, no duplicate symmetric solids, pair recursion and cascades, two whole traditional stars, stable canonical source');

@@ -6,7 +6,7 @@ import { getState, actions, subscribe } from './state.js';
 import { levels } from './levels.js';
 import { camera, controls } from './scene.js';
 import { flyCamera, isCamAnimating, cancelCameraAnimation } from './presets.js';
-import { verticesOf, pentagonalFaces, edgeDivisions, orthogonalGoldenRectangles, nestedFaceStars } from './golden-math.js';
+import { verticesOf, pentagonalFaces, edgeDivisions, orthogonalGoldenRectangles, nestedFaceStars, rectangleSpiral } from './golden-math.js';
 import { el, button, slider, bind } from './lab-controls.js';
 import { registerSetting, settingLink, linkText } from './settings-links.js';
 
@@ -35,9 +35,13 @@ function build() {
   generation=levels[0];
 }
 function cameraFor(id) {
+  const view=goldenSceneView(id);
+  flyCamera(view.direction.multiplyScalar(30),view.height/Math.min(1,innerWidth/innerHeight));
+}
+export function goldenSceneView(id,detail=false) {
   if(!data||generation!==levels[0])build();
   const direction=id==='pentagon'?center(data.face.points).normalize():new THREE.Vector3(3,2,4).normalize();
-  flyCamera(direction.multiplyScalar(30),(id==='pentagon'?9.5:id==='bridge'?6.3:5.1)/Math.min(1,innerWidth/innerHeight));
+  return {direction,height:detail?.65:id==='pentagon'?9.5:id==='bridge'?6.3:5.1,target:detail?center(data.face.points):new THREE.Vector3()};
 }
 subscribe((state,previous,action)=>{
   if(!state.presetId && ((previous.goldenScene.id!=='none'&&state.goldenScene.id==='none')||action.type.startsWith('history/')))cancelCameraAnimation();
@@ -125,6 +129,29 @@ function drawPentagon(p) {
   formula.textContent=`Диагональ / ребро = φ · rₙ₊₁ / rₙ = 1/φ²`;
   linkedCopy(note,`Рекурсия на грани: ${layer+1} из 6 уровней · масштаб ${measure(scale)}. Кнопка «В центр звезды» позволяет рассмотреть внутренние уровни.`);
 }
+function drawSpirals(p) {
+  const colors=[gold,cyan,violet];
+  data.rectangles.forEach((r,index)=>{
+    r.points.forEach((a,i)=>line(a,r.points[(i+1)%4],colors[index],ease(p/.18),.3,1));
+    polygon(r.points,colors[index],.025);
+    const progress=ease((p-.15-index*.08)/.55),theta=-Math.PI*6+Math.PI*6*progress;
+    if(p<.15+index*.08)return;
+    let previous=rectangleSpiral(r,-Math.PI*6);
+    const samples=420;
+    for(let i=1;i<=samples;i++) {
+      const point=rectangleSpiral(r,-Math.PI*6+(theta+Math.PI*6)*i/samples);
+      line(previous,point,colors[index],1,.13,6);line(previous,point,colors[index],1,.95,1.8);previous=point;
+    }
+    dot(previous,colors[index],1,3.5);
+    if(index===0&&p>.8) {
+      const origin=r.points[0].clone().lerp(r.points[2],.5),a=rectangleSpiral(r,-Math.PI/2),b=rectangleSpiral(r,0);
+      line(origin,a,cyan,1,.8);line(origin,b,gold,1,.8);
+      ratioLabels(origin,a,origin,b,origin.distanceTo(a),origin.distanceTo(b));
+    }
+  });
+  formula.textContent='r(θ + 90°) / r(θ) = φ ≈ 1,61803';
+  linkedCopy(note,'Точные логарифмические спирали построены в золотых прямоугольниках икосаэдра. Поверните сцену, чтобы различить три плоскости.');
+}
 function explain() {
   const demo=GOLDEN_SCENES[getState().goldenScene.id];if(!demo)return;
   const info=document.getElementById('info');info.replaceChildren();
@@ -164,7 +191,7 @@ export function initGoldenScenesUI(parent) {
   bind(()=>{
     const s=getState().goldenScene,demo=GOLDEN_SCENES[s.id];card.hidden=!demo;
     zoom.hidden=overview.hidden=s.id!=='pentagon';zoom.disabled=s.progress<.5;
-    if(!demo){status.textContent='Три геометрические связи, полученные из координат моделей.';return;}
+    if(!demo){status.textContent='Геометрические связи и спирали в плоскостях фигур.';return;}
     linkedCopy(heading,demo.title);play.textContent=s.running?'Ⅱ Пауза':s.progress>=1?'▶ Ещё раз':'▶ Продолжить';
     back.disabled=s.progress===0;next.disabled=s.progress===1;
     const index=Math.min(3,Math.floor(s.progress*4));linkedCopy(stage,`${index+1} / 4 · ${demo.steps[index]}`);
@@ -186,7 +213,7 @@ export function updateGoldenScenes(dt) {
   const dpr=Math.min(devicePixelRatio,2);
   if(ink.width!==Math.round(innerWidth*dpr)||ink.height!==Math.round(innerHeight*dpr)){ink.width=Math.round(innerWidth*dpr);ink.height=Math.round(innerHeight*dpr);}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,innerWidth,innerHeight);ctx.lineCap='round';ctx.lineJoin='round';
-  if(s.id==='rectangles')drawRectangles(s.progress);else if(s.id==='bridge')drawBridge(s.progress);else drawPentagon(s.progress);
+  if(s.id==='rectangles')drawRectangles(s.progress);else if(s.id==='bridge')drawBridge(s.progress);else if(s.id==='spiral')drawSpirals(s.progress);else drawPentagon(s.progress);
   if(labels.every(label=>!label.hidden)) {
     const a=labels[0].getBoundingClientRect(),b=labels[1].getBoundingClientRect();
     if(a.left<b.right+6&&a.right+6>b.left&&a.top<b.bottom+6&&a.bottom+6>b.top)

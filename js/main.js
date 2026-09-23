@@ -1,3 +1,4 @@
+import { initTours, updateTours, applyTourEffects, tourOrbit, resetTourCamera } from './tours.js';
 import { updateLab } from './lab.js';
 import { drawLabProjection } from './lab-projection.js';
 /**
@@ -8,14 +9,14 @@ import * as THREE from 'three';
 import { scene, camera, renderer, controls, canvas, setDepth, setViewHeight, resizeCamera } from './scene.js';
 import { getState, actions, ALL_IDS } from './state.js';
 import { levels } from './levels.js';
-import { updateCamAnim, isCamAnimating, deactivatePreset, isPresetActive, cancelCameraAnimation } from './presets.js';
+import { updateCamAnim, isCamAnimating, deactivatePreset, isPresetActive, cancelCameraAnimation, flyCamera } from './presets.js';
 import { initUI, showInfo } from './ui.js';
 import { drawProjectionGuide } from './guide.js';
 import { updateStudies } from './studies.js';
 import { updateGolden } from './golden.js';
 import { initPicking } from './picking.js';
 import { initShortcuts } from './shortcuts.js';
-import { updateStarfield } from './starfield.js';
+import { updateStarfield, renderStarfield } from './starfield.js';
 import { updateGoldenScenes } from './golden-scenes.js';
 
 // ── Build UI ──
@@ -26,18 +27,17 @@ window.toggleAll = on => actions.objects(ALL_IDS, { visible: on });
 
 // ── Camera reset ──
 window.resetCamera = () => {
-  cancelCameraAnimation();
-  setDepth(0);
-  camera.up.set(0, 1, 0);
-  camera.position.set(7, 5, 9).normalize().multiplyScalar(30);
-  controls.target.set(0, 0, 0);
-  setViewHeight(11);
-  controls.update();
+  if(resetTourCamera())return;
+  window.dispatchEvent(new Event('camera-manual-change'));
   if (isPresetActive()) deactivatePreset();
+  camera.up.set(0, 1, 0);
+  flyCamera(new THREE.Vector3(1,1,1).normalize().multiplyScalar(30),11/Math.min(1,innerWidth/innerHeight),1400);
+
 };
 
 document.querySelectorAll('.hdr-btns button').forEach(button=>button.disabled=false);
 initShortcuts();
+initTours();
 
 const updatePicking = initPicking(showInfo);
 
@@ -50,8 +50,9 @@ function animate() {
   const t = clock.elapsedTime;
 
   updateCamAnim();
-  controls.autoRotate = getState().display.autoRotate && !isCamAnimating();
-  controls.autoRotateSpeed = getState().display.speed * 8;
+  updateTours(dt);
+  controls.autoRotate = (getState().display.autoRotate || tourOrbit()) && !isCamAnimating();
+  controls.autoRotateSpeed = tourOrbit() ? .38 : getState().display.speed * 8;
 
   // Node pulsation
   for (const lv of levels) {
@@ -60,14 +61,16 @@ function animate() {
     lv.mc.nodes.forEach((n, i) => n.scale.setScalar(bs + 0.04 * Math.sin(t * 2 + i * 0.5)));
   }
 
-  controls.update();
+  controls.update(dt);
   updateLab(dt);
+  applyTourEffects();
   updatePicking();
   updateGolden();
   updateStudies(dt);
-  updateStarfield();
+  updateStarfield(dt);
   updateGoldenScenes(dt);
-  renderer.render(scene, camera);
+  renderStarfield();
+  if(getState().ui.mode==='advanced'||getState().tour.id)renderer.render(scene, camera);
   drawProjectionGuide();
   drawLabProjection();
 }

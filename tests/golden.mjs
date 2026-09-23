@@ -21,6 +21,14 @@ for(const scale of [1,.35,.0225]) {
   const normals=triple.map(r=>r.points[1].clone().sub(r.points[0]).cross(r.points[3].clone().sub(r.points[0])).normalize());
   for(let i=0;i<3;i++)for(let j=i+1;j<3;j++)assert.ok(Math.abs(normals[i].dot(normals[j]))<1e-5);
   for(const vertex of iv)assert.equal(triple.flatMap(r=>r.points).filter(p=>p.distanceTo(vertex)<scale*1e-5).length,1);
+  for(const [index,rectangle] of triple.entries()) {
+    const origin=rectangle.points[0].clone().add(rectangle.points[2]).multiplyScalar(.5);
+    for(const theta of [-6*Math.PI,-3.2,-Math.PI/2]) {
+      const a=math.rectangleSpiral(rectangle,theta).sub(origin),b=math.rectangleSpiral(rectangle,theta+Math.PI/2).sub(origin);
+      assert.ok(Math.abs(a.dot(normals[index]))<scale*1e-6);
+      assert.ok(Math.abs(b.length()/a.length()-PHI)<1e-10);
+    }
+  }
   const faces=math.pentagonalFaces(dod,dv);assert.equal(faces.length,12);faces.forEach(check);
   for(const face of faces){
     const nested=math.nestedFaceStars(face.points,6),center=face.points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(5);

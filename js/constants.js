@@ -96,3 +96,7 @@ for (const compound of COMPOUNDS.filter(c=>c.id!=='merkaba')) compound.members.f
   OBJ_IDS.push(id); COLORS[id]=COMPONENT_COLORS[i];
   const base=INFO[compound.kind];INFO[id]={...base,name:`${base.name} ${i+1} · ${compound.name}`,nameEn:compound.id,desc:`Компонент ${i+1} соединения «${compound.name}». Цвет и номер сохраняются при рекурсии и сборке.`};
 });
+
+OBJ_IDS.push('tetrahedron_mirror');
+COLORS.tetrahedron_mirror=0xffb06a;
+INFO.tetrahedron_mirror={...INFO.tetrahedron,name:'Тетраэдр · зеркальная пара',nameEn:'Opposite tetrahedron',desc:'Центральное отражение исходного тетраэдра: каждая вершина p заменена на −p. Вместе они занимают все восемь вершин куба и образуют соединение двух тетраэдров.'};

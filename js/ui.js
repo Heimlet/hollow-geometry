@@ -1,3 +1,4 @@
+import { MIRROR_PAIRS, pairOf } from './mirror-data.js';
 import { COMPOUNDS } from './compound-data.js';
 import { VIEW_CONTEXTS, contextForObjects } from './exploration-data.js';
 import { objectSetting, onlyObjectVisible } from './scene-selectors.js';
@@ -15,6 +16,9 @@ import { activatePreset } from './presets.js';
 import { initStudiesUI } from './studies.js';
 import { initGoldenUI } from './golden.js';
 import { initGoldenScenesUI } from './golden-scenes.js';
+import { appearanceButtons } from './appearance-buttons.js';
+import { initMetatronUI } from './metatron-ui.js';
+import { PLATONIC } from './exploration-data.js';
 import { registerSetting, settingLink, linkText, initSettingsNavigation, openSetting } from './settings-links.js';
 
 // ── Helpers ──
@@ -126,8 +130,14 @@ function buildObjRow(id, label, color) {
   ib.title = `О фигуре: ${label}`;ib.setAttribute('aria-label', ib.title);
   ib.addEventListener('click', e => { e.stopPropagation(); showInfo(id); });
   const vt = mkTgl(true, v => actions.objects([id], { visible: v }), () => getState().objects[id].visible);
-  hdr.append(dot, nm, ib, vt); row.appendChild(hdr);
+  hdr.append(dot, nm);appearanceButtons(hdr,pairOf(id),label);hdr.append(ib, vt); row.appendChild(hdr);
 
+  if(MIRROR_PAIRS[id]) {
+    const mirror=document.createElement('button');mirror.className='mirror-button';mirror.textContent='◭';
+    mirror.title='Зеркальная пара тетраэдра';mirror.setAttribute('aria-label',mirror.title);
+    mirror.addEventListener('click',e=>{e.stopPropagation();actions.mirror(id);});hdr.insertBefore(mirror,ib);
+    settingBindings.push(()=>mirror.setAttribute('aria-pressed',getState().objects[MIRROR_PAIRS[id]].visible));
+  }
   const ct = document.createElement('div'); ct.className = 'obj-ctrls';
   { const c = document.createElement('div'); c.className = 'ctrl'; c.innerHTML = '<label>Рёбра</label>'; c.appendChild(mkTgl(true, v => actions.objects([id], { edges: v }), () => getState().objects[id].edges)); ct.appendChild(c); }
   { const c = document.createElement('div'); c.className = 'ctrl'; c.innerHTML = '<label>Грани</label>'; c.appendChild(mkTgl(true, v => actions.objects([id], { faces: v }), () => getState().objects[id].faces)); ct.appendChild(c); }
@@ -144,17 +154,17 @@ function buildObjRow(id, label, color) {
 
 // ── Group builder ──
 
-function buildGrp(title, icon, items) {
+function buildGrp(title, icon, items, memberIds) {
   const g = document.createElement('div'); g.className = 'grp';
   const h = document.createElement('div'); h.className = 'grp-hdr';
   h.innerHTML = `<span class="arr">▶</span><span class="ico">${icon}</span><span class="ttl">${title}</span>`;
-  const ids = items.map(item => item.id);
+  const ids = memberIds || items.map(item => item.id);
   const mt = mkTgl(true, v => actions.objects(ids, { visible: v }),
     () => groupVisibility(getState(), ids));
-  h.appendChild(mt);
+  appearanceButtons(h,ids.filter(id=>id!=='_metatron_'),title);h.appendChild(mt);
   const b = document.createElement('div'); b.className = 'grp-body';
   items.forEach(it => b.appendChild(it.el));
-  h.addEventListener('click', e => { if (e.target.closest('.tgl, a')) return; h.classList.toggle('open'); tog(b); });
+  h.addEventListener('click', e => { if (e.target.closest('.tgl, a, button')) return; h.classList.toggle('open'); tog(b); });
   g.append(h, b); return g;
 }
 
@@ -173,6 +183,8 @@ export function initUI() {
     <input id="camera-depth" type="range" min="0" max="1" step="0.01" value="0">
     <p class="camera-hint">0 — точная 2D-проекция · 100 — мягкая перспектива</p>
     <label class="guide-control"><input id="guide-toggle" type="checkbox"> Направляющая проекции</label>
+    <label class="guide-control"><input id="gentle-orbit" type="checkbox" checked> Мягкое вращение</label>
+    <p class="camera-hint">Мягкое вращение замедляет жесты, сглаживает движение и удерживает вертикаль у полюсов.</p>
     <p class="camera-hint">С пресетом — эталон его оси. Без пресета — текущий ракурс без перспективы.</p>
     <p class="camera-help">Перетаскивание — вращать · Колесо — масштаб<br>Правая кнопка — сдвиг · ⟲ — сброс камеры<br>Клик по пересечению — выбор фигуры · Esc — снять выделение</p>`;
   groupsEl.before(panel);
@@ -186,6 +198,8 @@ export function initUI() {
   depth.addEventListener('input', () => setDepth(+depth.value));
   panel.querySelector('#guide-toggle').addEventListener('change', e => actions.display({ guide: e.target.checked }));
   settingBindings.push(() => { panel.querySelector('#guide-toggle').checked = getState().display.guide; });
+  panel.querySelector('#gentle-orbit').addEventListener('change',e=>actions.display({gentleOrbit:e.target.checked}));
+  settingBindings.push(()=>{panel.querySelector('#gentle-orbit').checked=getState().display.gentleOrbit;});
   const syncProjection = () => {
     depth.value = projectionDepth; value.textContent = `${Math.round(projectionDepth * 100)}%`;
     ortho.setAttribute('aria-pressed', projectionDepth === 0);
@@ -202,7 +216,7 @@ export function initUI() {
     const ib = document.createElement('button'); ib.className = 'ibtn'; ib.textContent = 'i'; ib.addEventListener('click', () => showInfo('metatron'));
     ib.title = 'О фигуре: Куб Метатрона';ib.setAttribute('aria-label', ib.title);
     const vt = mkTgl(true, v => actions.objects(['_metatron_'], { visible: v }), () => getState().objects._metatron_.visible);
-    h.append(d, n, ib, vt); div.appendChild(h);
+    h.append(d, n);appearanceButtons(h,PLATONIC.members,'Куб Метатрона');h.append(ib, vt); div.appendChild(h);
     const ct = document.createElement('div'); ct.className = 'obj-ctrls';
     { const c = document.createElement('div'); c.className = 'ctrl'; c.innerHTML = '<label>Узлы</label>'; c.appendChild(mkTgl(true, v => actions.objects(['_metatron_'], { nodes: v }), () => getState().objects._metatron_.nodes)); ct.appendChild(c); }
     { const c = document.createElement('div'); c.className = 'ctrl'; c.innerHTML = '<label>Линии</label>'; c.appendChild(mkTgl(true, v => actions.objects(['_metatron_'], { lines: v }), () => getState().objects._metatron_.lines)); ct.appendChild(c); }
@@ -213,14 +227,14 @@ export function initUI() {
       c.append(slider, vs); ct.appendChild(c); }
     h.addEventListener('click', e => { if (e.target.closest('.tgl, button, a')) return; tog(ct); });
     div.appendChild(ct);
-    groupsEl.appendChild(buildGrp('Куб Метатрона', '✡', [{ id: '_metatron_', el: div }]));
+    groupsEl.appendChild(buildGrp('Куб Метатрона', '✡', [{ id: '_metatron_', el: div }],['_metatron_',...PLATONIC.members]));
   }
 
   // G2: Platonic Solids
   {
     const ids  = ['tetrahedron', 'cube', 'octahedron', 'dodecahedron', 'icosahedron'];
     const lbl  = ['Тетраэдр', 'Куб', 'Октаэдр', 'Додекаэдр', 'Икосаэдр'];
-    groupsEl.appendChild(buildGrp('Платоновы тела', '⬡', ids.map((id, i) => buildObjRow(id, lbl[i], COLORS[id]))));
+    groupsEl.appendChild(buildGrp('Платоновы тела', '⬡', ids.map((id, i) => buildObjRow(id, lbl[i], COLORS[id])),PLATONIC.members));
   }
 
   const catalog=document.createElement('section');catalog.className='compound-catalog';
@@ -298,8 +312,6 @@ export function initUI() {
       const value=document.createElement('span');value.className='val';
       const count=mkSl(getState().display.starCount,200,8000,200,starCount=>actions.display({starCount}));count.setAttribute('aria-label','Количество звёзд');
       settingBindings.push(()=>{count.value=getState().display.starCount;count.disabled=!getState().display.stars;value.textContent=getState().display.starCount.toLocaleString('ru');});c.append(count,value);dd.append(c); }
-    const keys=document.createElement('details');keys.className='keyboard-help';
-    keys.innerHTML='<summary>Горячие клавиши</summary><dl><dt>Ctrl / ⌘ Z</dt><dd>Отменить настройки</dd><dt>Ctrl / ⌘ Shift Z</dt><dd>Повторить</dd><dt>Ctrl Y</dt><dd>Повторить</dd><dt>S</dt><dd>Звёзды</dd><dt>G</dt><dd>Направляющая</dd><dt>H</dt><dd>Скрыть / открыть меню</dd><dt>R</dt><dd>Сбросить камеру</dd></dl><p>Один жест ползунка — одно действие. При отмене построения, сборка и вращение Меркабы ставятся на паузу. Клавиши работают и в русской раскладке.</p>';dd.append(keys);
     const g = document.createElement('div'); g.className = 'grp';
     const h = document.createElement('div'); h.className = 'grp-hdr';
     h.innerHTML = '<span class="arr">▶</span><span class="ico">⚙</span><span class="ttl">Отображение</span>';
@@ -326,6 +338,7 @@ export function initUI() {
   groupsEl.querySelectorAll('.obj-row[data-object-id]').forEach(row => {
     const id = row.dataset.objectId;
     registerSetting(`object.${id}`, row, row.querySelector('.nm').textContent);
+    if(MIRROR_PAIRS[id])registerSetting(`object.${MIRROR_PAIRS[id]}`,row.querySelector('.mirror-button'),'Зеркальная пара тетраэдра');
     const keys = id === '_metatron_' ? ['nodes', 'lines', 'opacity'] : ['edges', 'faces', 'opacity'];
     row.querySelectorAll('.ctrl').forEach((control, index) => {
       registerSetting(`detail.${id}.${keys[index]}`, control, `${row.querySelector('.nm').textContent}: ${control.querySelector('label').textContent}`);
@@ -351,6 +364,7 @@ export function initUI() {
     const text = title.textContent; title.replaceChildren(settingLink(text, groupKeys[text]));
   });
   initLabUI(groupsEl);
+  initMetatronUI();
   initSettingsNavigation();
   initExplorationNavigation();
   linkText(document.querySelector('.sb-head h1'));

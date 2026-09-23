@@ -4,7 +4,7 @@ Quick-start guide for AI agents working on this project.
 
 ## What is this?
 
-Interactive 3D visualization of **Metatron's Cube** containing all 5 Platonic solids, Merkaba, and cuboctahedron. Built with **Three.js** (ES modules via CDN importmap). No build tools, no npm.
+Interactive 3D visualization of **Metatron's Cube** containing all 5 Platonic solids, Merkaba, and cuboctahedron. Built with **Three.js** (ES modules via a local importmap). No build tools, no npm.
 
 ## How to Run
 
@@ -116,7 +116,7 @@ All user-visible text is in **Russian**. Keep it that way.
 - **`file://` protocol won't work** — ES module imports across files need a local server
 - **Hover color reset**: `SObj.color` is a hex number, `MCube.color` is a `THREE.Color` — both work with `.set()` but be careful comparing them
 - **Exported `let` variables**: Use getter functions (e.g., `isPresetActive()`) when reading mutable state from other modules
-- **Three.js importmap**: Pinned to v0.167.0 via CDN — don't change without testing
+- **Three.js importmap**: Pinned to v0.167.0 in `vendor/three` (unmodified, MIT) — don't change without testing
 - **Display settings**: use `actions.display(...)` and `getState().display`; no mutable window flags
 - **Preset visibility**: selecting a preset makes its required contours visible atomically. Manual appearance edits exit the preset. Recursion preserves it.
 - **Regression checks**: run both test scripts described in `docs/state-model.md` after state/camera changes.
@@ -125,7 +125,7 @@ All user-visible text is in **Russian**. Keep it that way.
 ## Geometry laboratory
 
 See [docs/implementation-plan.md](docs/implementation-plan.md) for implemented scope
-and [docs/state-model.md](docs/state-model.md) for invariants and all 12 checks.
+and [docs/state-model.md](docs/state-model.md) for invariants and all 14 checks.
 
 - `compound-data.js`: stable compound/component IDs; new components are regular objects in the store.
 - `polyhedra-math.js`: pure convex hull/intersection, compound coordinates, symmetry and exploded-layout math.
@@ -139,7 +139,37 @@ layers must follow the current world transforms. Hidden render sources remain
 available for Intersection; disabling the whole compound cascades through its layers.
 Use `actions.assembly(...)` for atomic component activation and assembly animation.
 
-- `golden-scene-data.js` / `golden-scenes.js`: three guided φ constructions tied to real model coordinates; local pentagram recursion is distinct from whole-scene recursion.
-- `starfield.js`: camera-independent apparent star density; settings live in `display`.
+- `golden-scene-data.js` / `golden-scenes.js`: four guided φ constructions tied to real model coordinates; local pentagram recursion is distinct from whole-scene recursion.
+- `starfield.js`: real spherical 3D stars in a separate perspective pass with exactly shared camera orientation; settings live in `display`.
 - `shortcuts.js`: history grouping per gesture and keyboard shortcuts. Store history covers scene settings, not free camera gestures. Use `tickLab`, `tickStudy`, `tickGoldenScene` for frame updates, never regular user commands.
-- `tests/history.mjs`: undo/redo, transaction grouping, animation exclusion, guided-scene lifetime. There are now 12 regression suites.
+- `tests/history.mjs`: undo/redo, transaction grouping, animation exclusion, guided-scene lifetime. There are now 14 regression suites.
+
+
+## Hollow Geometry tours and paired bodies
+
+- `tour-data.js`: eight Russian film scripts (82 chapters, 3–5 minutes each).
+- `tour-state.js`: deterministic recipe/seek/tick functions. Each chapter atomically
+  owns visibility, recursion, research layers, assembly and golden constructions.
+- `tours.js`: simple card menu, player, chapter flights, transient draw effects.
+  A manual orbit pauses the film; scene edits finish it. The laboratory remains
+  available. `tickTour` is transient (`history:false`), never a history entry.
+- `ui.mode` starts as `simple`; initial objects are off, stars on, recursion 1.
+- `mirror-data.js`: central inversion pairs. The tetrahedron alone has a distinct
+  opposite placement; cube/octahedron/dodecahedron/icosahedron are centrosymmetric.
+  `tetrahedron_mirror` is a regular scene object at every recursion level, with
+  geometry reflected from the actual source vertices. Parent-off cascades to it.
+- `metatron/type`: exclusive selection of the chosen type plus its reflected
+  partner and the network. Do not create disconnected visibility flags in UI.
+- `appearance-buttons.js`: only visible member bodies are affected.
+- `merkaba-motion.js`: attributed Drunvalo illustration (one fixed whole star,
+  two counterrotating whole stars, 34:21), distinct from relative tetrahedron
+  rotation. Whole-star decorations do not alter the source hull/intersection.
+- `display.gentleOrbit`: slower orbit/zoom/pan with damping and polar guard.
+  Camera Reset flies to diagonal [1,1,1], then flattens to exact orthographic.
+- Programmatic section changes emit `camera-context-change`, never the manual
+  gesture event: manual handlers may dispatch, subscribers must not.
+- `starfield.mjs` verifies actual 3D depth, quaternion synchronization and stable
+  sky positioning during FOV compensation. `tours.mjs` covers all 82 chapters,
+  seeking, replay, pause, history and paired visibility.
+
+Tests can use the bundled module directly: `for f in tests/*.mjs; do node "$f" "$PWD/vendor/three/three.module.js"; done`.

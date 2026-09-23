@@ -1,3 +1,4 @@
+import { PLATONIC_TYPES, MIRROR_PAIRS, pairOf } from './mirror-data.js';
 import { ASSEMBLIES, VIEW_CONTEXTS, contextForObjects } from './exploration-data.js';
 import { initialLab, labChange } from './lab-state.js';
 import { objectId, derivedKind } from './scene-selectors.js';
@@ -7,6 +8,8 @@ import { objectId, derivedKind } from './scene-selectors.js';
 import { OBJ_IDS } from './constants.js';
 import { getPreset } from './preset-data.js';
 import { GOLDEN_SCENES } from './golden-scene-data.js';
+import { initialTour, enterTourStep, frameTour, tickTour } from './tour-state.js';
+import { TOURS } from './tour-data.js';
 export const ALL_IDS = [...OBJ_IDS, '_metatron_'];
 const opacity = { tetrahedron: .15, cube: .10, octahedron: .12, dodecahedron: .08,
   icosahedron: .12, merkaba_up: .12, merkaba_down: .12, cuboctahedron: .06, _metatron_: .4 };
@@ -20,15 +23,65 @@ export function initialState() {
   return freeze({ objects: Object.fromEntries(ALL_IDS.map(id => [id, {
     visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: opacity[id] ?? .12,
   }])), recursion: { depth: 1, scale: .35 }, presetId: null,
-  lab: initialLab(), viewContext: 'platonic',
+  lab: initialLab(), viewContext: 'platonic', ui:{mode:'simple'}, tour:initialTour(),
   study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, turns: 3, size: 1, attached: false },
   goldenScene: { id: 'none', progress: 0, running: false },
-  display: { autoRotate: false, speed: .15, stars: true, starCount: 2400, guide: false, golden: false } });
+  display: { autoRotate: false, speed: .15, stars: true, starCount: 2400, gentleOrbit:true, guide: false, golden: false } });
 }
 function requireValid(condition, message) { if (!condition) throw new Error(message); }
 export function reduce(state, action) {
   let next = state;
   switch (action.type) {
+    case 'ui/mode': {
+      requireValid(['simple','advanced'].includes(action.mode),'Invalid interface mode');
+      next={...state,ui:{mode:action.mode},tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
+    }
+    case 'tour/start': next=enterTourStep(state,action.id,0,state.tour.auto);break;
+    case 'tour/step': {
+      requireValid(state.tour.id&&Number.isInteger(action.index),'No active tour');
+      next=enterTourStep(state,state.tour.id,action.index,state.tour.auto);break;
+    }
+    case 'tour/control': {
+      requireValid(Object.entries(action.patch).every(([k,v])=>['playing','auto'].includes(k)&&typeof v==='boolean'),'Invalid tour controls');
+      next={...state,tour:{...state.tour,...action.patch}};
+      if(!state.tour.id)next.tour.playing=false;
+      else if(action.patch.playing===true&&state.tour.elapsed>=TOURS[state.tour.id].steps[state.tour.index].seconds)
+        next=enterTourStep(next,state.tour.id,(state.tour.index+1)%TOURS[state.tour.id].steps.length,next.tour.auto);
+      break;
+    }
+    case 'tour/seek': {
+      requireValid(state.tour.id&&Number.isFinite(action.elapsed),'Invalid tour time');
+      next=frameTour(state,action.elapsed);next={...next,tour:{...next.tour,playing:false,phase:'explore'}};break;
+    }
+    case 'tour/tick': {
+      requireValid(Number.isFinite(action.seconds)&&action.seconds>=0,'Invalid tour tick');next=tickTour(state,action.seconds);break;
+    }
+    case 'tour/stop': next={...state,tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
+    case 'metatron/selection': {
+      const ids=PLATONIC_TYPES.flatMap(pairOf);
+      requireValid(typeof action.visible==='boolean','Invalid Metatron selection');
+      next=reduce(state,{type:'objects/change',ids,patch:{visible:action.visible}});
+      next=reduce(next,{type:'objects/change',ids:['_metatron_'],patch:{visible:true}});
+      next={...next,viewContext:'metatron'};break;
+    }
+    case 'objects/appearance': {
+      requireValid(action.ids?.length&&action.ids.every(id=>ALL_IDS.includes(id))&&['edges','faces'].includes(action.key),'Invalid appearance command');
+      const ids=action.ids.filter(id=>state.objects[id].visible);if(!ids.length)break;
+      next=reduce(state,{type:'objects/change',ids,patch:{[action.key]:!ids.every(id=>state.objects[id][action.key])}});
+      next={...next,viewContext:state.viewContext};break;
+    }
+    case 'object/mirror': {
+      requireValid(MIRROR_PAIRS[action.id],'No distinct mirror partner');
+      const mirror=MIRROR_PAIRS[action.id],visible=!state.objects[mirror].visible;
+      next=reduce(state,{type:'objects/change',ids:visible?pairOf(action.id):[mirror],patch:{visible}});break;
+    }
+    case 'metatron/type': {
+      requireValid(PLATONIC_TYPES.includes(action.id)&&typeof action.visible==='boolean','Invalid Metatron type');
+      const ids=pairOf(action.id);
+      next=action.visible?reduce(state,{type:'objects/change',ids:ALL_IDS.filter(id=>id!=='_metatron_'&&!ids.includes(id)),patch:{visible:false}}):state;
+      next=reduce(next,{type:'objects/change',ids:action.visible?[...ids,'_metatron_']:ids,patch:{visible:action.visible}});
+      next={...next,viewContext:'metatron'};break;
+    }
     case 'golden-scene/start': {
       const demo=GOLDEN_SCENES[action.id];requireValid(demo,'Unknown golden scene');
       const objects=Object.fromEntries(ALL_IDS.map(id=>[id,{...state.objects[id],
@@ -108,7 +161,7 @@ export function reduce(state, action) {
         next.lab={...next.lab,layers};
       }
       if ((action.section==='layers' && ['hull','intersection','projection','source','hullFaces','hullEdges','intersectionFaces','intersectionEdges'].some(k=>action.patch[k]===true)) || (action.section==='rotation' && action.patch.running)) {
-        if(!state.objects.merkaba_up.visible && !state.objects.merkaba_down.visible) {
+        if((!state.objects.merkaba_up.visible && !state.objects.merkaba_down.visible) || (action.section==='rotation' && action.patch.running && next.lab.rotation.mode==='tradition')) {
           next.lab={...next.lab,layers:{...next.lab.layers,source:action.section==='layers'?(action.patch.source??true):true}};
           next.objects={...state.objects}; for(const id of ['merkaba_up','merkaba_down'])next.objects[id]={...state.objects[id],visible:true,faces:true,edges:true};
         }
@@ -150,6 +203,14 @@ export function reduce(state, action) {
         if (!settings.visible) Object.assign(settings, { edges: false, faces: false, nodes: false, lines: false });
         objects[id] = settings;
       });
+      for(const [parent,mirror] of Object.entries(MIRROR_PAIRS)) {
+        if(action.ids.includes(parent)&&patch.visible===false)objects[mirror]={...objects[mirror],visible:false,faces:false,edges:false,nodes:false,lines:false};
+        if(action.ids.includes(mirror)&&objects[mirror].visible&&!objects[parent].visible)objects[parent]={...objects[parent],visible:true,faces:true,edges:true};
+        if(action.ids.includes(parent)&&objects[mirror].visible) {
+          const appearance=Object.fromEntries(Object.entries(patch).filter(([key])=>['faces','edges','opacity'].includes(key)));
+          objects[mirror]={...objects[mirror],...appearance};
+        }
+      }
       // Explicit manual appearance edits exit preset mode; no invisible overrides.
       next = { ...state, objects, presetId: null, viewContext: contextForObjects(action.ids) || state.viewContext };
       if (!objects.merkaba_up.visible && !objects.merkaba_down.visible) next.lab = {...state.lab,
@@ -188,7 +249,7 @@ export function reduce(state, action) {
       requireValid(Object.entries(action.patch).every(([key, value]) => key === 'starCount'
         ? Number.isInteger(value) && value >= 200 && value <= 8000 : key === 'speed'
         ? Number.isFinite(value) && value >= 0 && value <= .5
-        : ['autoRotate', 'stars', 'guide', 'golden'].includes(key) && typeof value === 'boolean'), 'Invalid display settings');
+        : ['autoRotate', 'stars', 'guide', 'golden', 'gentleOrbit'].includes(key) && typeof value === 'boolean'), 'Invalid display settings');
       next = { ...state, display: { ...state.display, ...action.patch } }; break;
     }
     default: throw new Error(`Unknown action: ${action.type}`);
@@ -206,10 +267,14 @@ export function reduce(state, action) {
   for(const pack of ASSEMBLIES)if(pack.members.every(id=>!next.objects[id].visible)&&(next.lab.collections[pack.id].direction||next.lab.collections[pack.id].explode))next={...next,lab:labChange(next.lab,'collections',{direction:0,explode:0},pack.id)};
   // Guided geometry assumes canonical, co-centred sources. Editing the scene
   // ends the guide atomically rather than leaving orphaned annotations behind.
-  if(state.goldenScene.id!=='none' && !action.type.startsWith('golden-scene/') && action.history!==false &&
+  if(state.goldenScene.id!=='none' && !action.type.startsWith('golden-scene/') && !action.type.startsWith('tour/') && action.history!==false &&
     (['objects/change','object/visibility','object/only','preset/select','recursion/change','assembly/change','lab/change','compound/solo','compound/restore'].includes(action.type) ||
     action.type==='view/focus'&&action.id!=='golden' || action.type==='study/change' || action.type==='display/change'&&action.patch.golden===true))
     next={...next,goldenScene:{...state.goldenScene,id:'none',running:false}};
+  // The timeline has a single owner. Manual scene edits hand control back to the
+  // user; free camera interaction only pauses it through tour/control.
+  if(state.tour.id && !action.type.startsWith('tour/') && !action.type.startsWith('ui/') && action.history!==false &&
+    action.type!=='display/change' && action.type!=='view/focus')next={...next,tour:{...state.tour,id:null,playing:false,phase:'idle'}};
   return freeze(next);
 }
 export function groupVisibility(state, ids) {
@@ -228,6 +293,7 @@ export function createStore() {
   };
   // Restored animation frames are stable until the user presses Play again.
   const paused = snapshot => freeze({...snapshot,
+    ui:state.ui,tour:{...snapshot.tour,playing:false},
     goldenScene:{...snapshot.goldenScene,running:false}, study:{...snapshot.study,running:false},
     lab:{...snapshot.lab,rotation:{...snapshot.lab.rotation,running:false},
       explode:{...snapshot.lab.explode,direction:0},
@@ -264,6 +330,17 @@ export function createStore() {
 }
 export const { getState, dispatch, subscribe, getHistory, beginHistoryGroup, endHistoryGroup, undo, redo } = createStore();
 export const actions = {
+  interface: mode => dispatch({type:'ui/mode',mode,history:false}),
+  startTour: id => dispatch({type:'tour/start',id}),
+  tourStep: index => dispatch({type:'tour/step',index}),
+  tourControl: patch => dispatch({type:'tour/control',patch}),
+  seekTour: elapsed => dispatch({type:'tour/seek',elapsed}),
+  tickTour: seconds => dispatch({type:'tour/tick',seconds,history:false}),
+  stopTour: () => dispatch({type:'tour/stop'}),
+  metatronSelection: visible => dispatch({type:'metatron/selection',visible}),
+  appearance: (ids,key) => dispatch({type:'objects/appearance',ids,key}),
+  mirror: id => dispatch({type:'object/mirror',id}),
+  metatronType: (id,visible) => dispatch({type:'metatron/type',id,visible}),
   startGoldenScene: id => dispatch({type:'golden-scene/start',id}),
   goldenScene: patch => dispatch({type:'golden-scene/change',patch}),
   tickGoldenScene: patch => dispatch({type:'golden-scene/change',patch,history:false}),

@@ -38,6 +38,7 @@ function applySettings(level, state) {
   if (dim) meta.lMat.opacity *= .075;
   meta.nodes.forEach(node => { node.material.transparent = true; node.material.opacity = dim ? .05 : 1; });
 }
+export function refreshLevelAppearance() { levels.forEach(level=>applySettings(level,getState())); }
 // ── Create a single recursion level ──
 
 function createLevel(scale, idx) {
@@ -66,6 +67,9 @@ function createLevel(scale, idx) {
 
   // Platonic solids (radii derived from cuboctahedron)
   make('tetrahedron',  new THREE.TetrahedronGeometry(cR),    null, COLORS.tetrahedron);
+  const tetraPositions=lvl.objs.tetrahedron.mesh.geometry.attributes.position;
+  const mirror=hull(Array.from({length:tetraPositions.count},(_,i)=>new THREE.Vector3().fromBufferAttribute(tetraPositions,i).negate()));
+  make('tetrahedron_mirror',packGeometry(mirror),packEdges(mirror),COLORS.tetrahedron_mirror);
   make('cube',         new THREE.BoxGeometry(2*a, 2*a, 2*a), null, COLORS.cube);
   make('octahedron',   new THREE.OctahedronGeometry(oR),     null, COLORS.octahedron);
   make('dodecahedron', new THREE.DodecahedronGeometry(cR),   null, COLORS.dodecahedron);

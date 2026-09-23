@@ -19,6 +19,7 @@ export function getPresetHighlights() { return hint.guides; }
 
 export function cancelCameraAnimation() { camAnim = null; }
 window.addEventListener('camera-manual-change', cancelCameraAnimation);
+window.addEventListener('camera-context-change', cancelCameraAnimation);
 controls.addEventListener('start', cancelCameraAnimation);
 
 export function flyCamera(to, height, dur = 1200, target = new THREE.Vector3()) {

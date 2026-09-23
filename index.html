@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Куб Метатрона — 3D Сакральная Геометрия</title>
+<title>Hollow Geometry</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -13,7 +13,7 @@
   <div class="hdr-btns">
     <button disabled onclick="toggleAll(true)">Вкл. всё</button>
     <button disabled onclick="toggleAll(false)">Выкл. всё</button>
-    <button disabled onclick="resetCamera()" title="Сбросить ракурс текущего раздела">⟲ Камера</button>
+    <button disabled onclick="resetCamera()" title="Вид по диагонали куба · ось [1, 1, 1]">⟲ Камера</button>
   </div>
   <div class="history-buttons" aria-label="История действий">
     <button id="undo" disabled aria-label="Отменить действие" title="Отменить · Ctrl / ⌘ Z">↶</button>
@@ -23,8 +23,7 @@
 </header>
 <div id="sidebar">
   <div class="sb-head">
-    <h1>✡ Куб Метатрона</h1>
-    <p>Исследуйте форму, симметрию и пропорции</p>
+    <h1>Hollow Geometry</h1>
     <nav id="section-nav" aria-label="Разделы исследования"></nav>
     <div id="scene-status" role="status"></div>
   </div>
@@ -36,8 +35,8 @@
 
 <script type="importmap">
 {"imports":{
-  "three":"https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
-  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+  "three":"./vendor/three/three.module.js",
+  "three/addons/":"./vendor/three/addons/"
 }}
 </script>
 <script type="module" src="js/main.js"></script>
