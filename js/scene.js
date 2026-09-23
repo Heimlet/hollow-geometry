@@ -55,11 +55,11 @@ export function settleControls() {
   controls.enableDamping = damping; controls.autoRotate = auto;
 }
 
-export function setDepth(value) {
-  window.dispatchEvent(new Event('camera-manual-change'));
+export function setDepth(value, { automatic = false } = {}) {
+  if (!automatic) window.dispatchEvent(new Event('camera-manual-change'));
   settleControls();
   projectionDepth = THREE.MathUtils.clamp(value, 0, 1);
-  if (projectionDepth > 0) lastDepth = projectionDepth;
+  if (projectionDepth > 0 && !automatic) lastDepth = projectionDepth;
   camera = configureProjection(camera, projectionDepth === 0 ? orthographic : perspective,
     controls.target, projectionDepth, innerWidth / innerHeight);
   controls.object = camera;
