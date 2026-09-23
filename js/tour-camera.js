@@ -10,10 +10,10 @@ import { tourProgress,smooth } from './tour-state.js';
 import { goldenSceneView } from './golden-scenes.js';
 import { cancelCameraAnimation } from './presets.js';
 import { shotAt,stageViewport,fitTourFrame } from './tour-camera-math.js';
-let pending=false,flight=null,base=null,active=false,viewport=null,finishedKey=null,holdTimeline=true;
+let pending=false,flight=null,base=null,baseKey=null,active=false,viewport=null,finishedKey=null,holdTimeline=true;
 const torusOrientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));
 const torusFramePoints=torusBounds().map(p=>new THREE.Vector3(...p).applyQuaternion(torusOrientation));
-export function queueTourShot(options={}){cancelCameraAnimation();settleControls();pending=true;flight=null;holdTimeline=options.holdTimeline!==false;}
+export function queueTourShot(options={}){cancelCameraAnimation();settleControls();pending=true;flight=null;baseKey=null;holdTimeline=options.holdTimeline!==false;}
 export function cancelTourShot(){pending=false;flight=null;}
 export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
@@ -50,18 +50,20 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   const resized=viewport&&(viewport.width!==innerWidth||viewport.height!==innerHeight);
   viewport=stageViewport(innerWidth,innerHeight,panelHeight,panelWidth);
   setCameraFrameOffset(viewport.offsetY,viewport.offsetX);
-  const cut=pending&&recipe.camera?.cut;
-  if(pending) {
+  const chapterKey=`${state.tour.id}:${state.tour.index}`,unframed=baseKey!==chapterKey;
+  // Pausing before the first animation frame can cancel a queued flight, but
+  // must still initialize and frame the chapter once before releasing orbit.
+  const cut=pending&&recipe.camera?.cut||unframed&&!pending;
+  if(pending||unframed) {
     base=recipe.golden?goldenSceneView(recipe.golden,recipe.detail):{direction:new THREE.Vector3(3,2,4).normalize(),target:new THREE.Vector3()};
     if(recipe.dir)base.direction=new THREE.Vector3(...recipe.dir).normalize();
-    flight=cut?null:{elapsed:0,direction:camera.position.clone().sub(controls.target).normalize(),target:controls.target.clone(),height:getViewHeight(),depth:projectionDepth};pending=false;
+    flight=cut?null:{elapsed:0,direction:camera.position.clone().sub(controls.target).normalize(),target:controls.target.clone(),height:getViewHeight(),depth:projectionDepth};pending=false;baseKey=chapterKey;
   }
-  const chapterKey=`${state.tour.id}:${state.tour.index}`;
   const p=tourProgress(state),finish=p===1&&finishedKey!==chapterKey&&recipe.camera?.mode!=='free'&&(recipe.camera?.releaseAt??1)>=1;
   if(p<1)finishedKey=null;
   const shot=shotAt(recipe,base.direction,p);
   controls.enabled=!state.ui.topic&&!flight&&(!state.tour.playing||!shot.locked);
-  if(state.ui.topic||!finish&&!flight&&(!state.tour.playing||!shot.locked)) {
+  if(!cut&&(state.ui.topic||!finish&&!flight&&(!state.tour.playing||!shot.locked))) {
     // Responsive framing may change on resize, but never the viewer's free angle.
     if(resized){const points=scenePoints();if(points.length){const direction=camera.position.clone().sub(controls.target).normalize();setViewHeight(fitTourFrame(points,direction,viewport,projectionDepth,controls.target).height);controls.update();camera.updateMatrixWorld(true);}}
     return;

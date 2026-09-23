@@ -39,11 +39,12 @@ for(const demo of READING_DEMOS) {
   const target=resolveReadingDemo(demo);assert.ok(target,demo.chapter);
   assert.equal(TOURS[target.tour].steps.filter(s=>s.id===demo.chapter).length,1,'Chapter IDs must be unique');
 }
-const target=resolveReadingDemo(READING_DEMOS[0]);
+const divisionDemo=READING_DEMOS.find(d=>d.tour==='golden'&&d.chapter==='rectangle-division');
+const target=resolveReadingDemo(divisionDemo);
 assert.equal(TOURS[target.tour].steps[target.index].scene.golden,'division');
 actions.startTour('metatron');actions.tickTour(3);actions.readTopic('phi');
 const pausedReading=getState();
-resolveReadingDemo(READING_DEMOS[0]);assert.equal(getState(),pausedReading,'Preparing a link must not change settings, close reading or leave the current tour');
+resolveReadingDemo(divisionDemo);assert.equal(getState(),pausedReading,'Preparing a link must not change settings, close reading or leave the current tour');
 actions.startTour(target.tour,target.index);assert.equal(getState().tour.index,target.index);assert.equal(getState().tour.elapsed,0);assert.equal(getState().ui.topic,null);assert.equal(getState().tour.playing,true);assert.equal(getState().goldenScene.id,'division');
 assert.equal(getState().objects._metatron_.visible,false);assert.equal(getState().objects.icosahedron.visible,true);
 assert.equal(resolveReadingDemo({tour:'golden',chapter:'missing'}),null);

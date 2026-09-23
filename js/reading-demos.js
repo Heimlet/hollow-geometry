@@ -1,6 +1,8 @@
 import {TOURS} from './tour-data.js';
 /** Stable chapter IDs: editing/reordering the film cannot silently change a link. */
 export const READING_DEMOS=[
+  {topic:'torus',section:'Что скрывает плоский рисунок',label:'Увидеть квадрат и шестиугольник одного куба',tour:'projections',chapter:'cube-square'},
+  {topic:'torus',section:'Что скрывает плоский рисунок',label:'Увидеть тела за Звездой Давида',tour:'merkaba',chapter:'star-reveal'},
   {topic:'phi',section:'Убрать кусок — и получить ту же форму',label:'Посмотреть деление прямоугольников и спирали',tour:'golden',chapter:'rectangle-division'},
   {topic:'phi',section:'В Метатроне можно заглянуть внутрь',label:'Увидеть три золотые плоскости',tour:'golden',chapter:'golden-planes'},
   {topic:'phi',section:'Вот эта простота и поражает',label:'Посмотреть, как звезда повторяет себя',tour:'golden',chapter:'nested-stars'},

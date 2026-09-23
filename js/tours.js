@@ -114,7 +114,7 @@ export function initTours() {
   playlist.append(musicIcon);musicRow.append(playlist);
   const grid=el('div',null,'tour-grid');
   for(const [id,tour]of Object.entries(TOURS)) {
-    const card=button(grid,'',()=>actions.startTour(id));card.className='tour-card';card.style.setProperty('--tour-color',tour.color);
+    const card=button(grid,'',()=>actions.startTour(id));card.className='tour-card';card.dataset.tour=id;card.style.setProperty('--tour-color',tour.color);
     card.setAttribute('aria-label',`Смотреть: ${tour.name}`);
     const icon=el('span',null,'tour-icon');icon.append(tourIcon(id,tour.icon));icon.setAttribute('aria-hidden','true');
     const meta=el('span',`${tour.reading==='torus'?'Финал · ':''}${minutes(id)} · ${tour.steps.length} глав`,'tour-meta');

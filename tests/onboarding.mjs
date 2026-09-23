@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {ONBOARDING_KEY,shouldShowOnboarding,rememberOnboarding} from '../js/onboarding.js';
+const records=new Map([['unrelated-preference','keep']]);
+const storage={getItem:key=>records.get(key)??null,setItem:(key,value)=>records.set(key,value)};
+assert.equal(shouldShowOnboarding(storage),true);
+rememberOnboarding(storage);assert.equal(shouldShowOnboarding(storage),false);
+assert.equal(records.get(ONBOARDING_KEY),'seen');assert.equal(records.get('unrelated-preference'),'keep');
+const unavailable={getItem(){throw new Error('blocked');},setItem(){throw new Error('blocked');}};
+assert.doesNotThrow(()=>rememberOnboarding(unavailable));assert.equal(shouldShowOnboarding(unavailable),true);
+assert.doesNotThrow(()=>rememberOnboarding(null));assert.equal(shouldShowOnboarding(null),true);
+console.log('PASS: first-visit detection, persistent dismissal, unrelated settings preserved and blocked storage fallback');

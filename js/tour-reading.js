@@ -4,6 +4,7 @@ import { KNOWLEDGE,topicFor } from './tour-knowledge.js';
 import { actions,getState,subscribe } from './state.js';
 import { el,button } from './lab-controls.js';
 import { linkText,openSetting } from './settings-links.js';
+import { geometryFigure } from './geometry-figures.js';
 let pendingDemo=null;
 /** One confirmation path for chapter links in reading cards and on the home page. */
 export function appendChapterLink(parent,demo,{inline=false,warningParent=parent,cancelLabel='Остаться в справке'}={}) {
@@ -82,6 +83,7 @@ export function initTourReading() {
         section.append(card);
       }
       if(references.length){const citations=el('div',null,'knowledge-citations');for(const index of references){const [label,url]=entry.sources[index],a=el('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';citations.append(a);}section.append(citations);}
+      for(const figure of entry.figures||[])if(figure.section===title)section.append(geometryFigure(figure.kind));
       body.append(section);READING_DEMOS.filter(d=>d.topic===key&&d.section===title).forEach(d=>appendChapterLink(section,d));if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
     if(entry.related.length){const related=el('div',null,'knowledge-related');related.append(el('h3','Связанные идеи'));entry.related.forEach(id=>{const b=button(related,KNOWLEDGE[id].title,()=>actions.readTopic(id));b.dataset.topic=id;});body.append(related);}
     if(entry.sources.length){const sources=el('div',null,'knowledge-sources');sources.append(el('h3','Источники и дальше'));for(const [title,url]of entry.sources){const a=el('a',title);a.href=url;a.target='_blank';a.rel='noopener noreferrer';sources.append(a);}body.append(sources);}

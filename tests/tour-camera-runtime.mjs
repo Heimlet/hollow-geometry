@@ -17,6 +17,10 @@ presets:`export function cancelCameraAnimation(){}`,
 async function load(name){if(cache.has(name))return cache.get(name);let s=stubs[name]??await readFile(new URL('../js/'+name+'.js',import.meta.url),'utf8');s=s.replaceAll("'three'",JSON.stringify(three));for(const m of [...s.matchAll(/'\.\/([\w-]+)\.js'/g)])s=s.replaceAll(m[0],JSON.stringify(await load(m[1])));const result=url(s);cache.set(name,result);return result;}
 const rig=await import(await load('tour-camera')),scene=await import(await load('scene')),{actions,getState}=await import(await load('state')),{Vector3}=await import(three);
 const frame=()=>{if(!rig.tourCameraBusy())actions.tickTour(.025);rig.updateTourCamera(.025,330,440);};
+actions.startTour('fruit');rig.queueTourShot();actions.tourControl({playing:false});rig.cancelTourShot();
+assert.doesNotThrow(()=>rig.updateTourCamera(.025,330,440),'Immediate pause before first render still initializes the chapter');
+assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-10);
+assert.equal(getState().tour.elapsed,0);assert.equal(scene.controls.enabled,true);
 actions.startTour('duality');actions.tourStep(8);rig.queueTourShot();for(let i=0;i<60;i++)frame();
 assert.equal(rig.tourCameraStatus().locked,false);assert.equal(scene.controls.enabled,true);
 scene.camera.position.copy(scene.controls.target).add(new Vector3(-20,10,5));scene.controls.update();const freeDirection=scene.camera.position.clone().sub(scene.controls.target).normalize(),elapsed=getState().tour.elapsed;

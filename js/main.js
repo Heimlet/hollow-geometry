@@ -1,4 +1,5 @@
 import { updateKnowledgePreview } from './knowledge-preview.js';
+import { initOnboarding } from './onboarding.js';
 import { createScreenLines } from './screen-lines.js';
 import { openTourReading } from './tour-reading.js';
 import { initTours, updateTours, applyTourEffects, applyTourTransition, restoreTourMaterials, updateTourStage, resetTourCamera } from './tours.js';
@@ -41,6 +42,7 @@ window.resetCamera = () => {
 document.querySelectorAll('.hdr-btns button').forEach(button=>button.disabled=false);
 initShortcuts();
 initTours();
+initOnboarding(resetTourCamera);
 const screenLines=createScreenLines(scene);
 
 const updatePicking = initPicking(id=>getState().tour.id?openTourReading(id):showInfo(id));
