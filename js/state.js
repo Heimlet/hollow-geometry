@@ -24,7 +24,7 @@ export function initialState() {
   return freeze({ objects: Object.fromEntries(ALL_IDS.map(id => [id, {
     visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: opacity[id] ?? .12,
   }])), recursion: { depth: 1, scale: .35 }, presetId: null,
-  lab: initialLab(), viewContext: 'platonic', ui:{mode:'simple',topic:null}, tour:initialTour(),
+  lab: initialLab(), viewContext: 'platonic', ui:{mode:'simple',topic:null,topicTrail:[]}, tour:initialTour(),
   study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, turns: 3, size: 1, attached: false },
   goldenScene: { id: 'none', progress: 0, running: false },
   display: { autoRotate: false, speed: .15, stars: true, starCount: 2400, gentleOrbit:true, guide: false, golden: false } });
@@ -35,10 +35,16 @@ export function reduce(state, action) {
   switch (action.type) {
     case 'knowledge/open': {
       requireValid(KNOWLEDGE[action.topic],'Unknown reading topic');
-      next={...state,ui:{...state.ui,topic:action.topic},tour:{...state.tour,playing:false}};break;
+      if(state.ui.topic===action.topic)break;
+      const trail=state.ui.topic?[...(state.ui.topicTrail||[]),state.ui.topic].slice(-30):[];
+      next={...state,ui:{...state.ui,topic:action.topic,topicTrail:trail},tour:{...state.tour,playing:false}};break;
+    }
+    case 'knowledge/back': {
+      const trail=state.ui.topicTrail||[];if(!trail.length)break;
+      next={...state,ui:{...state.ui,topic:trail.at(-1),topicTrail:trail.slice(0,-1)},tour:{...state.tour,playing:false}};break;
     }
     case 'knowledge/close': {
-      next={...state,ui:{...state.ui,topic:null}};
+      next={...state,ui:{...state.ui,topic:null,topicTrail:[]}};
       if(action.resume&&state.tour.id&&state.tour.phase!=='complete')next=reduce(next,{type:'tour/control',patch:{playing:true}});
       break;
     }
@@ -53,7 +59,7 @@ export function reduce(state, action) {
     }
     case 'tour/control': {
       requireValid(Object.entries(action.patch).every(([k,v])=>['playing','auto'].includes(k)&&typeof v==='boolean'),'Invalid tour controls');
-      next={...state,tour:{...state.tour,...action.patch},ui:{...state.ui,...(action.patch.playing?{topic:null}:{})}};
+      next={...state,tour:{...state.tour,...action.patch},ui:{...state.ui,...(action.patch.playing?{topic:null,topicTrail:[]}:{})}};
       if(!state.tour.id)next.tour.playing=false;
       else if(action.patch.playing===true&&state.tour.elapsed>=TOURS[state.tour.id].steps[state.tour.index].seconds)
         next=enterTourStep(next,state.tour.id,(state.tour.index+1)%TOURS[state.tour.id].steps.length,next.tour.auto);
@@ -66,7 +72,7 @@ export function reduce(state, action) {
     case 'tour/tick': {
       requireValid(Number.isFinite(action.seconds)&&action.seconds>=0,'Invalid tour tick');next=tickTour(state,action.seconds);break;
     }
-    case 'tour/stop': next={...state,ui:{...state.ui,topic:null},tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
+    case 'tour/stop': next={...state,ui:{...state.ui,topic:null,topicTrail:[]},tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
     case 'metatron/selection': {
       const ids=PLATONIC_TYPES.flatMap(pairOf);
       requireValid(typeof action.visible==='boolean','Invalid Metatron selection');
@@ -341,6 +347,7 @@ export function createStore() {
 export const { getState, dispatch, subscribe, getHistory, beginHistoryGroup, endHistoryGroup, undo, redo } = createStore();
 export const actions = {
   readTopic: topic => dispatch({type:'knowledge/open',topic,history:false}),
+  backTopic: () => dispatch({type:'knowledge/back',history:false}),
   closeTopic: (resume=true) => dispatch({type:'knowledge/close',resume,history:false}),
   interface: mode => dispatch({type:'ui/mode',mode,history:false}),
   startTour: id => dispatch({type:'tour/start',id}),

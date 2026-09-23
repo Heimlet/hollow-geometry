@@ -285,8 +285,8 @@ Ctrl Y, кнопки верхней панели и S/G/H/R. В текстовы
 
 ## Простые туры
 
-По умолчанию `ui.mode = simple`: восемь крупных карточек запускают фильмы с
-82 главами. Лаборатория доступна вторым режимом. `tour-state.js` строит каждую
+По умолчанию `ui.mode = simple`: девять крупных карточек запускают фильмы с
+92 главами. Лаборатория доступна вторым режимом. `tour-state.js` строит каждую
 главу из полной декларативной сцены, а `frameTour` вычисляет кадр из времени:
 возврат к главе и повторное воспроизведение не накапливают трансформации.
 
@@ -386,3 +386,17 @@ for f in tests/*.mjs; do node "$f" "$PWD/vendor/three/three.module.js"; done
 Один renderer переиспользуется между карточками; геометрия и материалы снимка
 освобождаются при закрытии или смене темы. На время справки основная сцена стоит,
 а после любого закрытия просмотр продолжается автоматически.
+# Metatron teaching layers and public delivery
+
+The `nodes` tour adds ten chapters (nine tours, 92 chapters total). Nodes share the
+same `metatron_nodes` reading topic and the existing `_metatron_` visibility owner.
+Neighbour links, diameters and square sections are measured from the source node
+positions; auxiliary geometry never dispatches state changes. Contact spheres use
+R/2 and do not overlap. Render layers are disposed when their recipe changes.
+
+Recursion contractions and fades are functions of chapter progress. Level scales
+are temporary, reset on exit; zoom remains centred on the true common centre.
+Pixel-width line proxies preserve the original geometry for picking and projection,
+copy draw ranges and crossfade opacity, and restore source material visibility
+after every render. Tests cover geometry, grouped node picking, deterministic replay,
+stroke width, range, transforms and cleanup.

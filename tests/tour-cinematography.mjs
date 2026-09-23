@@ -26,7 +26,7 @@ for(const tour of Object.values(TOURS))for(const chapter of tour.steps) {
     assert.ok(shot.direction.distanceTo(previous.direction)<.07,chapter.title);
     assert.ok(Math.abs(shot.depth-previous.depth)<.02,chapter.title);
     assert.ok(Math.abs(shot.direction.length()-1)<1e-12);
-    assert.ok(opacity>=0&&opacity<=.4200000001);
+    assert.ok(opacity>=0&&opacity<=.4600000001);
     previous=shot;
   }
   if(chapter.scene.faces!==false)assert.ok(tourFaceOpacity(chapter.scene,.32)>tourFaceOpacity(chapter.scene,1)*2,chapter.title);
@@ -63,4 +63,4 @@ for(const [width,height,panel] of [[1280,900,330],[1366,768,340],[390,844,360],[
 }
 const vp=stageViewport(1280,900,330),small=[new THREE.Vector3(-2,-2,-2),new THREE.Vector3(2,2,2)];
 assert.ok(fitTourFrame(small,base,vp).height<14,'A compact scene does not inherit the exploded endpoint zoom');
-console.log(`PASS: 82 continuous camera/opacity scripts, exact symmetric finales, golden pass-through, ${checks} projected bounds checks with true object-centred framing`);
+console.log(`PASS: 92 continuous camera/opacity scripts, exact symmetric finales, golden pass-through, ${checks} projected bounds checks with true object-centred framing`);

@@ -80,7 +80,8 @@ const terms = [
   ['group.tetra5', 'соединени(?:е|я|ю|ем) (?:5|пяти) тетраэдров'],
   ['group.cube5', 'соединени(?:е|я|ю|ем) (?:5|пяти) кубов'],
   ['group.compound', 'соединени(?:я|й|ям) многогранников'],
-  ['golden.studies', 'золот(?:ая|ой|ую) спирал(?:ь|и|ью)|вложенные пентаграммы|деление золотого прямоугольника'],
+  ['golden.studies', 'золот(?:ая|ой|ую) спирал(?:ь|и|ью)|деление золотого прямоугольника'],
+  ['golden.scene.pentagon', 'вложенн(?:ые|ых) пентаграмм(?:ы)?|пентаграмм(?:а|ы|у|е|ой|ами|ах)?|пятиконечн(?:ая|ые|ую|ых) зв[её]зд(?:а|ы|у)?'],
   ['lab.hull', 'выпукл(?:ая|ую|ой) оболочк(?:а|у|и|ой)|оболочк(?:а|у|и|ой) Меркабы'],
   ['lab.intersection', 'пересечени(?:е|я|ю|ем) (?:двух тетраэдров|тетраэдров|Меркабы)'],
   ['lab.source', 'исходные тетраэдры'],
@@ -101,13 +102,15 @@ const terms = [
   ['object.octahedron', 'октаэдр(?:а|у|ом|е|ы|ов)?|octahedron'],
   ['object.tetrahedron', 'тетраэдр(?:а|у|ом|е|ы|ов)?|tetrahedron'],
   ['object.cube', 'куб(?:а|у|ом|е|ы|ов)?|cube'],
-  ['display.stars', 'зв[её]зд(?:ы|ный фон)'],
+  ['display.stars', 'зв[её]здн(?:ый фон|ое небо)|фоновы(?:е|х) зв[её]зд(?:ы)?'],
   ['display.autoRotate', 'автовращени(?:е|я)|авто-вращ\\.'],
   ['display.guide', 'направляющ(?:ая|ую|ей) проекции'],
   ['camera', 'ортографическ(?:ая|ую|ой) (?:камера|проекция)|перспектив(?:а|у|ы)'],
   ['recursion', 'рекурси(?:я|и|ю)'],
 ];
 export function textReferences(text, objectId) {
+  const stars=['dodecahedron','pentagram','pentagon','phi'].includes(objectId)
+    ?[['golden.scene.pentagon','зв[её]зд(?:а|ы|у|е|ой|ами|ах)?']]:[];
   const contextual = objectId ? [
     ...(objectId === '_metatron_' ? [['detail._metatron_.nodes', 'узл(?:ы|ов|ами|ах|а)'], ['detail._metatron_.lines', 'лини(?:и|й|ями|ях)']]
       : [[`detail.${objectId}.edges`, 'р[её]бр(?:а|о|ам|ами|ах)|р[её]бер'], [`detail.${objectId}.faces`, 'гран(?:и|ей|ям|ями|ях)']]),
@@ -119,7 +122,7 @@ export function textReferences(text, objectId) {
     [`detail.${id}.edges`, `(?:р[её]бра|р[её]бер|р[её]брам|р[её]брами) ${noun}`],
     [`detail.${id}.faces`, `(?:грани|граней|граням|гранями) ${noun}`],
   ]);
-  const rules = [...qualified, ...terms, ...contextual];
+  const rules = [...qualified, ...terms, ...stars, ...contextual];
   const regex = new RegExp(`(?<![\\p{L}\\p{N}])(?:${rules.map(([, pattern]) => `(${pattern})`).join('|')})(?![\\p{L}\\p{N}])`, 'giu');
   const parts = []; let end = 0;
   for (const match of text.matchAll(regex)) {

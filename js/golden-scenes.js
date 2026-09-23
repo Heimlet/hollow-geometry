@@ -168,6 +168,7 @@ export function initGoldenScenesUI(parent) {
   section.append(el('h3','Увидеть связь φ'),el('p','Запустите построение: фигуры и ракурс настроятся автоматически.','camera-hint'));
   for(const [id,demo]of Object.entries(GOLDEN_SCENES)) {
     const b=button(section,'',()=>actions.startGoldenScene(id));b.className='golden-scene-launch';b.dataset.scene=id;
+    registerSetting(`golden.scene.${id}`,b,demo.title);
     b.append(el('strong',demo.title),el('span',demo.subtitle));
     bind(()=>b.setAttribute('aria-pressed',String(getState().goldenScene.id===id)));
   }

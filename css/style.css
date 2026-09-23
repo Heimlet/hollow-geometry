@@ -1,5 +1,8 @@
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#050510;overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#d0d0e0}
+body{background:#050510;overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;color:#d0d0e0;-webkit-user-select:none;user-select:none}
+/* Reading remains copyable; controls and technical chrome behave like an app. */
+:is(.knowledge-body p,.knowledge-body h2,.knowledge-body h3,.tour-narration,#info .desc,.golden-story p,input:not([type=range]):not([type=checkbox]),textarea,[contenteditable=true]){-webkit-user-select:text;user-select:text}
+:is(button,[role=button],summary,label,select,output,.settings-link,.tour-topic,.tour-eyebrow,.tour-status),:is(button,[role=button],summary,label) *{-webkit-user-select:none!important;user-select:none!important}
 canvas#c{display:block;position:fixed;top:0;left:0;width:100%;height:100%}
 
 /* Sidebar */
@@ -332,7 +335,7 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .tour-menu{position:fixed;inset:64px 0 0;z-index:20;overflow:auto;padding:32px max(24px,calc((100vw - 1100px)/2)) 36px;background:radial-gradient(ellipse at 50% 10%,#10213e44,transparent 70%);scrollbar-width:thin;scrollbar-color:#384a65 transparent}
 .tour-eyebrow{font-size:10px;letter-spacing:1.7px;color:#90a6c5;text-transform:uppercase}
 
-.tour-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.tour-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .tour-card{position:relative;display:flex;align-items:flex-start;flex-direction:column;gap:10px;min-height:225px;text-align:left;padding:22px 18px 17px;border:1px solid #a2bde426;border-radius:16px;background:linear-gradient(145deg,#1b2845ca,#0a1124e8);color:#dce6f4;cursor:pointer;box-shadow:0 8px 32px #0002;transition:transform .25s,border-color .25s,background .25s;overflow:hidden}
 .tour-card:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 90% 0,color-mix(in srgb,var(--tour-color) 11%,transparent),transparent 70%);pointer-events:none}
 .tour-card:hover{transform:translateY(-4px);border-color:var(--tour-color);background:#17233bec}.tour-card:focus-visible{outline-color:var(--tour-color)}
@@ -449,15 +452,11 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 @media(max-width:700px){.knowledge-preview canvas{height:180px}.knowledge-preview figcaption{font-size:9px}}
 
 /* A quiet music link above the tour collection. */
-.tour-menu-tools{display:flex;justify-content:flex-end;margin-bottom:20px}
-.tour-playlist{display:inline-flex;align-items:center;gap:12px;max-width:100%;padding:10px 14px 10px 10px;border:1px solid #dec6952e;border-radius:13px;background:linear-gradient(120deg,#eac5810d,#8cacde07);color:#e6d6b6;text-decoration:none;transition:background .2s,border-color .2s;box-shadow:0 4px 20px #0002}
-.playlist-icon{display:grid;place-items:center;flex:0 0 36px;height:36px;border:1px solid #efd09a30;border-radius:11px;background:radial-gradient(circle at 30% 20%,#edc78026,#edc78006);color:#edcf97}
-.playlist-icon svg{width:24px;height:24px;filter:drop-shadow(0 0 6px #edc78025)}
-.playlist-icon ellipse{fill:#edcf9722}
-.playlist-label{display:flex;flex-direction:column;gap:4px;font-size:12px;line-height:1.35}
-.playlist-label small{font-size:10px;color:#879ab4}
-.playlist-external{margin-left:4px;color:#a9987b;font-size:17px}
-.tour-playlist:hover{background:#eac58113;border-color:#dec69570}.tour-playlist:hover .playlist-icon{color:#ffe4b3}
+.tour-menu-tools{display:flex;justify-content:flex-end;margin-bottom:12px}
+.tour-playlist{display:grid;place-items:center;width:44px;height:44px;border:1px solid transparent;border-radius:50%;text-decoration:none;transition:background .2s,border-color .2s}
+.playlist-icon{display:block;width:22px;height:22px}
+.tour-playlist:hover{background:#eac5810d;border-color:#dec69535}
 .tour-playlist:focus-visible{outline:2px solid #efd197;outline-offset:4px}
-@media(max-width:700px){.tour-menu-tools{justify-content:stretch;margin-bottom:16px}.tour-playlist{width:100%}.playlist-external{margin-left:auto}}
+.knowledge-back{align-self:flex-start;margin:12px 48px 0 22px;padding:7px 10px;border:1px solid #92bddd44;border-radius:6px;background:#162037;color:#cce2f4;font:inherit;font-size:12px;cursor:pointer}
+.knowledge-back[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.tour-playlist{transition:none}}

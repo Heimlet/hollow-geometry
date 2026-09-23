@@ -3,7 +3,8 @@ import { getState, actions, subscribe } from './state.js';
 import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
-import { tourFaceOpacity } from './tour-effects.js';
+import { tourFaceOpacity,recursionMoment } from './tour-effects.js';
+import { createMetatronStudy } from './metatron-study.js';
 import { derivedObjects,traditionalFields } from './lab.js';
 import { captureVisibleParts,createTourTransition } from './tour-transitions.js';
 import { scene,projectionDepth } from './scene.js';
@@ -13,6 +14,7 @@ import { initTourReading,linkTourText } from './tour-reading.js';
 import { queueTourShot,cancelTourShot,tourCameraBusy,updateTourCamera,tourCameraStatus } from './tour-camera.js';
 let player, effectActive=false, status, animationState, cameraState,returnCamera;
 const transition=createTourTransition(scene);
+const nodeStudy=createMetatronStudy(scene);
 let transitionKey=null,lastGolden=null,fadeInk=false;
 export function applyTourTransition(dt) {
   const state=getState(),key=state.tour.id?`${state.tour.id}:${state.tour.index}`:null;
@@ -25,6 +27,7 @@ const minutes=id=>`${Math.ceil(tourDuration(id)/60)} мин`;
 function clearEffects() {
   if(!effectActive)return;
   for(const level of levels) {
+    level.group.scale.setScalar(1);
     level.mc.nodes.forEach(n=>{n.visible=level.mc.nVis;n.material.opacity=1;});
     level.mc.lines.geometry.setDrawRange(0,Infinity);
     for(const object of Object.values(level.objs)) {object.edges.geometry.setDrawRange(0,Infinity);object.fMat.opacity=object.op;}
@@ -41,10 +44,12 @@ export function updateTours(dt) {
   if(state.tour.playing&&!document.hidden&&!tourCameraBusy())actions.tickTour(Math.min(dt,.05));
 }
 export function updateTourStage(dt) {
+  const state=getState(),recipe=tourStep(state)?.scene;
+  if(recipe?.effect==='recursion')for(const level of levels){level.group.scale.setScalar(recursionMoment(tourProgress(state),level.idx,state.recursion.scale).scale);level.group.updateMatrixWorld(true);}
   const bounds=player?.getBoundingClientRect();
   updateTourCamera(dt,bounds?.height||220,bounds?.width||440);
   if(!getState().tour.id||!status)return;
-  const s=tourCameraStatus(),recipe=tourStep(getState()).scene,p=tourProgress(getState());
+  const s=tourCameraStatus(),p=tourProgress(getState());
   const symbol=recipe.camera?.symbol,cue=s.locked&&!s.flight&&symbol&&p>=symbol.from&&p<=symbol.to?symbol.label:null;
   const motion=getState().tour.phase==='complete'?'✓ Тур завершён':getState().tour.playing?'▶ Анимация идёт':'Ⅱ ТУР НА ПАУЗЕ';
   const control=s.reading?'🔒 Открыта справка':s.locked?'🔒 Камера по сценарию':'↔ Можно вращать';
@@ -57,15 +62,23 @@ export function updateTourStage(dt) {
   if(status.textContent!==message+projection)status.textContent=message+projection;
 }
 export function applyTourEffects() {
-  const state=getState(),recipe=tourStep(state)?.scene;if(!recipe)return;
+  const state=getState(),recipe=tourStep(state)?.scene;
+  nodeStudy.update(levels[0]?.mc,recipe?.nodeStudy,tourProgress(state));
+  if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/.8));effectActive=true;
   for(const level of levels) {
     if(recipe.effect==='nodes')level.mc.nodes.forEach((node,i)=>{node.visible=level.mc.nVis&&p*14>=i;node.material.opacity=Math.min(1,Math.max(0,p*14-i));});
     if(recipe.effect==='network')level.mc.lines.geometry.setDrawRange(0,Math.floor(78*reveal)*2);
+    const alpha=recipe.effect==='recursion'?recursionMoment(p,level.idx,state.recursion.scale).alpha:1;
+    if(recipe.effect==='recursion') {
+      level.mc.lMat.opacity=.44*alpha;
+      level.mc.nodes.forEach(node=>{node.material.opacity=alpha;node.visible=level.mc.nVis&&alpha>.01;});
+    }
     for(const object of Object.values(level.objs)) {
       if(!object.vis)continue;
       if(recipe.effect==='edges')object.edges.geometry.setDrawRange(0,Math.floor(object.edges.geometry.attributes.position.count*reveal/2)*2);
-      object.fMat.opacity=tourFaceOpacity(recipe,p);
+      object.fMat.opacity=tourFaceOpacity(recipe,p)*alpha;
+      if(!recipe.golden)object.eMat.opacity=.97*alpha;
     }
   }
   for(const owner of derivedObjects)if(owner.object.vis)owner.object.fMat.opacity=tourFaceOpacity(recipe,p);
@@ -84,12 +97,10 @@ export function initTours() {
   const musicRow=el('div',null,'tour-menu-tools'),playlist=el('a',null,'tour-playlist');
   playlist.href='https://music.yandex.com/playlists/3ce0098c-24f8-988b-b3ae-9a7ebc2dcc19';
   playlist.target='_blank';playlist.rel='noopener noreferrer';
-  playlist.setAttribute('aria-label','Музыка для путешествий — плейлист в Яндекс Музыке, откроется в новой вкладке');
-  const musicIcon=el('span',null,'playlist-icon');musicIcon.setAttribute('aria-hidden','true');
-  musicIcon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l11-3v12M9 10l11-3"/><ellipse cx="6" cy="18" rx="3" ry="2.3"/><ellipse cx="17" cy="15" rx="3" ry="2.3"/></svg>';
-  const musicLabel=el('span',null,'playlist-label');musicLabel.append(el('span','Музыка для путешествий'),el('small','Яндекс Музыка'));
-  const external=el('span','↗','playlist-external');external.setAttribute('aria-hidden','true');
-  playlist.append(musicIcon,musicLabel,external);musicRow.append(playlist);
+  playlist.title='Плейлист · Яндекс Музыка';
+  playlist.setAttribute('aria-label','Плейлист в Яндекс Музыке · откроется в новой вкладке');
+  const musicIcon=el('img',null,'playlist-icon');musicIcon.src='assets/yandex-music.svg';musicIcon.alt='';musicIcon.width=22;musicIcon.height=22;
+  playlist.append(musicIcon);musicRow.append(playlist);
   const grid=el('div',null,'tour-grid');
   for(const [id,tour]of Object.entries(TOURS)) {
     const card=button(grid,'',()=>actions.startTour(id));card.className='tour-card';card.style.setProperty('--tour-color',tour.color);

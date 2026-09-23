@@ -19,7 +19,8 @@ export function shotAt(recipe,baseDirection,p) {
   else if(plan.to){const to=new THREE.Vector3(...plan.to).normalize();direction.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(direction,to).slerp(new THREE.Quaternion(),1-ease(p)));}
   else if(recipe.orbit){const spherical=new THREE.Spherical().setFromVector3(direction);spherical.theta+=(plan.arc??1.05)*ease(p);spherical.phi+=.1*Math.sin(Math.PI*p);direction.setFromSpherical(spherical);}
   const depth=curveAt(plan.depth||[[0,0],[1,0]],p);
-  return {direction,depth,locked:plan.mode!=='free'&&p<(plan.releaseAt??1),symbol:plan.symbol&&p>=plan.symbol.from&&p<=plan.symbol.to?plan.symbol.label:null};
+  const zoom=curveAt(plan.zoom||[[0,1],[1,1]],p);
+  return {direction,depth,zoom,locked:plan.mode!=='free'&&p<(plan.releaseAt??1),symbol:plan.symbol&&p>=plan.symbol.from&&p<=plan.symbol.to?plan.symbol.label:null};
 }
 export function stageViewport(width,height,panelHeight,panelWidth=440) {
   const top=76,side=width>=1100&&height>=600;

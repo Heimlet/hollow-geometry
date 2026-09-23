@@ -3,16 +3,18 @@ import { KNOWLEDGE,topicFor } from './tour-knowledge.js';
 import { actions,getState,subscribe } from './state.js';
 import { el,button } from './lab-controls.js';
 import { linkText,openSetting } from './settings-links.js';
-export function openTourReading(key){actions.readTopic(topicFor(key));}
-export function linkTourText(root) {
-  linkText(root);
+export function openTourReading(key){const topic=topicFor(key);if(!topic)return false;actions.readTopic(topic);return true;}
+export function linkTourText(root,context) {
+  linkText(root,context);
   for(const link of root.querySelectorAll('a[data-setting]')) {
-    const topic=topicFor(link.dataset.setting),b=el('button',link.textContent,'tour-topic');b.type='button';b.dataset.topic=topic;
+    const topic=topicFor(link.dataset.setting);
+    if(!topic||topic===context){link.replaceWith(document.createTextNode(link.textContent));continue;}
+    const b=el('button',link.textContent,'tour-topic');b.type='button';b.dataset.topic=topic;
     b.title=`Подробнее: ${KNOWLEDGE[topic].title}`;b.setAttribute('aria-label',b.title);link.replaceWith(b);
   }
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT),nodes=[];
   while(walker.nextNode())if(!walker.currentNode.parentElement.closest('a,button'))nodes.push(walker.currentNode);
-  for(const node of nodes)if(node.textContent.includes('φ')) {
+  for(const node of nodes)if(context!=='phi'&&node.textContent.includes('φ')) {
     const fragment=document.createDocumentFragment(),parts=node.textContent.split('φ');
     parts.forEach((part,i)=>{if(i){const b=el('button','φ','tour-topic');b.type='button';b.dataset.topic='phi';b.title='φ: чем это интересно';fragment.append(b);}fragment.append(part);});node.replaceWith(fragment);
   }
@@ -33,26 +35,29 @@ function phyllotaxis(parent) {
 export function initTourReading() {
   const dialog=el('dialog',null,'knowledge-dialog');dialog.setAttribute('aria-labelledby','knowledge-title');
   const close=button(dialog,'×',()=>actions.closeTopic());close.className='knowledge-close';close.setAttribute('aria-label','Закрыть справку и продолжить тур');
+  const back=button(dialog,'← К предыдущей справке',()=>actions.backTopic());back.className='knowledge-back';back.hidden=true;
   const body=el('article',null,'knowledge-body'),footer=el('footer',null,'knowledge-footer');
   const resume=button(footer,'Продолжить тур',()=>actions.closeTopic(true));resume.className='knowledge-resume';
   const leave=button(footer,'Покинуть тур и перейти в лабораторию',()=>{const entry=KNOWLEDGE[getState().ui.topic];actions.interface('advanced');openSetting(entry.setting,leave);});leave.className='knowledge-leave';
-  dialog.append(body,footer);document.body.append(dialog);let previous=null,returnFocus=null;
+  dialog.append(body,footer);document.body.append(dialog);let previous=null,returnFocus=null;const scrollPositions=new Map();
   dialog.addEventListener('cancel',event=>{event.preventDefault();actions.closeTopic();});
   dialog.addEventListener('click',event=>{if(event.target===dialog&&event.clientX){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)actions.closeTopic();}});
-  function sync(state) {
-    const key=state.ui.topic||null;if(key===previous)return;previous=key;
+  function sync(state,previousState,action={}) {
+    const key=state.ui.topic||null;if(key===previous)return;if(previous)scrollPositions.set(previous,body.scrollTop);previous=key;
+    back.hidden=!(state.ui.topicTrail?.length);
     if(!key){hideKnowledgePreview();if(dialog.open)dialog.close();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});return;}
     const entry=KNOWLEDGE[key];body.replaceChildren();
     body.append(el('p',entry.kicker,'tour-eyebrow'));const heading=el('h2',entry.title);heading.id='knowledge-title';heading.tabIndex=-1;body.append(heading);mountKnowledgePreview(body,key,entry.title);body.append(el('p',entry.lead,'knowledge-lead'));
-    entry.sections.forEach(([title,copy],index)=>{const section=el('section');section.append(el('h3',title),el('p',copy));body.append(section);if(key==='phi'&&index===2)phyllotaxis(body);});
+    entry.sections.forEach(([title,copy],index)=>{const section=el('section');section.append(el('h3',title),el('p',copy));body.append(section);if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
     if(entry.related.length){const related=el('div',null,'knowledge-related');related.append(el('h3','Связанные идеи'));entry.related.forEach(id=>{const b=button(related,KNOWLEDGE[id].title,()=>actions.readTopic(id));b.dataset.topic=id;});body.append(related);}
     if(entry.sources.length){const sources=el('div',null,'knowledge-sources');sources.append(el('h3','Источники и дальше'));for(const [title,url]of entry.sources){const a=el('a',title);a.href=url;a.target='_blank';a.rel='noopener noreferrer';sources.append(a);}body.append(sources);}
-    body.querySelectorAll('p').forEach(paragraph=>linkTourText(paragraph));
+    body.querySelectorAll('p').forEach(paragraph=>linkTourText(paragraph,key));
+    if(key==='metatron_nodes'){const watch=button(body,'Смотреть тур «Тайна тринадцати точек»',()=>actions.startTour('nodes'));watch.className='phi-library';}
     close.setAttribute('aria-label',state.tour.id&&state.tour.phase!=='complete'?'Закрыть справку и продолжить тур':'Закрыть справку');
     resume.textContent=state.tour.id?(state.tour.phase==='complete'?'Вернуться к финалу':'Продолжить тур'):'Вернуться';
     leave.textContent=state.tour.id?'Покинуть тур и перейти в лабораторию':'Открыть в лаборатории';
     if(!dialog.open){returnFocus=document.activeElement;dialog.showModal();}
-    body.scrollTop=0;heading.focus({preventScroll:true});
+    body.scrollTop=action.type==='knowledge/back'?(scrollPositions.get(key)||0):0;heading.focus({preventScroll:true});
   }
   sync(getState());subscribe(sync);
   document.addEventListener('click',event=>{

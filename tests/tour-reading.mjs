@@ -23,3 +23,11 @@ console.log('PASS: pause/read/resume preserves tour, objects and progress; expli
 
 // The public close command used by X, Escape and backdrop resumes automatically.
 actions.startTour('golden');actions.tickTour(2);actions.readTopic('phi');actions.closeTopic();assert.equal(getState().tour.playing,true);assert.equal(getState().tour.elapsed,2);assert.equal(getState().ui.topic,null);
+actions.readTopic('dodecahedron');actions.readTopic('pentagram');actions.readTopic('phi');
+assert.deepEqual(getState().ui.topicTrail,['dodecahedron','pentagram']);
+actions.backTopic();assert.equal(getState().ui.topic,'pentagram');actions.backTopic();assert.equal(getState().ui.topic,'dodecahedron');
+assert.equal(getState().tour.playing,false);assert.equal(getState().tour.elapsed,2);assert.deepEqual(getState().ui.topicTrail,[]);
+actions.closeTopic();assert.equal(getState().tour.playing,true);assert.deepEqual(getState().ui.topicTrail,[]);
+assert.equal(topicFor('golden.scene.pentagon'),'pentagram');
+assert.equal(topicFor('display.stars'),null);assert.equal(topicFor('nonexistent'),null,'Unknown settings cannot silently open projection help');
+console.log('PASS: reversible reading trail, tour clock preserved, contextual pentagram topic and no unrelated fallback');

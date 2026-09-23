@@ -9,3 +9,8 @@ export function uniqueHits(intersections, owners) {
   return results;
 }
 
+export function metatronNodeOwner(meta,index,level) {
+  return {id:'metatron',object:meta,level:0,key:'metatron:nodes',
+    topic:'metatron_nodes',title:'13 точек Метатрона',
+    node:meta.nodes[index],edges:meta.lines};
+}

@@ -3,7 +3,7 @@ import {initialState,reduce,createStore,ALL_IDS} from '../js/state.js';
 import {TOURS,tourDuration} from '../js/tour-data.js';
 import {PLATONIC_TYPES,pairOf} from '../js/mirror-data.js';
 import {advanceRotation} from '../js/merkaba-motion.js';
-assert.equal(Object.keys(TOURS).length,8);
+assert.equal(Object.keys(TOURS).length,9);
 let chapters=0;
 for(const [id,tour]of Object.entries(TOURS)) {
   assert.ok(tourDuration(id)>=180,id);
@@ -43,4 +43,4 @@ state=reduce(state,{type:'objects/appearance',ids:['cube','dodecahedron'],key:'f
 // Traditional motion belongs to two whole stars, with opposed 34:21 speeds.
 const rot=initialState().lab.rotation;const motion=advanceRotation(rot,1);assert.ok(motion.up>0&&motion.down<0);assert.ok(Math.abs(motion.up/-motion.down-34/21)<1e-12);
 assert.throws(()=>reduce(state,{type:'tour/start',id:'bad'}));assert.throws(()=>reduce(state,{type:'object/mirror',id:'cube'}));
-console.log(`PASS: 8 tours, ${chapters} deterministic chapters, auto/manual advance, replay, pause, history, mirror pairs, exclusive Metatron selection and shared appearance`);
+console.log(`PASS: ${Object.keys(TOURS).length} tours, ${chapters} deterministic chapters, auto/manual advance, replay, pause, history, mirror pairs, exclusive Metatron selection and shared appearance`);

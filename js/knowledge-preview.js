@@ -6,6 +6,8 @@ import { COLORS } from './constants.js';
 import { COMPOUNDS } from './compound-data.js';
 import { PLATONIC_TYPES } from './mirror-data.js';
 const figures={tetrahedron:['tetrahedron'],cube:['cube'],octahedron:['octahedron'],dodecahedron:['dodecahedron'],icosahedron:['icosahedron'],cuboctahedron:['cuboctahedron'],merkaba:['merkaba_up','merkaba_down'],platonic:PLATONIC_TYPES,compounds:COMPOUNDS.find(c=>c.id==='tetra5').members,projection:['cube'],metatron:['_metatron_']};
+figures.metatron_nodes=['_metatron_'];
+figures.pentagram=['_pentagram_'];
 let renderer,scene,camera,controls,group,container,active=false,radius=1,width=0,height=0;
 function init() {
   renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0,0);
@@ -41,15 +43,27 @@ export function mountKnowledgePreview(parent,topic,title) {
   renderer.domElement.setAttribute('aria-label',`Объёмная миниатюра: ${title}. Вращение перетаскиванием или клавишами со стрелками.`);
   container.append(renderer.domElement,caption);parent.append(container);
   for(const id of ids) {
-    if(id==='_metatron_') {
+    if(id==='_pentagram_') {
+      for(let level=0;level<3;level++) {
+        const r=((1+Math.sqrt(5))/2)**(-2*level),points=Array.from({length:5},(_,i)=>new THREE.Vector3(r*Math.cos(Math.PI/2+i*Math.PI*2/5+level*Math.PI/5),r*Math.sin(Math.PI/2+i*Math.PI*2/5+level*Math.PI/5),0));
+        const geometry=new THREE.BufferGeometry().setFromPoints(points.flatMap((p,i)=>[p,points[(i+2)%5]]));
+        group.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:level?0x9bd9ef:0xf2cc84,toneMapped:false})));
+      }
+    } else if(id==='_metatron_') {
       const meta=levels[0].mc;
-      group.add(new THREE.LineSegments(meta.lines.geometry.clone(),new THREE.LineBasicMaterial({color:0xa8cbea,transparent:true,opacity:.22,toneMapped:false})));
-      for(const source of meta.nodes){const node=new THREE.Mesh(source.geometry.clone(),new THREE.MeshPhongMaterial({color:0xb9d6fa,shininess:40}));node.position.copy(source.position);group.add(node);}
+      group.add(new THREE.LineSegments(meta.lines.geometry.clone(),new THREE.LineBasicMaterial({color:0xa8cbea,transparent:true,opacity:topic==='metatron_nodes'?.1:.3,toneMapped:false})));
+      if(topic==='metatron_nodes') {
+        const radii=meta.pos.slice(1).flatMap(p=>[new THREE.Vector3(),new THREE.Vector3(...p)]);
+        group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(radii),new THREE.LineBasicMaterial({color:0xf2ca82,transparent:true,opacity:.65,toneMapped:false})));
+        caption.textContent='Золотая точка — центр · голубые — 12 внешних узлов. Вращайте миниатюру.';
+      }
+      for(const [index,source]of meta.nodes.entries()){const node=new THREE.Mesh(source.geometry.clone(),new THREE.MeshPhongMaterial({color:topic==='metatron_nodes'&&index===0?0xf2ca82:0xb9d6fa,shininess:40}));node.position.copy(source.position);group.add(node);}
     } else solid(levels[0].objs[id],id);
   }
   for(const child of group.children)child.geometry.setDrawRange(0,Infinity);
   group.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(group),center=box.getCenter(new THREE.Vector3());radius=box.getBoundingSphere(new THREE.Sphere()).radius;
   group.position.copy(center).negate();camera.zoom=1;camera.up.set(0,1,0);camera.position.set(1,1,1).normalize().multiplyScalar(radius*5);controls.target.set(0,0,0);
+  if(topic==='pentagram')camera.position.set(0,0,radius*5);
   controls.enableDamping=false;controls.update();controls.enableDamping=true;controls.enabled=true;active=true;width=height=0;
 }
 export function updateKnowledgePreview() {

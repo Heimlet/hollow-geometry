@@ -16,3 +16,7 @@ console.log('PASS: Russian inflections, qualified edge/face ownership, compound 
 
 assert.deepEqual(keys('Соединение 5 кубов и соединение десяти тетраэдров'), ['group.cube5','group.tetra10']);
 assert.deepEqual(keys('Золотая спираль. Выпуклая оболочка. Исходные тетраэдры.'), ['golden.studies','lab.hull','lab.source']);
+assert.deepEqual(keys('Внутренние звёзды почти сливаются.','dodecahedron'),['golden.scene.pentagon']);
+assert.deepEqual(keys('Звёзды в грани, звёздный фон.','dodecahedron'),['golden.scene.pentagon','detail.dodecahedron.faces','display.stars']);
+assert.deepEqual(keys('Силуэт звезды. Звёзды.'),[],'Ambiguous words must not guess an unrelated setting');
+assert.deepEqual(keys('Вложенные пентаграммы и пятиконечная звезда.'),['golden.scene.pentagon','golden.scene.pentagon']);

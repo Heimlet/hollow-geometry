@@ -18,5 +18,6 @@ export function initMetatronUI() {
   button(buttons,'Все пять тел',()=>actions.metatronSelection(true));
   button(buttons,'Только сеть',()=>actions.metatronSelection(false));
   button(buttons,'Смотреть тур',()=>actions.startTour('metatron'));
+  button(buttons,'О 13 точках',()=>actions.readTopic('metatron_nodes'));
   registerSetting('metatron.types',section,'Тела внутри куба Метатрона');host.append(section);
 }

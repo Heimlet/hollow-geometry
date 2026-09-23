@@ -147,7 +147,7 @@ Use `actions.assembly(...)` for atomic component activation and assembly animati
 
 ## Hollow Geometry tours and paired bodies
 
-- `tour-data.js`: eight Russian film scripts (82 chapters, 3–5 minutes each).
+- `tour-data.js`: nine Russian film scripts (92 chapters, 3–5 minutes each).
 - `tour-state.js`: deterministic recipe/seek/tick functions. Each chapter atomically
   owns visibility, recursion, research layers, assembly and golden constructions.
 - `tours.js`: simple card menu, player, chapter flights, transient draw effects.
@@ -169,7 +169,7 @@ Use `actions.assembly(...)` for atomic component activation and assembly animati
 - Programmatic section changes emit `camera-context-change`, never the manual
   gesture event: manual handlers may dispatch, subscribers must not.
 - `starfield.mjs` verifies actual 3D depth, quaternion synchronization and stable
-  sky positioning during FOV compensation. `tours.mjs` covers all 82 chapters,
+  sky positioning during FOV compensation. `tours.mjs` covers all 92 chapters,
   seeking, replay, pause, history and paired visibility.
 
 Tests can use the bundled module directly: `for f in tests/*.mjs; do node "$f" "$PWD/vendor/three/three.module.js"; done`.
@@ -190,7 +190,7 @@ Tests can use the bundled module directly: `for f in tests/*.mjs; do node "$f" "
 - Progress is segmented by chapter; amber styling denotes pause. Camera lock and
   free exploration have visible labels. Avoid replacing substantive narration with
   interface instructions; control hints belong in the status row.
-- 18 suites include `tour-cinematography.mjs`, `tour-reading.mjs` and
+- 20 suites include `tour-cinematography.mjs`, `tour-reading.mjs` and
   `tour-transitions.mjs`, `tour-camera-runtime.mjs`. Browser-check exact Platonic final view, Metatron chapter 10
   framing, reading/resume, chapter progress and both desktop/mobile layouts.
 
@@ -201,3 +201,22 @@ rejoins the current scripted viewpoint without restarting or pausing the chapter
   cards, using full geometry snapshots with separate camera and materials. Dispose
   preview buffers on close/topic change; reuse one renderer. Never reuse transient
   draw ranges from a half-built tour figure, or move the main camera from a preview.
+
+## Node tour, line rendering and publishing
+
+- Nine tours / 92 chapters. `nodes` explores the thirteen Metatron nodes as one
+  group; every node opens `metatron_nodes`, with no individual selection halo.
+- `metatron-relations.js` derives neighbours, opposite pairs and square sections
+  from actual coordinates. `metatron-study.js` owns temporary teaching geometry,
+  including contact spheres of radius R/2; dispose it on chapter changes.
+- `recursionMoment` is a render-only, reversible contraction of nested copies;
+  clear level group scales on exit. The corresponding camera zoom is explicit,
+  keeps the shared centre and returns to an exact full view.
+- `screen-lines.js` draws pixel-width proxies using the bundled Three.js 0.167
+  line addons. Original geometry remains the picking/projection source. Call
+  prepare before rendering, restore afterwards. Keep draw ranges, world matrices,
+  transition opacity and resource disposal synchronized.
+- `.github/workflows/pages.yml` stages only public runtime files using
+  `scripts/prepare-pages.py`; it resolves Open Graph image/canonical URLs before
+  deploying. No JavaScript is needed for social preview metadata. See
+  `docs/github-pages.md` for setup. Artwork is checked in; regeneration is optional.

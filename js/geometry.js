@@ -144,6 +144,7 @@ export class MCube {
       color, transparent: true, opacity: this._op, depthWrite: false,
     });
     this.lines = new THREE.LineSegments(lg, this.lMat);
+    this.lines.userData.network = true;
     this.group.add(this.lines);
   }
 

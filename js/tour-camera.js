@@ -65,6 +65,9 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   const up=new THREE.Vector3().crossVectors(shot.direction,right).normalize();
   const detailPoints=focus?[-1,1].flatMap(x=>[-1,1].map(y=>focus.clone().addScaledVector(right,x*.34).addScaledVector(up,y*.34))):points;
   const goal=fitTourFrame(detailPoints,shot.direction,viewport,shot.depth,focus);
+  // An explicit detail zoom can let the faded outer shell pass beyond the frame.
+  // It never shifts the shared geometric centre.
+  goal.height/=shot.zoom;
   let direction=shot.direction,height=goal.height,target=goal.center,depth=shot.depth;
   if(flight) {
     flight.elapsed+=Math.min(dt,.05);const t=smooth(flight.elapsed/(recipe.golden?1.5:1.3));
