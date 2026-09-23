@@ -4,6 +4,7 @@ import { getState,actions } from './state.js';
 import { el,button,check,slider,select,bind } from './lab-controls.js';
 import { registerSetting } from './settings-links.js';
 import { fitVisible, setLabStatus } from './lab.js';
+import { assemblyAvailability, objectVisible } from './scene-selectors.js';
 const axisOptions=[['x','X'],['y','Y'],['z','Z'],['diagonal','Диагональ [1,1,1]'],['custom','Свой вектор']];
 function section(parent,title,key) {const d=el('details',null,'lab-section');d.append(el('summary',title));parent.append(d);if(key)registerSetting(key,d,title);return d;}
 function view(pack,order) {actions.preset(`${pack.id}-axis-${order}`);}
@@ -13,7 +14,8 @@ export function initLabUI(groups) {
   select(explode,'Область разнесения',[['scene','Вся сцена и уровни'],['components','Тела внутри коллекций']],()=>getState().lab.explode.scope,scope=>actions.lab('explode',{scope,direction:0}));
   slider(explode,'Explode',0,1,.001,()=>getState().lab.explode.value,value=>actions.lab('explode',{value,direction:0,scope:'scene'}),v=>`${Math.round(v*100)}%`);
   const row=el('div',null,'lab-buttons');explode.append(row);
-  button(row,'Разнести всё',()=>actions.lab('explode',{scope:'scene',direction:1}));button(row,'Собрать всё',()=>actions.lab('explode',{scope:'scene',direction:-1}));button(row,'Пауза разнесения',()=>actions.lab('explode',{direction:0}));button(row,'Вместить',fitVisible);
+  const expandAll=button(row,'Разнести всё',()=>actions.lab('explode',{scope:'scene',direction:1})),collapseAll=button(row,'Собрать всё',()=>actions.lab('explode',{scope:'scene',direction:-1})),pauseAll=button(row,'Пауза разнесения',()=>actions.lab('explode',{direction:0}));button(row,'Вместить',fitVisible);
+  bind(()=>{const state=getState(),conf=state.lab.explode,available=assemblyAvailability(conf.value,conf.direction,Object.keys(state.objects).some(id=>objectVisible(state,id)));expandAll.disabled=!available.expand;collapseAll.disabled=!available.collapse;pauseAll.disabled=!available.pause;});
   check(explode,'Линии связи',()=>getState().lab.explode.links,links=>actions.lab('explode',{links}));
   explode.append(el('p','0% — общий центр. Для больших схем нажмите «Вместить». Разнесение переносит тела, сохраняя их ориентацию. Смена области сбрасывает разнесение предыдущей области.','camera-hint'));
   for(const pack of ASSEMBLIES) {
@@ -26,10 +28,11 @@ export function initLabUI(groups) {
     for(const order of pack.id==='platonic'?[]:pack.id==='merkaba'?[2,3]:[2,3,5]){const b=button(rows,`Ось ${order}`,()=>view(pack,order));b.setAttribute('aria-label',`Ось ${order} · ${pack.name}`);b.className='preset-btn lab-axis';b.dataset.pid=`${pack.id}-axis-${order}`;}
     slider(assembly,`Разборка · ${pack.name}`,0,1,.001,()=>getState().lab.collections[pack.id].explode,explode=>actions.assembly(pack.id,{explode,direction:0}),v=>`${Math.round(v*100)}%`);
     const buttons=el('div',null,'lab-buttons');assembly.append(buttons);
-    button(buttons,'Разобрать',()=>actions.assembly(pack.id,{direction:1}));
-    button(buttons,'Собрать',()=>actions.assembly(pack.id,{direction:-1}));
-    button(buttons,'Пауза сборки',()=>actions.lab('collections',{direction:0},pack.id));
-    button(buttons,'Сброс сборки',()=>actions.lab('collections',{explode:0,direction:0},pack.id));
+    const expand=button(buttons,'Разобрать',()=>actions.assembly(pack.id,{direction:1}));
+    const collapse=button(buttons,'Собрать',()=>actions.assembly(pack.id,{direction:-1}));
+    const pause=button(buttons,'Пауза сборки',()=>actions.lab('collections',{direction:0},pack.id));
+    const reset=button(buttons,'Сброс сборки',()=>actions.lab('collections',{explode:0,direction:0},pack.id));
+    bind(()=>{const conf=getState().lab.collections[pack.id],available=assemblyAvailability(conf.explode,conf.direction);expand.disabled=!available.expand;collapse.disabled=!available.collapse;pause.disabled=!available.pause;reset.disabled=!available.reset;});
     button(buttons,'Вместить',()=>fitVisible(pack.members));
     assembly.append(el('p','Раздвигает включённые тела. Если все скрыты — включает коллекцию. 0% точно возвращает тела в общий центр.','camera-hint'));
     if(pack.id==='tetra5')check(assembly,'Зеркальная пятёрка тетраэдров',()=>getState().lab.collections.tetra5.mirror,mirror=>actions.lab('collections',{mirror},pack.id));

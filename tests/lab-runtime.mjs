@@ -43,3 +43,13 @@ assert.deepEqual(PLATONIC.members.filter(id=>getState().objects[id].visible),['c
 const placed=levels[0].objs.cube.group.position.clone();actions.objects(['icosahedron'],{visible:false});updateLab(0);assert.equal(levels[0].objs.cube.group.position.distanceTo(placed),0);
 actions.objects(PLATONIC.members,{visible:false});assert.equal(getState().lab.collections.platonic.explode,0);assert.ok(PLATONIC.members.every(id=>!getState().objects[id].faces&&!getState().objects[id].edges));
 console.log('PASS: Platonic animation reaches endpoints, preserves orientation, restores exact origin at all levels, preserves partial selection and cascades off');
+
+actions.objects(ALL_IDS,{visible:false});actions.recursion({depth:1});
+actions.assembly('merkaba',{explode:.15});actions.objects(['merkaba_down'],{visible:false});actions.lab('layers',{hull:true,intersection:true});updateLab(0);
+const hullBefore=derivedObjects.find(o=>o.kind==='hull').data.volume;
+actions.onlyObject('merkaba_hull');updateLab(0);
+assert.equal(derivedObjects.find(o=>o.kind==='hull').data.volume,hullBefore);
+assert.equal(derivedObjects.filter(o=>o.object.vis).length,1);
+assert.ok(Object.values(levels[0].objs).every(o=>!o.group.visible));
+actions.onlyObject('cube');updateLab(0);assert.equal(levels[0].objs.cube.group.visible,true);assert.ok(derivedObjects.every(o=>!o.object.vis));
+console.log('PASS: isolating a derived solid preserves its shape and hides all render sources; ordinary isolation hides derived layers');

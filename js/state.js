@@ -1,5 +1,6 @@
 import { ASSEMBLIES, VIEW_CONTEXTS, contextForObjects } from './exploration-data.js';
 import { initialLab, labChange } from './lab-state.js';
+import { objectId, derivedKind } from './scene-selectors.js';
 /** Single source of truth for scene configuration. No DOM or Three.js objects.
  * Commands are atomic; subscribers only render committed, immutable snapshots.
  */
@@ -26,6 +27,37 @@ function requireValid(condition, message) { if (!condition) throw new Error(mess
 export function reduce(state, action) {
   let next = state;
   switch (action.type) {
+    case 'object/visibility': {
+      const id = objectId(action.id), kind = derivedKind(id);
+      requireValid(typeof action.visible === 'boolean', 'Invalid visibility');
+      next = kind ? reduce(state, {type:'lab/change',section:'layers',patch:{[kind]:action.visible}})
+        : reduce(state, {type:'objects/change',ids:[id],patch:{visible:action.visible}});
+      next = {...next, presetId:null, viewContext:state.viewContext};
+      if (action.visible && ['merkaba_up','merkaba_down'].includes(id)) next.lab = {...next.lab,layers:{...next.lab.layers,source:true}};
+      break;
+    }
+    case 'object/only': {
+      const id = objectId(action.id), kind = derivedKind(id);
+      requireValid(kind || ALL_IDS.includes(id), 'Unknown object');
+      const keep = kind ? ['merkaba_up','merkaba_down'] : [id];
+      const existingSources = kind && keep.some(key => state.objects[key].visible);
+      const objects = Object.fromEntries(ALL_IDS.map(key => {
+        const current = state.objects[key];
+        // A hidden source can have a different explode offset; keep both inputs'
+        // existing states so isolating a derived solid does not change its shape.
+        if (existingSources && keep.includes(key)) return [key, current];
+        return [key, keep.includes(key) ? {...current,visible:true,...(!current.visible?{edges:true,faces:true,nodes:true,lines:true}:{})}
+          : {...current,visible:false,edges:false,faces:false,nodes:false,lines:false}];
+      }));
+      const layers = {...state.lab.layers,source:!kind&&keep.some(key=>['merkaba_up','merkaba_down'].includes(key)),
+        hull:false,intersection:false,projection:false,hullFaces:false,hullEdges:false,intersectionFaces:false,intersectionEdges:false};
+      if (kind) Object.assign(layers,{[kind]:true,[kind+'Faces']:state.lab.layers[kind]?state.lab.layers[kind+'Faces']:true,[kind+'Edges']:state.lab.layers[kind]?state.lab.layers[kind+'Edges']:true});
+      next = {...state,objects,presetId:null,study:{...state.study,mode:'none',running:false},
+        display:{...state.display,golden:false,guide:false},lab:{...state.lab,layers,
+          rotation:{...state.lab.rotation,running:false},explode:{...state.lab.explode,direction:0},
+          collections:Object.fromEntries(Object.entries(state.lab.collections).map(([key,value])=>[key,{...value,direction:0}]))}};
+      break;
+    }
     case 'view/focus': {
       requireValid(VIEW_CONTEXTS.some(view => view.id === action.id), 'Unknown view context');
       if (state.viewContext !== action.id) next = { ...state, viewContext: action.id, presetId: null };
@@ -139,6 +171,11 @@ export function reduce(state, action) {
     }
     default: throw new Error(`Unknown action: ${action.type}`);
   }
+  // A projection panel opened for a preset has the same lifetime as that preset.
+  // A new Merkaba projection supplies its new axis; other presets clear the panel.
+  if (next.presetId !== state.presetId && !getPreset(next.presetId)?.labProjection && next.lab.layers.projection) {
+    next = {...next,lab:{...next.lab,layers:{...next.lab.layers,projection:false}}};
+  }
   // Visibility invariants apply to every command, including solo/restore and presets.
   if(!next.objects.merkaba_up.visible&&!next.objects.merkaba_down.visible &&
     (next.lab.rotation.running||['source','hull','intersection','projection','hullFaces','hullEdges','intersectionFaces','intersectionEdges'].some(k=>next.lab.layers[k]))) {
@@ -170,6 +207,8 @@ export function createStore() {
 }
 export const { getState, dispatch, subscribe } = createStore();
 export const actions = {
+  objectVisibility: (id, visible) => dispatch({type:'object/visibility',id,visible}),
+  onlyObject: id => dispatch({type:'object/only',id}),
   focus: id => dispatch({ type: 'view/focus', id }),
   assembly: (id,patch,reveal=true) => dispatch({type:'assembly/change',id,patch,reveal}),
   solo: (id,member) => dispatch({type:'compound/solo',id,member}),

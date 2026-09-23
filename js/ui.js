@@ -1,5 +1,6 @@
 import { COMPOUNDS } from './compound-data.js';
 import { VIEW_CONTEXTS, contextForObjects } from './exploration-data.js';
+import { objectSetting, onlyObjectVisible } from './scene-selectors.js';
 import { initLabUI } from './lab-ui.js';
 /**
  * Sidebar UI — groups, toggles, sliders, preset buttons.
@@ -102,6 +103,11 @@ export function showInfo(id) {
     <div class="pr"><span class="pl">Элемент</span><span class="pv">${d.element}</span></div>
     <div class="desc">${d.desc}</div>`;
   linkText(el, id === 'metatron' ? '_metatron_' : id);
+  el.querySelector('h2').replaceChildren(settingLink(d.name, objectSetting(id), true));
+  const only = document.createElement('button');only.className = 'info-only';only.textContent = 'Оставить только этот объект';
+  only.title = 'Скрыть остальные фигуры и исследовательские слои. Выбранная фигура остаётся на всех уровнях рекурсии.';
+  only.disabled = onlyObjectVisible(getState(), id);
+  only.addEventListener('click', () => { actions.onlyObject(id);showInfo(id); });el.querySelector('.sub').after(only);
   const help = document.createElement('p'); help.className = 'settings-link-help'; help.textContent = 'Подчёркнутые названия открывают настройки. Включение и выключение — тумблером.'; el.append(help);
   el.classList.add('vis');
   window.dispatchEvent(new CustomEvent('inspect-object', { detail: id }));

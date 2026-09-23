@@ -125,7 +125,7 @@ All user-visible text is in **Russian**. Keep it that way.
 ## Geometry laboratory
 
 See [docs/implementation-plan.md](docs/implementation-plan.md) for implemented scope
-and [docs/state-model.md](docs/state-model.md) for invariants and all 10 checks.
+and [docs/state-model.md](docs/state-model.md) for invariants and all 11 checks.
 
 - `compound-data.js`: stable compound/component IDs; new components are regular objects in the store.
 - `polyhedra-math.js`: pure convex hull/intersection, compound coordinates, symmetry and exploded-layout math.

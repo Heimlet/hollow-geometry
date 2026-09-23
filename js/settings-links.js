@@ -6,13 +6,18 @@ export function registerSetting(key, element, name) {
   element.id ||= `setting-${key.replaceAll('.', '-')}`;
   targets.set(key, { element, name });
 }
-export function settingLink(text, key) {
+export function settingLink(text, key, withIcon = false) {
   const link = document.createElement('a');
   link.className = 'settings-link'; link.textContent = text;
   link.href = '#' + (targets.get(key)?.element.id || `setting-${key.replaceAll('.', '-')}`);
   link.dataset.setting = key;
   link.title = `Открыть настройки: ${text}`;
   link.setAttribute('aria-label', `${text} — открыть настройки`);
+  if (withIcon) {
+    const icon = document.createElement('span');icon.className = 'settings-link-icon';icon.setAttribute('aria-hidden','true');
+    icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m10 13 4-4M8 15l-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 3 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0" transform="translate(1 1)"/></svg>';
+    link.append(icon);
+  }
   return link;
 }
 export function openSetting(key, source) {

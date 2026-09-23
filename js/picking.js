@@ -1,10 +1,11 @@
 import { derivedObjects } from './lab.js';
-/** Inspection UI is transient: it never changes scene visibility or materials. */
+/** Transient inspection and visibility commands; scene state owns all settings. */
 import * as THREE from 'three';
 import { INFO } from './constants.js';
 import { scene, camera, canvas, controls, getViewHeight } from './scene.js';
 import { levels } from './levels.js';
-import { subscribe } from './state.js';
+import { subscribe, getState, actions } from './state.js';
+import { objectVisible, objectSetting } from './scene-selectors.js';
 import { uniqueHits } from './pick-targets.js';
 import { inspectStudyAt } from './studies.js';
 import { inspectGoldenAt } from './golden.js';
@@ -23,6 +24,7 @@ export function initPicking(showInfo) {
   outline.geometry.dispose(); outline.visible = false; outline.renderOrder = 20; scene.add(outline);
   let selected = null, hovered = null, preview = null, pointer = null, start = null, dragged = false;
   let focusBeforePicker = null, labelHovered = false, lastHoverAt = 0;
+  let pickerRows = [];
   label.addEventListener('pointerenter', () => { labelHovered = true; });
   label.addEventListener('pointerleave', () => { labelHovered = false; });
   const title = owner => `${INFO[owner.id]?.name || owner.id}${owner.level ? ` · уровень ${owner.level + 1}` : ''}`;
@@ -55,12 +57,18 @@ export function initPicking(showInfo) {
     return uniqueHits(ray.intersectObjects([...owners.keys()], false), owners);
   }
   function closePicker(restore = false) {
-    picker.hidden = true; preview = null;
+    picker.hidden = true; preview = null;pickerRows = [];
     if (restore) focusBeforePicker?.focus();
   }
   function select(owner) { selected = owner; hovered = null; showInfo(owner.id); closePicker(); }
   let labelKey = null;
-  const keyFor = owner => owner.kind ? `lab.${owner.kind}` : `object.${owner.id === 'metatron' ? '_metatron_' : owner.id}`;
+  const keyFor = owner => objectSetting(owner.id);
+  function syncPicker(state) {
+    for (const {owner, toggle, row} of pickerRows) {
+      toggle.checked = objectVisible(state, owner.id);
+      row.classList.toggle('pick-hidden', !toggle.checked);
+    }
+  }
   function position(element, x, y) {
     element.style.left = Math.max(8, Math.min(x, innerWidth - element.offsetWidth - 8)) + 'px';
     element.style.top = Math.max(8, Math.min(y, innerHeight - element.offsetHeight - 8)) + 'px';
@@ -87,14 +95,19 @@ export function initPicking(showInfo) {
     close.addEventListener('click', () => closePicker(true)); picker.append(heading, close);
     for (const owner of hits) {
       const button = document.createElement('button'); button.className = 'pick-item'; button.textContent = title(owner);
-      button.addEventListener('pointerenter', () => { preview = owner; });
-      button.addEventListener('focus', () => { preview = owner; });
+      button.title = `Описание: ${title(owner)}`;
+      button.addEventListener('pointerenter', () => { preview = objectVisible(getState(), owner.id) ? owner : null; });
+      button.addEventListener('focus', () => { preview = objectVisible(getState(), owner.id) ? owner : null; });
       button.addEventListener('click', () => select(owner));
       const row = document.createElement('div'); row.className = 'pick-row';
+      const visibility = document.createElement('label');visibility.className = 'pick-visibility';visibility.title = `Показать или скрыть: ${title(owner)}`;
+      const toggle = document.createElement('input');toggle.type = 'checkbox';toggle.setAttribute('aria-label', `Показывать: ${title(owner)}`);
+      toggle.addEventListener('change', () => actions.objectVisibility(owner.id, toggle.checked));visibility.append(toggle);
       const settings = settingLink('Настройки', keyFor(owner));
       settings.addEventListener('click', () => closePicker());
-      row.append(button, settings); picker.appendChild(row);
+      row.append(visibility, button, settings); picker.appendChild(row);pickerRows.push({owner,toggle,row});
     }
+    const help = document.createElement('p');help.className = 'pick-help';help.textContent = 'Чекбокс — видимость на всех уровнях. Название — описание.';picker.append(help);syncPicker(getState());
     hovered = null; picker.hidden = false;
     position(picker, event.clientX + 12, event.clientY + 12);
     picker.querySelector('.pick-item').focus();
@@ -110,9 +123,13 @@ export function initPicking(showInfo) {
     if (selected?.id === event.detail) return;
     selected = [...candidates().values()].find(owner => owner.id === event.detail) || null;
   });
-  subscribe((state, previous) => {
+  subscribe((state, previous, action) => {
     if (state.objects !== previous.objects || state.recursion !== previous.recursion || state.presetId !== previous.presetId || state.lab.collections.tetra5.mirror !== previous.lab.collections.tetra5.mirror || state.lab.layers !== previous.lab.layers) {
-      selected = null; hovered = null; preview = null; labelKey=null; closePicker(); outline.visible = false; label.hidden = true;
+      selected = null; hovered = null; preview = null; labelKey=null;
+      // Keep the hit list stable while its checkboxes are used, including hidden
+      // entries, so the same checkbox can bring a figure back immediately.
+      if (action.type === 'object/visibility' && !picker.hidden) syncPicker(state); else closePicker();
+      outline.visible = false; label.hidden = true;
       document.getElementById('info').classList.remove('vis');
     }
   });
@@ -124,7 +141,8 @@ export function initPicking(showInfo) {
       if (hit) { hovered = hit; lastHoverAt = performance.now(); }
       else if (performance.now() - lastHoverAt > 400 || !picker.hidden || start) hovered = null;
     }
-    const owner = preview || selected || hovered;
+    const candidate = preview || selected || hovered;
+    const owner = candidate && objectVisible(getState(), candidate.id) ? candidate : null;
     canvas.style.cursor = hovered ? 'pointer' : 'default';
     outline.visible = !!owner; label.hidden = !owner;
     if (!owner) return;

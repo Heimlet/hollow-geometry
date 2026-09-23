@@ -201,6 +201,19 @@ button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px so
 .study-ink{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:3}.study-ink[hidden]{display:none}
 .lab-buttons .lab-axis{width:auto;min-height:0;padding:6px 8px;font-size:12px}.lab-buttons .lab-axis.active{background:#4768b34d;border-color:#91b4ff}
 .lab-range[hidden]{display:none}
+.settings-link-icon{display:inline-flex;width:15px;height:15px;margin-left:7px;vertical-align:-2px;color:#b9dcff}
+.settings-link-icon svg{width:100%;height:100%}
+#info h2{padding-right:22px;line-height:1.5}
+.info-only{display:block;width:100%;margin:10px 0 12px;padding:9px;border:1px solid #8bbfff60;border-radius:6px;background:#4488ff20;color:#d7ebff;font-size:12px;cursor:pointer}
+.info-only:hover:enabled{background:#4488ff38}
+.info-only:disabled{opacity:.4;cursor:default}
+#object-picker{min-width:290px;max-width:min(360px,calc(100vw - 24px))}
+.pick-visibility{display:flex;align-items:center;justify-content:center;align-self:stretch;flex:0 0 30px;cursor:pointer}
+.pick-visibility input{width:17px;height:17px;accent-color:#8bc4ff;cursor:pointer}
+.pick-row .pick-item{min-width:0;padding:9px 4px}
+.pick-hidden .pick-item{opacity:.45}
+#object-picker .pick-help{font-size:11px;color:#95a9c5;border-top:1px solid #ffffff18;padding-top:8px;margin:8px 0 0}
+#info,#object-picker{scrollbar-color:#48546c #101225;scrollbar-width:thin}
 
 /* Persistent scene controls, independent of the scrolling settings panel. */
 :root{--toolbar-height:56px}
