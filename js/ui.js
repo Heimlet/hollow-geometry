@@ -182,7 +182,7 @@ export function initUI() {
   // G5: 2D Projections (camera presets)
   {
     const grid = document.createElement('div'); grid.className = 'preset-grid';
-    PRESETS.forEach(p => {
+    PRESETS.filter(p=>!p.compound).forEach(p => {
       const b = document.createElement('button'); b.className = 'preset-btn'; b.dataset.pid = p.id;
       b.innerHTML = `<span class="p-icon">${p.icon}</span><span class="p-name">${p.name}</span>`;
       b.title = p.desc;
@@ -296,6 +296,7 @@ export function initUI() {
   initSettingsNavigation();
   linkText(document.querySelector('.sb-head h1'));
   panel.querySelectorAll('.camera-hint, .camera-help').forEach(el => linkText(el));
+  groupsEl.querySelectorAll('.lab-section .camera-hint').forEach(el=>linkText(el));
 
   // Accessible group headers and labelled controls, including compact object rows.
   document.querySelectorAll('.grp-hdr, .obj-hdr').forEach(header => {
@@ -339,7 +340,7 @@ export function initUI() {
       button.setAttribute('aria-pressed', button.dataset.pid === id);
     });
   });
-  subscribe(syncSettingsUI);
+  subscribe((state,previous)=>{if(state.objects!==previous.objects||state.recursion!==previous.recursion||state.presetId!==previous.presetId||state.display!==previous.display)syncSettingsUI();});
   syncSettingsUI();
 
   // Open only the projection section; recursion and display start collapsed.

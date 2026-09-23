@@ -6,7 +6,7 @@ import { getGoldenFinding } from './golden.js';
 import { pentagramDivision } from './golden-math.js';
 import { spiralPoint, rectangleSquares, nestedStars } from './studies-math.js';
 import { el, button, check, slider, select, bind, disposeGroup } from './lab-controls.js';
-import { registerSetting, settingLink } from './settings-links.js';
+import { registerSetting, settingLink, linkText } from './settings-links.js';
 const group=new THREE.Group();scene.add(group);
 const gold=0xffd166,cyan=0x66d9ff;
 let cached='',curves=[],radii,marker,measure,notice,badge,samples=1024;
@@ -23,11 +23,11 @@ function explain() {
   const info=document.getElementById('info');info.replaceChildren();
   button(info,'×',()=>info.classList.remove('vis')).className='xbtn';
   info.append(el('h2',names[mode]),el('p',explanations[mode],'desc'),el('p',measure?.textContent,'golden-measurements'),settingLink('Настройки построения','golden.studies'));
-  info.classList.add('vis');window.dispatchEvent(new Event('golden-inspect'));
+  linkText(info);info.classList.add('vis');window.dispatchEvent(new Event('golden-inspect'));
 }
 function frame() {
   const {attached,mode}=getState().study, finding=getGoldenFinding();
-  group.position.set(0,0,0);group.quaternion.identity();group.scale.setScalar(1);
+  group.position.set(0,0,0);group.quaternion.identity();group.scale.setScalar(getState().study.size);
   const valid=attached && finding && ((mode==='pentagram' && ['face','star'].includes(finding.kind)) || (mode!=='pentagram' && finding.kind==='rectangle'));
   if(valid) {
     const p=finding.points,center=p.reduce((s,v)=>s.add(v),new THREE.Vector3()).divideScalar(p.length);
@@ -36,17 +36,17 @@ function frame() {
     if(mode==='pentagram'){v=p[0].clone().sub(center).normalize();u=v.clone().cross(normal);}
     else if(p[0].distanceTo(p[1])<p[0].distanceTo(p[3])){u=p[3].clone().sub(p[0]).normalize();v=normal.clone().cross(u);}
     group.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(u,v,normal));group.position.copy(center);
-    group.scale.setScalar(mode==='pentagram'?p[0].distanceTo(center)/2.5:finding.short/3);
+    group.scale.setScalar((mode==='pentagram'?p[0].distanceTo(center)/2.5:finding.short/(mode==='spiral'?5.6:3))*getState().study.size);
   }
   if(notice)notice.textContent=attached ? valid ? 'Построение в плоскости выбранного элемента φ.' : 'Выберите подходящий прямоугольник или пятиугольную грань в отношениях φ. Пока показана отдельная плоскость.' : 'Самостоятельное построение. Все длины измеряются в плоскости фигуры.';
 }
 function rebuild() {
   const s=getState().study;
-  samples=2**Math.ceil(Math.log2(Math.max(512,Math.min(32768,6*Math.PI*Math.sqrt(2.5*group.scale.x*innerHeight/getViewHeight())))));
-  const key=`${s.mode}:${s.steps}:${s.mode==='spiral'?samples:0}`;if(cached===key)return;cached=key;
+  samples=2**Math.ceil(Math.log2(Math.max(512,Math.min(32768,2*s.turns*Math.PI*Math.sqrt(2.5*group.scale.x*innerHeight/getViewHeight())))));
+  const key=`${s.mode}:${s.steps}:${s.turns}:${s.mode==='spiral'?samples:0}`;if(cached===key)return;cached=key;
   disposeGroup(group);curves=[];radii=null;marker=null;
   if(s.mode==='spiral') {
-    const count=samples,points=Array.from({length:count+1},(_,i)=>spiralPoint(-6*Math.PI+i/count*6*Math.PI,2.5));curves=[line(points)];
+    const count=samples,points=Array.from({length:count+1},(_,i)=>spiralPoint(-2*s.turns*Math.PI+i/count*2*s.turns*Math.PI,2.5));curves=[line(points)];
     radii=[line([new THREE.Vector3(),new THREE.Vector3()],cyan),line([new THREE.Vector3(),new THREE.Vector3()],gold)];
     marker=new THREE.Mesh(new THREE.SphereGeometry(.04,12,8),new THREE.MeshBasicMaterial({color:0xffffff,depthTest:false}));marker.renderOrder=41;group.add(marker);
   } else if(s.mode==='rectangle') {
@@ -64,7 +64,10 @@ export function initStudiesUI(parent) {
   check(box,'В плоскости выбранного элемента φ',()=>getState().study.attached,attached=>actions.study({attached}));
   notice=el('p',null,'camera-hint');box.append(notice);
   slider(box,'Прогресс φ',0,1,.001,()=>getState().study.progress,progress=>actions.study({progress,running:false}),v=>`${Math.round(v*100)}%`);
-  slider(box,'Шаги φ',1,8,1,()=>getState().study.steps,steps=>actions.study({steps}));
+  const steps=slider(box,'Шаги φ',1,8,1,()=>getState().study.steps,steps=>actions.study({steps}));
+  const turns=slider(box,'Витки спирали',1,5,1,()=>getState().study.turns,turns=>actions.study({turns}));
+  slider(box,'Размер построения',.1,3,.05,()=>getState().study.size,size=>actions.study({size}),v=>`×${v.toFixed(2)}`);
+  bind(()=>{steps.parentElement.hidden=getState().study.mode==='spiral';turns.parentElement.hidden=getState().study.mode!=='spiral';});
   slider(box,'Скорость φ',.01,.5,.01,()=>getState().study.speed,speed=>actions.study({speed}),v=>`${v.toFixed(2)} цикла/с`);
   const row=el('div',null,'lab-buttons');box.append(row);
   const play=button(row,'▶ Запуск',()=>actions.study({running:!getState().study.running,progress:getState().study.progress>=1?0:getState().study.progress}));
@@ -86,8 +89,8 @@ export function updateStudies(dt) {
   frame();rebuild();group.visible=s.mode!=='none';if(badge)badge.hidden=!group.visible;ink.hidden=!group.visible;annotations.forEach(a=>a.hidden=!group.visible);if(!group.visible)return;
   let endpoints=[],lengths=[];
   if(s.mode==='spiral') {
-    const theta=-5.5*Math.PI+s.progress*5.5*Math.PI,a=spiralPoint(theta-Math.PI/2,2.5),b=spiralPoint(theta,2.5);
-    curves[0].geometry.setDrawRange(0,Math.floor((theta+6*Math.PI)/(6*Math.PI)*samples)+1);
+    const range=2*s.turns*Math.PI,theta=-range+Math.PI/2+s.progress*(range-Math.PI/2),a=spiralPoint(theta-Math.PI/2,2.5),b=spiralPoint(theta,2.5);
+    curves[0].geometry.setDrawRange(0,Math.floor((theta+range)/range*samples)+1);
     for(const [i,p] of [a,b].entries()){radii[i].geometry.attributes.position.setXYZ(1,p.x,p.y,0);radii[i].geometry.attributes.position.needsUpdate=true;radii[i].geometry.computeBoundingSphere();}
     endpoints=[[new THREE.Vector3(),a],[new THREE.Vector3(),b]];lengths=[a.length(),b.length()];
     marker.position.copy(b);measure.textContent=`r₁ = ${(a.length()*group.scale.x).toFixed(5)} · r₂ = ${(b.length()*group.scale.x).toFixed(5)}\nr₂ / r₁ = φ ≈ ${PHI.toFixed(5)} · Δθ = 90°`;

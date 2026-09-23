@@ -19,15 +19,25 @@ export function initialState() {
     visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: opacity[id] ?? .12,
   }])), recursion: { depth: 1, scale: .35 }, presetId: null,
   lab: initialLab(),
-  study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, attached: false },
+  study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, turns: 3, size: 1, attached: false },
   display: { autoRotate: false, speed: .15, stars: true, guide: false, golden: false } });
 }
 function requireValid(condition, message) { if (!condition) throw new Error(message); }
 export function reduce(state, action) {
   let next = state;
   switch (action.type) {
+    case 'assembly/change': {
+      const pack=COMPOUNDS.find(c=>c.id===action.id);requireValid(pack,'Unknown compound');
+      const base=action.reveal?reduce(state,{type:'objects/change',ids:pack.members,patch:{visible:true}}):state;
+      const lab=labChange(base.lab,'explode',{scope:'components',value:0,direction:0});
+      next={...base,lab:labChange(lab,'collections',action.patch,pack.id)};break;
+    }
     case 'lab/change': {
       next = {...state,lab:labChange(state.lab,action.section,action.patch,action.id)};
+      if(action.section==='explode' && action.patch.scope && action.patch.scope!==state.lab.explode.scope) {
+        if(action.patch.scope==='components') next.lab={...next.lab,explode:{...next.lab.explode,value:0,direction:0}};
+        else next.lab={...next.lab,collections:Object.fromEntries(Object.entries(next.lab.collections).map(([id,c])=>[id,{...c,explode:0,direction:0}]))};
+      }
       if(action.section==='layers') {
         const layers={...next.lab.layers};
         for(const kind of ['hull','intersection']) {
@@ -37,8 +47,9 @@ export function reduce(state, action) {
         }
         next.lab={...next.lab,layers};
       }
-      if ((action.section==='layers' && ['hull','intersection','projection','hullFaces','hullEdges','intersectionFaces','intersectionEdges'].some(k=>action.patch[k]===true)) || (action.section==='rotation' && action.patch.running)) {
+      if ((action.section==='layers' && ['hull','intersection','projection','source','hullFaces','hullEdges','intersectionFaces','intersectionEdges'].some(k=>action.patch[k]===true)) || (action.section==='rotation' && action.patch.running)) {
         if(!state.objects.merkaba_up.visible && !state.objects.merkaba_down.visible) {
+          next.lab={...next.lab,layers:{...next.lab.layers,source:action.section==='layers'?(action.patch.source??true):true}};
           next.objects={...state.objects}; for(const id of ['merkaba_up','merkaba_down'])next.objects[id]={...state.objects[id],visible:true,faces:true,edges:true};
         }
       }
@@ -47,7 +58,7 @@ export function reduce(state, action) {
     case 'compound/solo': {
       const pack=COMPOUNDS.find(c=>c.id===action.id);requireValid(pack && pack.members.includes(action.member),'Invalid component');
       const restore=state.lab.collections[pack.id].restore || Object.fromEntries(pack.members.map(id=>[id,state.objects[id]]));
-      const objects={...state.objects};for(const id of pack.members)objects[id]={...objects[id],visible:id===action.member,edges:id===action.member,faces:id===action.member};
+      const objects={...state.objects};for(const id of pack.members)objects[id]={...objects[id],visible:id===action.member,edges:id===action.member,faces:id===action.member,nodes:id===action.member,lines:id===action.member};
       next={...state,objects,presetId:null,lab:labChange(state.lab,'collections',{restore},pack.id)};break;
     }
     case 'compound/restore': {
@@ -58,7 +69,7 @@ export function reduce(state, action) {
       requireValid(['none','spiral','rectangle','pentagram'].includes(study.mode) &&
         study.progress >= 0 && study.progress <= 1 && Number.isFinite(study.progress) &&
         study.steps >= 1 && study.steps <= 8 && Number.isInteger(study.steps) &&
-        study.speed >= .01 && study.speed <= .5 && typeof study.running === 'boolean' && typeof study.attached === 'boolean', 'Invalid study');
+        study.speed >= .01 && study.speed <= .5 && Number.isInteger(study.turns) && study.turns>=1 && study.turns<=5 && Number.isFinite(study.size) && study.size>=.1 && study.size<=3 && typeof study.running === 'boolean' && typeof study.attached === 'boolean', 'Invalid study');
       if(study.mode === 'none') study.running = false;
       next = {...state,study}; break;
     }
@@ -82,7 +93,7 @@ export function reduce(state, action) {
       // Explicit manual appearance edits exit preset mode; no invisible overrides.
       next = { ...state, objects, presetId: null };
       if (!objects.merkaba_up.visible && !objects.merkaba_down.visible) next.lab = {...state.lab,
-        rotation:{...state.lab.rotation,running:false},layers:{...state.lab.layers,source:true,hull:false,intersection:false,projection:false,hullFaces:false,hullEdges:false,intersectionFaces:false,intersectionEdges:false}};
+        rotation:{...state.lab.rotation,running:false},layers:{...state.lab.layers,source:false,hull:false,intersection:false,projection:false,hullFaces:false,hullEdges:false,intersectionFaces:false,intersectionEdges:false}};
       if(patch.visible===true && action.ids.some(id=>['merkaba_up','merkaba_down'].includes(id)) && !state.objects.merkaba_up.visible && !state.objects.merkaba_down.visible) next.lab={...next.lab,layers:{...next.lab.layers,source:true}};
       for(const pack of COMPOUNDS) if(pack.members.every(id=>!objects[id].visible)) next.lab=labChange(next.lab,'collections',{direction:0,explode:0},pack.id);
       if(action.ids.length===ALL_IDS.length && patch.visible===false) next={...next,study:{...state.study,mode:'none',running:false},lab:{...next.lab,explode:{...next.lab.explode,value:0,direction:0},collections:Object.fromEntries(Object.entries(next.lab.collections).map(([id,c])=>[id,{...c,explode:0,direction:0}]))}};
@@ -101,6 +112,8 @@ export function reduce(state, action) {
           ...(id === '_metatron_' ? { lines: true, opacity: Math.max(objects[id].opacity, .4) } : {}) };
       });
       next = { ...state, objects, presetId: preset.id, display: { ...state.display, autoRotate: false } };
+      if(preset.obj.includes('merkaba_up'))next.lab={...state.lab,layers:{...state.lab.layers,source:true}};
+      if(preset.labProjection)next.lab={...next.lab,layers:{...next.lab.layers,projection:true,axis:preset.labProjection,...(preset.labProjection==='hexagon'?{hull:true,hullEdges:true,hullFaces:false}:{})}};
       break;
     }
     case 'preset/clear': next = { ...state, presetId: null }; break;
@@ -119,6 +132,12 @@ export function reduce(state, action) {
     }
     default: throw new Error(`Unknown action: ${action.type}`);
   }
+  // Visibility invariants apply to every command, including solo/restore and presets.
+  if(!next.objects.merkaba_up.visible&&!next.objects.merkaba_down.visible &&
+    (next.lab.rotation.running||['source','hull','intersection','projection','hullFaces','hullEdges','intersectionFaces','intersectionEdges'].some(k=>next.lab.layers[k]))) {
+    next={...next,lab:{...next.lab,rotation:{...next.lab.rotation,running:false},layers:{...next.lab.layers,source:false,hull:false,intersection:false,projection:false,hullFaces:false,hullEdges:false,intersectionFaces:false,intersectionEdges:false}}};
+  }
+  for(const pack of COMPOUNDS)if(pack.members.every(id=>!next.objects[id].visible)&&(next.lab.collections[pack.id].direction||next.lab.collections[pack.id].explode))next={...next,lab:labChange(next.lab,'collections',{direction:0,explode:0},pack.id)};
   return freeze(next);
 }
 export function groupVisibility(state, ids) {
@@ -144,6 +163,7 @@ export function createStore() {
 }
 export const { getState, dispatch, subscribe } = createStore();
 export const actions = {
+  assembly: (id,patch,reveal=true) => dispatch({type:'assembly/change',id,patch,reveal}),
   solo: (id,member) => dispatch({type:'compound/solo',id,member}),
   restore: id => dispatch({type:'compound/restore',id}),
   lab: (section, patch, id) => dispatch({ type: 'lab/change', section, patch, id }),

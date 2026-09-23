@@ -15,3 +15,17 @@ actions.lab('layers',{hullFaces:true});updateLab(0);assert.equal(getState().lab.
 actions.objects(ALL_IDS,{visible:false});updateLab(0);assert.ok(derivedObjects.every(o=>!o.object.vis));
 actions.objects(['cube5_1','cube5_3'],{visible:true});const previous=getState().objects;actions.solo('cube5','cube5_4');actions.restore('cube5');for(const id of ['cube5_0','cube5_1','cube5_2','cube5_3','cube5_4'])assert.deepEqual(getState().objects[id],previous[id]);
 console.log('PASS: live layers synchronized, recursion, reset, separation/assembly, parent cascade, source recovery, solo/restore');
+// A visibility change while exploded must not rearrange already placed bodies.
+actions.objects(ALL_IDS,{visible:false});actions.objects(['cube','tetrahedron','octahedron'],{visible:true});updateLab(0);actions.lab('explode',{scope:'scene',value:1});updateLab(0);
+const cubePosition=levels[0].objs.cube.group.position.clone();actions.objects(['tetrahedron'],{visible:false});updateLab(0);assert.ok(levels[0].objs.cube.group.position.distanceTo(cubePosition)<1e-12);
+actions.lab('explode',{value:0});updateLab(0);assert.ok(levels.every(level=>Object.values(level.objs).every(o=>o.group.position.length()===0)));
+// Replaced derived buffers and obsolete recursion instances must be disposed.
+actions.lab('layers',{hull:true,intersection:true});updateLab(0);let disposed=0;for(const owner of derivedObjects)owner.edges.geometry.addEventListener('dispose',()=>disposed++);
+actions.lab('rotation',{up:23});updateLab(0);assert.equal(disposed,6);
+let materialDisposed=false;derivedObjects[0].object.fMat.addEventListener('dispose',()=>materialDisposed=true);actions.recursion({depth:1});updateLab(0);assert.equal(materialDisposed,true);assert.equal(derivedObjects.length,2);
+console.log('PASS: stable explode layout, exact restoration, disposed replaced buffers/materials');
+actions.objects(ALL_IDS,{visible:false});let commits=0;const {subscribe}=await import(await load('state'));const unsubscribe=subscribe(()=>commits++);
+actions.assembly('tetra5',{explode:.7});assert.equal(commits,1);assert.equal(getState().objects.tetra5_0.visible,true);assert.equal(getState().lab.collections.tetra5.explode,.7);
+actions.lab('explode',{scope:'scene',value:.4});assert.equal(getState().lab.collections.tetra5.explode,0);
+actions.assembly('cube5',{explode:.3});assert.equal(getState().lab.explode.value,0);unsubscribe();
+console.log('PASS: atomic assembly reveals members and mutually exclusive explode scopes reset inactive offsets');

@@ -43,7 +43,7 @@ export function initPicking(showInfo) {
         if (meta.lVis && meta.op > 0) owners.set(meta.lines, owner);
       }
     }
-    for(const owner of derivedObjects) if(owner.object.vis){if(owner.object.fVis)owners.set(owner.object.mesh,owner);if(owner.object.eVis)owners.set(owner.edges,owner);}
+    for(const owner of derivedObjects) if(owner.object.vis&&(owner.object.eVis||(owner.object.fVis&&owner.object.op>0))){owners.set(owner.object.mesh,owner);if(owner.object.eVis)owners.set(owner.edges,owner);}
     return owners;
   }
   function hitsAt(x, y) {
@@ -112,7 +112,7 @@ export function initPicking(showInfo) {
   });
   subscribe((state, previous) => {
     if (state.objects !== previous.objects || state.recursion !== previous.recursion || state.presetId !== previous.presetId || state.lab.collections.tetra5.mirror !== previous.lab.collections.tetra5.mirror || state.lab.layers !== previous.lab.layers) {
-      selected = null; hovered = null; preview = null; closePicker(); outline.visible = false; label.hidden = true;
+      selected = null; hovered = null; preview = null; labelKey=null; closePicker(); outline.visible = false; label.hidden = true;
       document.getElementById('info').classList.remove('vis');
     }
   });

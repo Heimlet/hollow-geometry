@@ -110,4 +110,4 @@ const store = createStore(), snapshot = store.getState();
 assert.throws(() => { snapshot.objects.cube.visible = false; }, TypeError);
 assert.throws(() => store.dispatch({ type: 'preset/select', id: 'missing' }));
 assert.equal(store.getState(), snapshot);
-console.log('PASS: all 8 presets after hidden/transparent objects, atomic commands, manual overrides, recursion, group selectors, immutable state, 300 mixed transitions + Three.js rendering invariants');
+console.log('PASS: all ' + PRESETS.length + ' presets after hidden/transparent objects, atomic commands, manual overrides, recursion, group selectors, immutable state, 300 mixed transitions + Three.js rendering invariants');

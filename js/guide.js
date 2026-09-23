@@ -44,7 +44,7 @@ export function drawProjectionGuide() {
       .filter(([id, object]) => object.vis && object.group.visible && (!preset || preset.obj.includes(id)))
       .map(([, object]) => object.edges);
     if (level.mc.vis && (!preset || preset.obj.includes('_metatron_'))) objects.push(level.mc.lines);
-    objects.push(...derivedObjects.filter(o=>o.level===level.idx && o.object.vis).map(o=>o.edges));
+    if(!preset||preset.obj.includes('merkaba_up'))objects.push(...derivedObjects.filter(o=>o.level===level.idx && o.object.vis).map(o=>o.edges));
     if (level.idx === 0) objects.push(...getPresetHighlights());
     for (const edges of objects) {
       const positions = edges.geometry.getAttribute('position');

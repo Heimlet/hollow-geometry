@@ -120,3 +120,21 @@ All user-visible text is in **Russian**. Keep it that way.
 - **Display settings**: use `actions.display(...)` and `getState().display`; no mutable window flags
 - **Preset visibility**: selecting a preset makes its required contours visible atomically. Manual appearance edits exit the preset. Recursion preserves it.
 - **Regression checks**: run both test scripts described in `docs/state-model.md` after state/camera changes.
+
+
+## Geometry laboratory
+
+See [docs/implementation-plan.md](docs/implementation-plan.md) for implemented scope
+and [docs/state-model.md](docs/state-model.md) for invariants and all 10 checks.
+
+- `compound-data.js`: stable compound/component IDs; new components are regular objects in the store.
+- `polyhedra-math.js`: pure convex hull/intersection, compound coordinates, symmetry and exploded-layout math.
+- `lab-state.js`, `lab.js`, `lab-ui.js`, `lab-projection.js`: validated settings, one transform pipeline, controls and exact 2D panel.
+- `studies-math.js`, `studies.js`: three golden-ratio demonstrations, separate from timed preset hints.
+- `lab-controls.js`: accessible bound controls; settings navigation can open native details as well as legacy accordions.
+- `camera-transition.js`: framing first, perspective flattening second; automatic Depth changes must not cancel the animation.
+
+Do not mutate source vertices during animation. Picking, guides, labels and derived
+layers must follow the current world transforms. Hidden render sources remain
+available for Intersection; disabling the whole compound cascades through its layers.
+Use `actions.assembly(...)` for atomic component activation and assembly animation.

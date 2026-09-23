@@ -1,21 +1,12 @@
-import * as THREE from 'three';
 import { COMPOUNDS } from './compound-data.js';
-import { CR } from './constants.js';
 import { getState,actions,groupVisibility } from './state.js';
 import { el,button,check,slider,select,bind } from './lab-controls.js';
 import { registerSetting,settingLink } from './settings-links.js';
-import { flyCamera } from './presets.js';
 import { fitVisible, setLabStatus } from './lab.js';
-import { compoundCoordinates,hull } from './polyhedra-math.js';
 const axisOptions=[['x','X'],['y','Y'],['z','Z'],['diagonal','Диагональ [1,1,1]'],['custom','Свой вектор']];
 function section(parent,title,key) {const d=el('details',null,'lab-section');d.append(el('summary',title));parent.append(d);if(key)registerSetting(key,d,title);return d;}
-function showMembers(pack) {actions.objects(pack.members,{visible:true});}
-function view(pack,order) {
-  showMembers(pack);let dir;
-  if(pack.id==='merkaba')dir=order===3?new THREE.Vector3(1,1,1):new THREE.Vector3(0,0,1);
-  else {const {vertices}=compoundCoordinates(1),poly=hull(vertices);dir=order===3?vertices[0].clone():order===5?poly.faces[0].normal.clone():vertices[poly.edges[0][0]].clone().add(vertices[poly.edges[0][1]]);}
-  actions.display({autoRotate:false});flyCamera(dir.normalize().multiplyScalar(30),CR*2.7/Math.min(1,innerWidth/innerHeight));
-}
+function view(pack,order) {actions.preset(`${pack.id}-axis-${order}`);}
+
 export function initLabUI(groups) {
   const explode=section(document.getElementById('setting-display').querySelector('.grp-body'),'Взрывная схема · Explode','lab.explode');
   select(explode,'Область разнесения',[['scene','Фигуры и уровни'],['components','Компоненты соединений']],()=>getState().lab.explode.scope,scope=>actions.lab('explode',{scope,direction:0}));
@@ -23,16 +14,19 @@ export function initLabUI(groups) {
   const row=el('div',null,'lab-buttons');explode.append(row);
   button(row,'Разнести всё',()=>actions.lab('explode',{scope:'scene',direction:1}));button(row,'Собрать всё',()=>actions.lab('explode',{scope:'scene',direction:-1}));button(row,'Пауза разнесения',()=>actions.lab('explode',{direction:0}));button(row,'Вместить',fitVisible);
   check(explode,'Линии связи',()=>getState().lab.explode.links,links=>actions.lab('explode',{links}));
-  explode.append(el('p','0% — общий центр. Для больших схем нажмите «Вместить». Разнесение переносит тела, сохраняя их ориентацию.','camera-hint'));
+  explode.append(el('p','0% — общий центр. Для больших схем нажмите «Вместить». Разнесение переносит тела, сохраняя их ориентацию. Смена области сбрасывает разнесение предыдущей области.','camera-hint'));
   for(const pack of COMPOUNDS) {
     const host=document.querySelector(`[data-compound="${pack.id}"] > .grp-body`);
+    const appearance=section(host,'Оформление всех компонентов',`compound.${pack.id}.appearance`);
+    for(const [key,title]of [['edges','Все рёбра'],['faces','Все грани']])check(appearance,`${title} · ${pack.name}`,()=>{const values=pack.members.map(id=>getState().objects[id][key]);return values.every(Boolean)?true:values.some(Boolean)?'mixed':false;},value=>actions.objects(pack.members,{[key]:value}));
+    slider(appearance,`Прозрачность всех тел · ${pack.name}`,0,1,.01,()=>pack.members.reduce((sum,id)=>sum+getState().objects[id].opacity,0)/pack.members.length,opacity=>actions.objects(pack.members,{opacity}),v=>`${Math.round(v*100)}% в среднем`);
     const assembly=section(host,'Сборка и ракурсы',`compound.${pack.id}`);
     const rows=el('div',null,'lab-buttons');assembly.append(rows);
-    for(const order of pack.id==='merkaba'?[2,3]:[2,3,5])button(rows,`Ось ${order} · ${pack.id==='merkaba'?'Меркаба':pack.name}`,()=>view(pack,order));
-    slider(assembly,`Разборка · ${pack.name}`,0,1,.001,()=>getState().lab.collections[pack.id].explode,explode=>{actions.lab('explode',{scope:'components',direction:0});actions.lab('collections',{explode,direction:0},pack.id);},v=>`${Math.round(v*100)}%`);
+    for(const order of pack.id==='merkaba'?[2,3]:[2,3,5]){const b=button(rows,`Ось ${order} · ${pack.id==='merkaba'?'Меркаба':pack.name}`,()=>view(pack,order));b.className='preset-btn lab-axis';b.dataset.pid=`${pack.id}-axis-${order}`;}
+    slider(assembly,`Разборка · ${pack.name}`,0,1,.001,()=>getState().lab.collections[pack.id].explode,explode=>actions.assembly(pack.id,{explode,direction:0}),v=>`${Math.round(v*100)}%`);
     const buttons=el('div',null,'lab-buttons');assembly.append(buttons);
-    button(buttons,'Разобрать',()=>{showMembers(pack);actions.lab('explode',{scope:'components',direction:0});actions.lab('collections',{direction:1},pack.id);});
-    button(buttons,'Собрать',()=>{actions.lab('explode',{scope:'components',direction:0});actions.lab('collections',{direction:-1},pack.id);});
+    button(buttons,'Разобрать',()=>actions.assembly(pack.id,{direction:1}));
+    button(buttons,'Собрать',()=>actions.assembly(pack.id,{direction:-1}));
     button(buttons,'Пауза сборки',()=>actions.lab('collections',{direction:0},pack.id));
     button(buttons,'Сброс сборки',()=>actions.lab('collections',{explode:0,direction:0},pack.id));
     button(buttons,'Вместить',fitVisible);
@@ -46,7 +40,7 @@ export function initLabUI(groups) {
 function initMerkaba(host) {
   const research=section(host,'Исследовать Меркабу','lab.merkaba');
   research.append(el('p','Слои комбинируются. «Исходные тетраэдры» управляют только их отображением; оболочка и пересечение всегда вычисляются по обоим телам.','camera-hint'));
-  for(const [key,title] of [['hull','Выпуклая оболочка'],['intersection','Пересечение'],['projection','2D-панель Меркабы'],['source','Исходные тетраэдры']])check(research,title,()=>getState().lab.layers[key],v=>actions.lab('layers',{[key]:v}));
+  for(const [key,title] of [['hull','Выпуклая оболочка'],['intersection','Пересечение'],['projection','2D-панель Меркабы'],['source','Исходные тетраэдры']]){const input=check(research,title,()=>getState().lab.layers[key],v=>actions.lab('layers',{[key]:v}));if(key==='source')registerSetting('lab.source',input.parentElement,title);}
   const status=el('p',null,'lab-topology');research.append(status);setLabStatus(status);
   const spin=section(research,'Вращение тел','lab.rotation');
   select(spin,'Режим вращения',[['whole','Вся Меркаба'],['up','Тетраэдр ▲'],['down','Тетраэдр ▼'],['counter','Встречное'],['independent','Независимое']],()=>getState().lab.rotation.mode,mode=>actions.lab('rotation',{mode}));
@@ -76,6 +70,6 @@ function initMerkaba(host) {
   }
   const projection=section(research,'Ракурсы проекции','lab.projection');
   select(projection,'Проекция Меркабы',[['star','Гексаграмма · рёбра'],['hexagon','Шестиугольник · оболочка'],['square','Квадрат'],['triangles','Треугольники ▲ / ▼'],['free','Текущий ракурс']],()=>getState().lab.layers.axis,axis=>actions.lab('layers',{axis,projection:true}));
-  button(projection,'Камера по оси проекции',()=>view(COMPOUNDS[0],getState().lab.layers.axis==='square'?2:3));
+  button(projection,'Камера по оси проекции',()=>{const axis=getState().lab.layers.axis;if(axis!=='free')actions.preset(axis==='star'?'star6':`merkaba-${axis}`);});
   projection.append(el('p','Правильные фигуры проявляются в каноническом положении при Explode = 0. После относительного поворота контуры закономерно меняются.','camera-hint'));
 }

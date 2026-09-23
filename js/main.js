@@ -32,6 +32,8 @@ window.resetCamera = () => {
   if (isPresetActive()) deactivatePreset();
 };
 
+document.querySelectorAll('.hdr-btns button').forEach(button=>button.disabled=false);
+
 const updatePicking = initPicking(showInfo);
 
 // ── Animation loop ──
