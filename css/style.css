@@ -330,14 +330,14 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .mode-advanced #app-toolbar{padding-right:310px}
 .mode-simple:has(.tour-menu:not([hidden])) #c{opacity:.7}
 .tour-menu{position:fixed;inset:64px 0 0;z-index:20;overflow:auto;padding:32px max(24px,calc((100vw - 1100px)/2)) 36px;background:radial-gradient(ellipse at 50% 10%,#10213e44,transparent 70%);scrollbar-width:thin;scrollbar-color:#384a65 transparent}
-.tour-intro{margin-bottom:28px}.tour-eyebrow{font-size:10px;letter-spacing:1.7px;color:#90a6c5;text-transform:uppercase}
-.tour-intro h1{font-weight:450;letter-spacing:-1.3px;font-size:clamp(26px,3.1vw,43px);line-height:1.18;margin:12px 0;color:#ecf2fc}.tour-lead{font-size:14px;line-height:1.6;color:#95aac9}
+.tour-eyebrow{font-size:10px;letter-spacing:1.7px;color:#90a6c5;text-transform:uppercase}
+
 .tour-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
 .tour-card{position:relative;display:flex;align-items:flex-start;flex-direction:column;gap:10px;min-height:225px;text-align:left;padding:22px 18px 17px;border:1px solid #a2bde426;border-radius:16px;background:linear-gradient(145deg,#1b2845ca,#0a1124e8);color:#dce6f4;cursor:pointer;box-shadow:0 8px 32px #0002;transition:transform .25s,border-color .25s,background .25s;overflow:hidden}
 .tour-card:before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 90% 0,color-mix(in srgb,var(--tour-color) 11%,transparent),transparent 70%);pointer-events:none}
 .tour-card:hover{transform:translateY(-4px);border-color:var(--tour-color);background:#17233bec}.tour-card:focus-visible{outline-color:var(--tour-color)}
 .tour-icon{font-family:Georgia,'Times New Roman',serif;font-size:49px;line-height:1.1;color:var(--tour-color);height:56px;filter:drop-shadow(0 0 16px color-mix(in srgb,var(--tour-color) 22%,transparent))}
-.tour-card strong{font-size:15px;font-weight:500;line-height:1.3}.tour-description{font-size:11px;line-height:1.6;color:#91a6c4}.tour-meta{font-size:10px;color:var(--tour-color);margin-top:auto;padding-top:7px;letter-spacing:.3px}.tour-card-play{position:absolute;top:21px;right:20px;color:#748da9;font-size:19px}.tour-menu-note{font-size:12px;line-height:1.7;color:#849ab9;text-align:center;margin:22px 0 0}
+.tour-card strong{font-size:15px;font-weight:500;line-height:1.3}.tour-description{font-size:11px;line-height:1.6;color:#91a6c4}.tour-meta{font-size:10px;color:var(--tour-color);margin-top:auto;padding-top:7px;letter-spacing:.3px}.tour-card-play{position:absolute;top:21px;right:20px;color:#748da9;font-size:19px}
 .tour-player{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);width:min(720px,calc(100vw - 120px));z-index:50;padding:18px 22px 14px;border:1px solid #8faace36;border-radius:15px;background:#0c1426ed;backdrop-filter:blur(22px);box-shadow:0 18px 60px #0007;color:#dce6f4}
 .tour-progress{position:absolute;left:14px;right:14px;top:0;height:2px;background:#a9c7ee14;overflow:hidden}.tour-progress span{display:block;height:100%;background:#bbdcff;box-shadow:0 0 10px #89baff}
 .tour-player-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.tour-player-head .tour-eyebrow{font-size:9px;line-height:1.6;letter-spacing:1px}.tour-player-head button{background:none;border:0;padding:2px;font-size:11px;color:#89a4c8}
@@ -356,11 +356,11 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 #shortcut-panel h2{font-size:14px;font-weight:500;margin-bottom:14px}#shortcut-panel dl{display:grid;grid-template-columns:110px 1fr;gap:12px 10px;font-size:11px;line-height:1.4}#shortcut-panel dt{color:#cbdffa}#shortcut-panel dd{color:#91a8c7}#shortcut-panel[hidden]{display:none}
 @media(min-width:701px) and (hover:hover) and (pointer:fine){.shortcut-dock{display:block}}
 @media(prefers-reduced-motion:reduce){.shortcut-question:after{animation:none}.tour-card{transition:none}}
-@media(max-width:1100px){.mode-advanced #view-context{display:none}.tour-card{padding:18px 14px;min-height:230px}.tour-intro{margin-bottom:22px}.tour-menu{padding-top:22px}}
+@media(max-width:1100px){.mode-advanced #view-context{display:none}.tour-card{padding:18px 14px;min-height:230px}.tour-menu{padding-top:22px}}
 @media(max-width:850px){.tour-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tour-card{min-height:200px}.tour-menu{padding:24px 28px 40px}.mode-advanced #app-toolbar{padding-right:0}.mode-advanced .experience-mode{top:56px;right:0;left:0;justify-content:flex-end;background:#0d1222f5;height:44px;padding:4px 10px;border-bottom:1px solid #ffffff18}.mode-advanced #sidebar{top:100px;height:calc(100% - 100px)}.mode-advanced #proj-label{top:110px}.mode-advanced .golden-story{top:110px}}
 @media(max-width:700px){
   .mode-simple .experience-mode{padding:10px 14px;height:60px;gap:4px}.experience-brand{font-size:13px;letter-spacing:0}.experience-mode button{font-size:11px;padding:7px 9px}.mode-simple .experience-mode button:last-child{width:31px;padding:7px 0;font-size:0}.mode-simple .experience-mode button:last-child:before{content:'≈';font-size:19px;line-height:13px}
-  .tour-menu{inset:60px 0 0;padding:22px 18px 36px}.tour-intro h1{font-size:29px;max-width:310px;letter-spacing:-.7px}.tour-lead{font-size:12px}.tour-grid{gap:10px}.tour-card{padding:15px 12px;min-height:224px;gap:9px;border-radius:12px}.tour-card strong{font-size:13px}.tour-icon{font-size:43px;height:48px}.tour-description{font-size:10px;line-height:1.6}.tour-card-play{right:12px;top:17px}.tour-meta{font-size:9px}.tour-menu-note{font-size:11px}
+  .tour-menu{inset:60px 0 0;padding:22px 18px 36px}.tour-grid{gap:10px}.tour-card{padding:15px 12px;min-height:224px;gap:9px;border-radius:12px}.tour-card strong{font-size:13px}.tour-icon{font-size:43px;height:48px}.tour-description{font-size:10px;line-height:1.6}.tour-card-play{right:12px;top:17px}.tour-meta{font-size:9px}
   .tour-player{width:calc(100vw - 24px);bottom:12px;padding:14px 15px 12px;border-radius:12px}.tour-player h2{font-size:17px}.tour-narration{font-size:12px;line-height:1.65;max-height:120px}.tour-player-head .tour-eyebrow{font-size:8px;letter-spacing:.5px}.tour-player-head button{font-size:10px}.tour-controls{gap:5px;margin-top:11px}.tour-controls button{font-size:11px;padding:8px 10px}.tour-controls .tour-play{min-width:115px}.tour-controls .tour-inspect{font-size:0;min-width:30px;padding:8px}.tour-controls .tour-inspect:before{content:'⚙';font-size:15px}.tour-chapters{grid-template-columns:1fr}.touring #fs-btn{top:66px;left:12px;bottom:auto}.touring #info{top:70px;max-height:30vh}
   .mode-simple:has(#sidebar:not(.hidden)) .golden-scene-length{display:block}.mode-simple .golden-scene-length[hidden]{display:none}
   .mode-advanced .golden-story{top:auto}
@@ -447,3 +447,17 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .knowledge-preview canvas:active{cursor:grabbing}.knowledge-preview canvas:focus-visible{outline:2px solid #efd197;outline-offset:-3px}
 .knowledge-preview figcaption{text-align:center;color:#8a9fb9;font-size:10px;padding:0 12px 12px;line-height:1.5}
 @media(max-width:700px){.knowledge-preview canvas{height:180px}.knowledge-preview figcaption{font-size:9px}}
+
+/* A quiet music link above the tour collection. */
+.tour-menu-tools{display:flex;justify-content:flex-end;margin-bottom:20px}
+.tour-playlist{display:inline-flex;align-items:center;gap:12px;max-width:100%;padding:10px 14px 10px 10px;border:1px solid #dec6952e;border-radius:13px;background:linear-gradient(120deg,#eac5810d,#8cacde07);color:#e6d6b6;text-decoration:none;transition:background .2s,border-color .2s;box-shadow:0 4px 20px #0002}
+.playlist-icon{display:grid;place-items:center;flex:0 0 36px;height:36px;border:1px solid #efd09a30;border-radius:11px;background:radial-gradient(circle at 30% 20%,#edc78026,#edc78006);color:#edcf97}
+.playlist-icon svg{width:24px;height:24px;filter:drop-shadow(0 0 6px #edc78025)}
+.playlist-icon ellipse{fill:#edcf9722}
+.playlist-label{display:flex;flex-direction:column;gap:4px;font-size:12px;line-height:1.35}
+.playlist-label small{font-size:10px;color:#879ab4}
+.playlist-external{margin-left:4px;color:#a9987b;font-size:17px}
+.tour-playlist:hover{background:#eac58113;border-color:#dec69570}.tour-playlist:hover .playlist-icon{color:#ffe4b3}
+.tour-playlist:focus-visible{outline:2px solid #efd197;outline-offset:4px}
+@media(max-width:700px){.tour-menu-tools{justify-content:stretch;margin-bottom:16px}.tour-playlist{width:100%}.playlist-external{margin-left:auto}}
+@media(prefers-reduced-motion:reduce){.tour-playlist{transition:none}}

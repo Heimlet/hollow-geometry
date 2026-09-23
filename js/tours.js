@@ -81,7 +81,15 @@ export function initTours() {
   const reset=button(document.body,'⟲',()=>window.resetCamera());reset.className='fbtn tour-reset';
   reset.title='Вернуть ракурс тура';reset.setAttribute('aria-label',reset.title);
   const welcome=el('main',null,'tour-menu');welcome.setAttribute('aria-label','Выбор путешествия');
-  const intro=el('header',null,'tour-intro');intro.append(el('p','HOLLOW GEOMETRY','tour-eyebrow'),el('h1','Геометрия, которая оживает.'),el('p','Выберите путешествие. Дальше — просто смотрите.','tour-lead'));
+  const musicRow=el('div',null,'tour-menu-tools'),playlist=el('a',null,'tour-playlist');
+  playlist.href='https://music.yandex.com/playlists/3ce0098c-24f8-988b-b3ae-9a7ebc2dcc19';
+  playlist.target='_blank';playlist.rel='noopener noreferrer';
+  playlist.setAttribute('aria-label','Музыка для путешествий — плейлист в Яндекс Музыке, откроется в новой вкладке');
+  const musicIcon=el('span',null,'playlist-icon');musicIcon.setAttribute('aria-hidden','true');
+  musicIcon.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V6l11-3v12M9 10l11-3"/><ellipse cx="6" cy="18" rx="3" ry="2.3"/><ellipse cx="17" cy="15" rx="3" ry="2.3"/></svg>';
+  const musicLabel=el('span',null,'playlist-label');musicLabel.append(el('span','Музыка для путешествий'),el('small','Яндекс Музыка'));
+  const external=el('span','↗','playlist-external');external.setAttribute('aria-hidden','true');
+  playlist.append(musicIcon,musicLabel,external);musicRow.append(playlist);
   const grid=el('div',null,'tour-grid');
   for(const [id,tour]of Object.entries(TOURS)) {
     const card=button(grid,'',()=>actions.startTour(id));card.className='tour-card';card.style.setProperty('--tour-color',tour.color);
@@ -90,8 +98,7 @@ export function initTours() {
     const meta=el('span',`${minutes(id)} · ${tour.steps.length} глав`,'tour-meta');
     card.append(icon,el('strong',tour.name),el('span',tour.description,'tour-description'),meta,el('span','↗','tour-card-play'));
   }
-  const footer=el('p','Один клик запускает фильм. В любой момент можно остановиться и покрутить фигуру.','tour-menu-note');
-  welcome.append(intro,grid,footer);document.body.append(welcome);
+  welcome.append(musicRow,grid);document.body.append(welcome);
   player=el('section',null,'tour-player');player.hidden=true;player.setAttribute('aria-label','Управление путешествием');
   const progress=el('nav',null,'tour-progress');progress.setAttribute('aria-label','Прогресс по главам');
   const head=el('div',null,'tour-player-head'),chapter=el('span',null,'tour-eyebrow');
