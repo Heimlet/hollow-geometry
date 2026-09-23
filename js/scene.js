@@ -36,11 +36,14 @@ controls.maxDistance = Infinity;
 controls.minZoom = 0.05;
 controls.maxZoom = 100;
 controls.update();
+let orbitDragging=false;
 function syncOrbit() {
   const gentle=getState().display.gentleOrbit;
-  controls.rotateSpeed=gentle?.42:1;controls.zoomSpeed=gentle?.65:1;controls.panSpeed=gentle?.65:1;
-  controls.dampingFactor=gentle?.085:.07;controls.minPolarAngle=gentle?.06:0;controls.maxPolarAngle=Math.PI-(gentle?.06:0);
+  controls.rotateSpeed=gentle?.65:1;controls.zoomSpeed=gentle?.65:1;controls.panSpeed=gentle?.65:1;
+  controls.dampingFactor=orbitDragging?(gentle?.65:.8):.3;controls.minPolarAngle=gentle?.06:0;controls.maxPolarAngle=Math.PI-(gentle?.06:0);
 }
+controls.addEventListener('start',()=>{orbitDragging=true;syncOrbit();});
+controls.addEventListener('end',()=>{orbitDragging=false;syncOrbit();});
 syncOrbit();subscribe((state,previous)=>{if(state.display.gentleOrbit!==previous.display.gentleOrbit)syncOrbit();});
 
 export function setCameraFrameOffset(offsetY=0,offsetX=0) {

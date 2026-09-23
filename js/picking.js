@@ -87,7 +87,7 @@ export function initPicking(showInfo) {
     if (inspectStudyAt(event.clientX,event.clientY) || inspectGoldenAt(event.clientX,event.clientY)) { selected = null; hovered = null; preview = null; return; }
     const hits = hitsAt(event.clientX, event.clientY);
     if (!hits.length) { selected = null; hovered = null; return; }
-    if (hits.length === 1 || hits[0].topic==='metatron_nodes') { select(hits[0]); return; }
+    if (hits.length === 1 || hits[0].topic==='fruit') { select(hits[0]); return; }
     const inTour=!!getState().tour.id;
     if(inTour)actions.tourControl({playing:false});
     focusBeforePicker = document.activeElement;

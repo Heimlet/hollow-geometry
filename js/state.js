@@ -52,7 +52,7 @@ export function reduce(state, action) {
       requireValid(['simple','advanced'].includes(action.mode),'Invalid interface mode');
       next={...state,ui:{mode:action.mode},tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
     }
-    case 'tour/start': next=enterTourStep(state,action.id,0,state.tour.auto);break;
+    case 'tour/start': next=enterTourStep(state,action.id,action.index??0,state.tour.auto);break;
     case 'tour/step': {
       requireValid(state.tour.id&&Number.isInteger(action.index),'No active tour');
       next=enterTourStep(state,state.tour.id,action.index,state.tour.auto);break;
@@ -350,7 +350,7 @@ export const actions = {
   backTopic: () => dispatch({type:'knowledge/back',history:false}),
   closeTopic: (resume=true) => dispatch({type:'knowledge/close',resume,history:false}),
   interface: mode => dispatch({type:'ui/mode',mode,history:false}),
-  startTour: id => dispatch({type:'tour/start',id}),
+  startTour: (id,index=0) => dispatch({type:'tour/start',id,index}),
   tourStep: index => dispatch({type:'tour/step',index}),
   tourControl: patch => dispatch({type:'tour/control',patch}),
   seekTour: elapsed => dispatch({type:'tour/seek',elapsed}),

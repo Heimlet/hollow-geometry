@@ -1,3 +1,4 @@
+import {READING_DEMOS,resolveReadingDemo} from './reading-demos.js';
 import { mountKnowledgePreview,hideKnowledgePreview } from './knowledge-preview.js';
 import { KNOWLEDGE,topicFor } from './tour-knowledge.js';
 import { actions,getState,subscribe } from './state.js';
@@ -42,17 +43,31 @@ export function initTourReading() {
   dialog.append(body,footer);document.body.append(dialog);let previous=null,returnFocus=null;const scrollPositions=new Map();
   dialog.addEventListener('cancel',event=>{event.preventDefault();actions.closeTopic();});
   dialog.addEventListener('click',event=>{if(event.target===dialog&&event.clientX){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)actions.closeTopic();}});
+  let pendingDemo=null;
+  function watchButton(section,demo) {
+    const target=resolveReadingDemo(demo);if(!target)return;
+    const watch=button(section,`▷ ${demo.label}`,()=>{
+      pendingDemo?.remove();
+      const warning=el('aside',null,'knowledge-tour-confirm');warning.setAttribute('role','alert');
+      const state=getState();
+      warning.append(el('strong',`Открыть главу «${target.title}»?`),el('p',`Текущая сцена и её настройки будут заменены сценарием этой главы.${state.tour.id?' Вы покинете текущий тур и начнёте выбранную главу с начала.':''}`));
+      const row=el('div');
+      const cancel=button(row,'Остаться в справке',()=>{warning.remove();pendingDemo=null;watch.focus();});
+      button(row,'Начать показ',()=>actions.startTour(target.tour,target.index));
+      warning.append(row);section.append(warning);pendingDemo=warning;
+      warning.scrollIntoView({block:'nearest',behavior:'smooth'});cancel.focus({preventScroll:true});
+    });watch.className='knowledge-watch';watch.title=`${target.name} · глава ${target.index+1}`;
+  }
   function sync(state,previousState,action={}) {
     const key=state.ui.topic||null;if(key===previous)return;if(previous)scrollPositions.set(previous,body.scrollTop);previous=key;
     back.hidden=!(state.ui.topicTrail?.length);
     if(!key){hideKnowledgePreview();if(dialog.open)dialog.close();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});return;}
-    const entry=KNOWLEDGE[key];body.replaceChildren();
+    const entry=KNOWLEDGE[key];body.replaceChildren();pendingDemo=null;
     body.append(el('p',entry.kicker,'tour-eyebrow'));const heading=el('h2',entry.title);heading.id='knowledge-title';heading.tabIndex=-1;body.append(heading);mountKnowledgePreview(body,key,entry.title);body.append(el('p',entry.lead,'knowledge-lead'));
-    entry.sections.forEach(([title,copy],index)=>{const section=el('section');section.append(el('h3',title),el('p',copy));body.append(section);if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
+    entry.sections.forEach(([title,copy])=>{const section=el('section');section.append(el('h3',title),el('p',copy));body.append(section);READING_DEMOS.filter(d=>d.topic===key&&d.section===title).forEach(d=>watchButton(section,d));if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
     if(entry.related.length){const related=el('div',null,'knowledge-related');related.append(el('h3','Связанные идеи'));entry.related.forEach(id=>{const b=button(related,KNOWLEDGE[id].title,()=>actions.readTopic(id));b.dataset.topic=id;});body.append(related);}
     if(entry.sources.length){const sources=el('div',null,'knowledge-sources');sources.append(el('h3','Источники и дальше'));for(const [title,url]of entry.sources){const a=el('a',title);a.href=url;a.target='_blank';a.rel='noopener noreferrer';sources.append(a);}body.append(sources);}
     body.querySelectorAll('p').forEach(paragraph=>linkTourText(paragraph,key));
-    if(key==='metatron_nodes'){const watch=button(body,'Смотреть тур «Тайна тринадцати точек»',()=>actions.startTour('nodes'));watch.className='phi-library';}
     close.setAttribute('aria-label',state.tour.id&&state.tour.phase!=='complete'?'Закрыть справку и продолжить тур':'Закрыть справку');
     resume.textContent=state.tour.id?(state.tour.phase==='complete'?'Вернуться к финалу':'Продолжить тур'):'Вернуться';
     leave.textContent=state.tour.id?'Покинуть тур и перейти в лабораторию':'Открыть в лаборатории';
@@ -66,6 +81,7 @@ export function initTourReading() {
     const link=event.target.closest('a[data-setting]');
     if(link&&getState().tour.id){event.preventDefault();event.stopImmediatePropagation();openTourReading(link.dataset.setting);}
   },true);
-  const phi=button(document.querySelector('.tour-menu'),'φ — чем это интересно',()=>actions.readTopic('phi'));phi.className='phi-library';
+  const tools=document.querySelector('.tour-menu-tools');
+  const phi=button(tools,'φ — чем это интересно',()=>actions.readTopic('phi'));phi.className='phi-library';tools.prepend(phi);
   const panel=document.getElementById('setting-display-golden');if(panel){const b=button(panel,'φ — прочитать о смысле и связях',()=>actions.readTopic('phi'));b.className='phi-library';}
 }

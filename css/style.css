@@ -460,3 +460,12 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .knowledge-back{align-self:flex-start;margin:12px 48px 0 22px;padding:7px 10px;border:1px solid #92bddd44;border-radius:6px;background:#162037;color:#cce2f4;font:inherit;font-size:12px;cursor:pointer}
 .knowledge-back[hidden]{display:none}
 @media(prefers-reduced-motion:reduce){.tour-playlist{transition:none}}
+
+.knowledge-watch{display:inline-flex;align-items:center;gap:8px;margin:2px 0 12px;padding:9px 12px;border:1px solid #edc78055;border-radius:8px;background:#edc7800c;color:#f0d598;font:inherit;font-size:12px;text-align:left;line-height:1.5;cursor:pointer}
+.knowledge-watch:hover{background:#edc7801b;border-color:#edc78099}
+.knowledge-tour-confirm{padding:16px;margin:8px 0 20px;border:1px solid #edc78066;border-radius:10px;background:#2d2930;color:#f3dfb7}
+.knowledge-tour-confirm strong{font-size:14px}.knowledge-tour-confirm p{margin:10px 0!important;font-size:13px!important;color:#d4cabc}
+.knowledge-tour-confirm div{display:flex;flex-wrap:wrap;gap:8px}.knowledge-tour-confirm button{padding:9px 12px;border:1px solid #dbc6a455;border-radius:6px;font:inherit;font-size:12px;background:transparent;color:#eee0cb;cursor:pointer}
+.knowledge-tour-confirm button:last-child{background:#e7c487;color:#252330;font-weight:700}
+
+.tour-menu-tools{align-items:center;justify-content:space-between;gap:16px}.tour-menu-tools .phi-library{width:auto;margin:0;text-align:left}.tour-menu-tools .tour-playlist{flex-shrink:0}

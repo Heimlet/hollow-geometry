@@ -31,3 +31,21 @@ actions.closeTopic();assert.equal(getState().tour.playing,true);assert.deepEqual
 assert.equal(topicFor('golden.scene.pentagon'),'pentagram');
 assert.equal(topicFor('display.stars'),null);assert.equal(topicFor('nonexistent'),null,'Unknown settings cannot silently open projection help');
 console.log('PASS: reversible reading trail, tour clock preserved, contextual pentagram topic and no unrelated fallback');
+
+const {READING_DEMOS,resolveReadingDemo}=await import('../js/reading-demos.js');
+const {TOURS}=await import('../js/tour-data.js');
+for(const demo of READING_DEMOS) {
+  assert.ok(KNOWLEDGE[demo.topic].sections.some(s=>s[0]===demo.section),demo.section);
+  const target=resolveReadingDemo(demo);assert.ok(target,demo.chapter);
+  assert.equal(TOURS[target.tour].steps.filter(s=>s.id===demo.chapter).length,1,'Chapter IDs must be unique');
+}
+const target=resolveReadingDemo(READING_DEMOS[0]);
+assert.equal(TOURS[target.tour].steps[target.index].scene.golden,'division');
+actions.startTour('metatron');actions.tickTour(3);actions.readTopic('phi');
+const pausedReading=getState();
+resolveReadingDemo(READING_DEMOS[0]);assert.equal(getState(),pausedReading,'Preparing a link must not change settings, close reading or leave the current tour');
+actions.startTour(target.tour,target.index);assert.equal(getState().tour.index,target.index);assert.equal(getState().tour.elapsed,0);assert.equal(getState().ui.topic,null);assert.equal(getState().tour.playing,true);assert.equal(getState().goldenScene.id,'division');
+assert.equal(getState().objects._metatron_.visible,false);assert.equal(getState().objects.icosahedron.visible,true);
+assert.equal(resolveReadingDemo({tour:'golden',chapter:'missing'}),null);
+assert.throws(()=>reduce(getState(),{type:'tour/start',id:'golden',index:999}));
+console.log('PASS: all reading links resolve stable chapter IDs, selection is inert, confirmed jump replaces scene atomically');

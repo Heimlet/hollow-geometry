@@ -54,3 +54,39 @@ for(const scale of [1,.35,.0225]) {
   console.log(`scale ${scale}: 15 rectangles, 12 pentagons, 12 pentagram divisions, 12 octahedron edge divisions; dodecahedron rectangles ${math.goldenRectangles(dv).length}`);
 }
 console.log('PASS: measured φ, coplanarity, right angles, recursion scaling, rotation invariance, negative cube control');
+// Square removal preserves exact similarity in an arbitrary 3D plane.
+const original=math.orthogonalGoldenRectangles(math.verticesOf(new THREE.IcosahedronGeometry(IR)))[0];
+for(const rectangle of [original,{...original,points:original.points.map(p=>p.clone().applyAxisAngle(new THREE.Vector3(1,2,3).normalize(),.79).add(new THREE.Vector3(3,-2,1)))}]) {
+  const snapshot=rectangle.points.map(p=>p.toArray()),layers=math.rectangleSubdivision(rectangle,6);
+  const u=layers[0].points[1].clone().sub(layers[0].points[0]).normalize(),v=layers[0].points[3].clone().sub(layers[0].points[0]).normalize(),normal=u.clone().cross(v);
+  for(const [i,r]of layers.entries()) {
+    assert.ok(Math.abs(r.long/r.short-PHI)<1e-12);
+    for(const point of [...r.points,...r.square,...r.cut]) {
+      const relative=point.clone().sub(layers[0].points[0]);
+      assert.ok(Math.abs(relative.dot(normal))<1e-10);
+      assert.ok(relative.dot(u)>=-1e-8&&relative.dot(u)<=layers[0].long+1e-8);
+      assert.ok(relative.dot(v)>=-1e-8&&relative.dot(v)<=layers[0].short+1e-8);
+    }
+    if(i<layers.length-1)assert.ok(Math.abs(r.long*r.short-r.short**2-layers[i+1].long*layers[i+1].short)<1e-10,'Square plus remainder exactly covers its parent');
+    const c=r.points[0].clone().lerp(r.points[2],.5);
+    for(const theta of [-4*Math.PI,-3,-Math.PI/2])assert.ok(Math.abs(math.rectangleSpiral(r,theta+Math.PI/2).distanceTo(c)/math.rectangleSpiral(r,theta).distanceTo(c)-PHI)<1e-9);
+  }
+  assert.deepEqual(rectangle.points.map(p=>p.toArray()),snapshot);
+}
+console.log('PASS: six coplanar golden remainders, square/area conservation, rotated input, exact logarithmic growth in each remainder');
+// The continuous curve and rectangle removal must share one similarity/pole.
+for(const rectangle of math.orthogonalGoldenRectangles(math.verticesOf(new THREE.IcosahedronGeometry(IR)))) {
+  const spiral=math.subdivisionSpiral(rectangle),layers=math.rectangleSubdivision(rectangle,15);
+  for(let level=0;level<14;level++) {
+    const r=layers[level],u=r.points[1].clone().sub(r.points[0]).normalize(),v=r.points[3].clone().sub(r.points[0]).normalize();
+    for(let j=0;j<=100;j++) {
+      const point=spiral.pointAt(level+j/100),relative=point.clone().sub(r.points[0]);
+      assert.ok(relative.dot(u)>=-1e-9&&relative.dot(u)<=r.long+1e-9,'Arc belongs to its own remaining rectangle horizontally');
+      assert.ok(relative.dot(v)>=-1e-9&&relative.dot(v)<=r.short+1e-9,'Arc belongs to its own remaining rectangle vertically');
+      const a=point.clone().sub(spiral.pole),b=spiral.pointAt(level+j/100+1).sub(spiral.pole);
+      assert.ok(Math.abs(a.length()/b.length()-PHI)<1e-9);assert.ok(Math.abs(a.dot(b))<1e-10);
+    }
+    const local=spiral.pole.clone().sub(r.points[0]);assert.ok(local.dot(u)>=0&&local.dot(u)<=r.long);assert.ok(local.dot(v)>=0&&local.dot(v)<=r.short);
+  }
+}
+console.log('PASS: one continuous spiral per plane, fixed point shared by all remainders, each quarter-turn inside its matching rectangle, exact φ contraction and 90° rotation');

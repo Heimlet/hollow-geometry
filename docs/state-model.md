@@ -286,7 +286,7 @@ Ctrl Y, кнопки верхней панели и S/G/H/R. В текстовы
 ## Простые туры
 
 По умолчанию `ui.mode = simple`: девять крупных карточек запускают фильмы с
-92 главами. Лаборатория доступна вторым режимом. `tour-state.js` строит каждую
+94 главами. Лаборатория доступна вторым режимом. `tour-state.js` строит каждую
 главу из полной декларативной сцены, а `frameTour` вычисляет кадр из времени:
 возврат к главе и повторное воспроизведение не накапливают трансформации.
 
@@ -388,11 +388,13 @@ for f in tests/*.mjs; do node "$f" "$PWD/vendor/three/three.module.js"; done
 а после любого закрытия просмотр продолжается автоматически.
 # Metatron teaching layers and public delivery
 
-The `nodes` tour adds ten chapters (nine tours, 92 chapters total). Nodes share the
-same `metatron_nodes` reading topic and the existing `_metatron_` visibility owner.
-Neighbour links, diameters and square sections are measured from the source node
-positions; auxiliary geometry never dispatches state changes. Contact spheres use
-R/2 and do not overlap. Render layers are disposed when their recipe changes.
+The `fruit` tour replaces the former node tour and follows Metatron on the menu
+(nine tours, 94 chapters total). `fruit-life.js` derives the planar 1+6+6 circle
+layout, 18 tangencies and 78 centre pairs. `fruit-scene.js` owns the temporary
+circles and teaching strokes; camera fitting uses the full circle bounds.
+It never substitutes 3D cuboctahedron nodes for the planar Fruit of Life.
+All node picks open the shared `fruit` reading card, which explains that distinction.
+The older geometric relations renderer remains independent of scene state.
 
 Recursion contractions and fades are functions of chapter progress. Level scales
 are temporary, reset on exit; zoom remains centred on the true common centre.
@@ -400,3 +402,27 @@ Pixel-width line proxies preserve the original geometry for picking and projecti
 copy draw ranges and crossfade opacity, and restore source material visibility
 after every render. Tests cover geometry, grouped node picking, deterministic replay,
 stroke width, range, transforms and cleanup.
+
+## Links from reading to specific chapters
+
+`reading-demos.js` resolves curated links by stable chapter IDs, never by a saved
+numeric index. The reading dialog previews the destination and warns about replacing
+scene settings / leaving the current tour. Only the confirmation calls
+`startTour(id,index)`: a single atomic state transition, clearing reading history.
+Cancel stays in the reading card with the current timeline frozen. Tests verify
+all section titles and destination IDs, plus scene reset and no premature mutation.
+
+The new `division` golden scene removes six squares successively in each of the
+three actual golden rectangles of the icosahedron. Every remainder preserves φ;
+one logarithmic spiral per plane shares the fixed point of the subdivision.
+Its quarter-turn is the same similarity as a square removal. The scale comes
+from analytic arc extrema, keeping every later arc inside its remainder. The subdivision
+is derived in the source rectangle basis and works after rigid transforms.
+
+OrbitControls uses a high response factor during drag (.65 in gentle mode, .8
+otherwise), with a short .3 damping tail on release. The reduced rotate/zoom speed
+remains available independently of long input lag.
+
+A continuation chapter follows the same spiral from quarter-turn 6 through 14,
+zooming about the shared fixed point by φ⁸. The eight new subdivisions remain
+readable instead of collapsing to a dot; chapter IDs keep reading links stable.

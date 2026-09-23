@@ -4,6 +4,7 @@ import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
 import { tourFaceOpacity,recursionMoment } from './tour-effects.js';
+import { createFruitScene } from './fruit-scene.js';
 import { createMetatronStudy } from './metatron-study.js';
 import { derivedObjects,traditionalFields } from './lab.js';
 import { captureVisibleParts,createTourTransition } from './tour-transitions.js';
@@ -15,6 +16,7 @@ import { queueTourShot,cancelTourShot,tourCameraBusy,updateTourCamera,tourCamera
 let player, effectActive=false, status, animationState, cameraState,returnCamera;
 const transition=createTourTransition(scene);
 const nodeStudy=createMetatronStudy(scene);
+const fruitScene=createFruitScene(scene);
 let transitionKey=null,lastGolden=null,fadeInk=false;
 export function applyTourTransition(dt) {
   const state=getState(),key=state.tour.id?`${state.tour.id}:${state.tour.index}`:null;
@@ -64,6 +66,7 @@ export function updateTourStage(dt) {
 export function applyTourEffects() {
   const state=getState(),recipe=tourStep(state)?.scene;
   nodeStudy.update(levels[0]?.mc,recipe?.nodeStudy,tourProgress(state));
+  fruitScene.update(recipe?.fruit,tourProgress(state));
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/.8));effectActive=true;
   for(const level of levels) {

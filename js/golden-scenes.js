@@ -9,7 +9,7 @@ import { getState, actions, subscribe } from './state.js';
 import { levels } from './levels.js';
 import { camera, controls } from './scene.js';
 import { flyCamera, isCamAnimating, cancelCameraAnimation } from './presets.js';
-import { verticesOf, pentagonalFaces, edgeDivisions, orthogonalGoldenRectangles, nestedFaceStars, rectangleSpiral } from './golden-math.js';
+import { verticesOf, pentagonalFaces, edgeDivisions, orthogonalGoldenRectangles, nestedFaceStars, rectangleSpiral, rectangleSubdivision, subdivisionSpiral } from './golden-math.js';
 import { el, button, slider, bind } from './lab-controls.js';
 import { registerSetting, settingLink, linkText } from './settings-links.js';
 
@@ -35,6 +35,8 @@ function build() {
   const face=faces.sort((a,b)=>center(b.points).normalize().dot(direction)-center(a.points).normalize().dot(direction))[0];
   data={rectangles:orthogonalGoldenRectangles(ico),divisions:edgeDivisions(ico,objects.octahedron.edges.geometry),face,
     stars:nestedFaceStars(face.points,6),icoEdges:segments(objects.icosahedron.edges.geometry),octaEdges:segments(objects.octahedron.edges.geometry)};
+  data.subdivisions=data.rectangles.map(r=>rectangleSubdivision(r,14));
+  data.divisionSpirals=data.rectangles.map(subdivisionSpiral);
   generation=levels[0];
 }
 function cameraFor(id) {
@@ -43,6 +45,7 @@ function cameraFor(id) {
 }
 export function goldenSceneView(id,detail=false) {
   if(!data||generation!==levels[0])build();
+  if(id==='division'&&detail){const r=data.rectangles[0],direction=r.points[1].clone().sub(r.points[0]).cross(r.points[3].clone().sub(r.points[0])).normalize();return {direction,height:.3,target:data.divisionSpirals[0].pole.clone()};}
   const direction=id==='pentagon'?center(data.face.points).normalize():new THREE.Vector3(3,2,4).normalize();
   return {direction,height:detail?.65:id==='pentagon'?9.5:id==='bridge'?6.3:5.1,target:detail?center(data.face.points):new THREE.Vector3()};
 }
@@ -94,6 +97,30 @@ function drawRectangles(p) {
   if(p>.22)ratioLabels(...short,...long,r.short,r.long);
   formula.textContent=`${measure(r.long)} / ${measure(r.short)} = φ ≈ ${measure(PHI)}`;
   linkedCopy(note,'Голубая сторона — a. Золотая — φa. Вращайте фигуру: все три плоскости пересекаются под углом 90°.');
+}
+function drawDivision(p) {
+  const recipe=tourStep(getState())?.scene,from=recipe?.divisionFrom||0,to=recipe?.divisionTo||6;
+  const turns=from+(to-from)*p;
+  data.subdivisions.forEach((layers,plane)=>{
+    if(recipe?.detail&&plane>0)return;
+    const color=[gold,cyan,violet][plane],outer=layers[0],spiral=data.divisionSpirals[plane];
+    outer.points.forEach((a,i)=>line(a,outer.points[(i+1)%4],color,from?1:ease(p/.07),.55,1.3));
+    layers.forEach((r,level)=>{
+      const reveal=ease(turns-level);if(!reveal)return;
+      polygon(r.square,color,.009*reveal);
+      line(...r.cut,color,reveal,.78,1.5);
+    });
+    if(turns>0) {
+      let previous=spiral.pointAt(0);const samples=Math.max(1,Math.ceil(turns*100));
+      for(let i=1;i<=samples;i++) {
+        const q=turns*i/samples,point=spiral.pointAt(q);
+        line(previous,point,color,1,q>turns-1?.98:.68,2.1);previous=point;
+      }
+      dot(previous,color,1,3);dot(spiral.pole,color,.6,1.8);
+    }
+  });
+  formula.textContent=`Поворот на 90° → размер / φ · ${Math.min(to,Math.floor(turns))} из ${to} делений`;
+  linkedCopy(note,'Одна непрерывная спираль в каждой плоскости. Каждый её поворот на 90° совпадает по масштабу и направлению с переходом к следующему прямоугольнику.');
 }
 function drawBridge(p) {
   data.octaEdges.forEach(([a,b])=>line(a,b,'#859dbf',ease(p/.18),.7,1.4));
@@ -218,7 +245,7 @@ export function updateGoldenScenes(dt) {
   const dpr=Math.min(devicePixelRatio,2);
   if(ink.width!==Math.round(innerWidth*dpr)||ink.height!==Math.round(innerHeight*dpr)){ink.width=Math.round(innerWidth*dpr);ink.height=Math.round(innerHeight*dpr);}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,innerWidth,innerHeight);ctx.lineCap='round';ctx.lineJoin='round';
-  if(s.id==='rectangles')drawRectangles(s.progress);else if(s.id==='bridge')drawBridge(s.progress);else if(s.id==='spiral')drawSpirals(s.progress);else drawPentagon(s.progress);
+  if(s.id==='division')drawDivision(s.progress);else if(s.id==='rectangles')drawRectangles(s.progress);else if(s.id==='bridge')drawBridge(s.progress);else if(s.id==='spiral')drawSpirals(s.progress);else drawPentagon(s.progress);
   if(labels.every(label=>!label.hidden)) {
     const a=labels[0].getBoundingClientRect(),b=labels[1].getBoundingClientRect();
     if(a.left<b.right+6&&a.right+6>b.left&&a.top<b.bottom+6&&a.bottom+6>b.top)

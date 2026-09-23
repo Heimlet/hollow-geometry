@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { fruitOfLife,fruitCircle } from './fruit-life.js';
 import { camera,controls,projectionDepth,getViewHeight,setViewHeight,setDepth,setCameraFrameOffset,settleControls } from './scene.js';
 import { levels } from './levels.js';
 import { derivedObjects,traditionalFields } from './lab.js';
@@ -13,6 +14,7 @@ export function queueTourShot(options={}){cancelCameraAnimation();settleControls
 export function cancelTourShot(){pending=false;flight=null;}
 export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
+  if(tourStep(getState())?.scene.fruit){const f=fruitOfLife();return f.centers.flatMap(c=>fruitCircle(c,f.radius,24).flat().map(p=>new THREE.Vector3(...p)));}
   const points=[];
   for(const level of levels){
     for(const object of Object.values(level.objs)) {
@@ -63,7 +65,8 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   const focus=recipe.detail?base.target:null;
   const right=new THREE.Vector3().crossVectors(new THREE.Vector3(0,1,0),shot.direction).normalize();
   const up=new THREE.Vector3().crossVectors(shot.direction,right).normalize();
-  const detailPoints=focus?[-1,1].flatMap(x=>[-1,1].map(y=>focus.clone().addScaledVector(right,x*.34).addScaledVector(up,y*.34))):points;
+  const detailSize=recipe.focusSize??.34;
+  const detailPoints=focus?[-1,1].flatMap(x=>[-1,1].map(y=>focus.clone().addScaledVector(right,x*detailSize).addScaledVector(up,y*detailSize))):points;
   const goal=fitTourFrame(detailPoints,shot.direction,viewport,shot.depth,focus);
   // An explicit detail zoom can let the faded outer shell pass beyond the frame.
   // It never shifts the shared geometric centre.

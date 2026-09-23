@@ -104,3 +104,45 @@ export function rectangleSpiral(rectangle,theta) {
   const radius=rectangle.short*.47*PHI**(2*theta/Math.PI);
   return origin.addScaledVector(u,radius*Math.cos(theta)).addScaledVector(v,radius*Math.sin(theta));
 }
+
+/** Successive square removals, in the rectangle's own plane and orientation. */
+export function rectangleSubdivision(rectangle,count=6) {
+  const p=rectangle.points,longFirst=p[0].distanceTo(p[1])>p[0].distanceTo(p[3]);
+  let u=(longFirst?p[1]:p[3]).clone().sub(p[0]).normalize();
+  let v=(longFirst?p[3]:p[1]).clone().sub(p[0]).normalize();
+  let origin=p[0].clone(),side=rectangle.short;const layers=[];
+  for(let i=0;i<count;i++) {
+    const corner=(x,y)=>origin.clone().addScaledVector(u,x).addScaledVector(v,y);
+    const points=[corner(0,0),corner(PHI*side,0),corner(PHI*side,side),corner(0,side)];
+    layers.push({points,short:side,long:PHI*side,square:[corner(0,0),corner(side,0),corner(side,side),corner(0,side)],cut:[corner(side,0),corner(side,side)]});
+    origin=corner(PHI*side,0);const oldU=u;u=v;v=oldU.clone().negate();side/=PHI;
+  }
+  return layers;
+}
+
+/** A single true logarithmic spiral shares the subdivision's fixed point.
+ * T(x,y)=(φs-y/φ,x/φ) maps each rectangle to its remainder. A quarter
+ * turn of this curve is exactly T. Its scale is derived from the extrema
+ * of the first arc, so the whole curve stays inside the nested rectangles.
+ */
+export function subdivisionSpiral(rectangle) {
+  const r=rectangleSubdivision(rectangle,1)[0],p=r.points,s=r.short;
+  const u=p[1].clone().sub(p[0]).normalize(),v=p[3].clone().sub(p[0]).normalize();
+  const cx=PHI*s/(1+1/PHI**2),cy=cx/PHI,wx=-cx,wy=s-cy,k=2*Math.log(PHI)/Math.PI;
+  const candidates=[0,Math.PI/2];
+  for(const [a,b]of [[-k*wx-wy,k*wy-wx],[wx-k*wy,-wy-k*wx]]) {
+    const root=Math.atan2(-a,b);
+    for(let n=-1;n<=1;n++){const theta=root+n*Math.PI;if(theta>0&&theta<Math.PI/2)candidates.push(theta);}
+  }
+  let scale=1;
+  for(const theta of candidates) {
+    const decay=Math.exp(-k*theta),x=decay*(wx*Math.cos(theta)-wy*Math.sin(theta)),y=decay*(wx*Math.sin(theta)+wy*Math.cos(theta));
+    if(Math.abs(x)>1e-14)scale=Math.min(scale,(x>0?PHI*s-cx:-cx)/x);
+    if(Math.abs(y)>1e-14)scale=Math.min(scale,(y>0?s-cy:-cy)/y);
+  }
+  const pole=p[0].clone().addScaledVector(u,cx).addScaledVector(v,cy);
+  return {pole,pointAt(quarters) {
+    const theta=quarters*Math.PI/2,decay=scale*PHI**(-quarters);
+    return pole.clone().addScaledVector(u,decay*(wx*Math.cos(theta)-wy*Math.sin(theta))).addScaledVector(v,decay*(wx*Math.sin(theta)+wy*Math.cos(theta)));
+  }};
+}

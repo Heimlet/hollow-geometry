@@ -63,4 +63,4 @@ for(const [width,height,panel] of [[1280,900,330],[1366,768,340],[390,844,360],[
 }
 const vp=stageViewport(1280,900,330),small=[new THREE.Vector3(-2,-2,-2),new THREE.Vector3(2,2,2)];
 assert.ok(fitTourFrame(small,base,vp).height<14,'A compact scene does not inherit the exploded endpoint zoom');
-console.log(`PASS: 92 continuous camera/opacity scripts, exact symmetric finales, golden pass-through, ${checks} projected bounds checks with true object-centred framing`);
+console.log(`PASS: 94 continuous camera/opacity scripts, exact symmetric finales, golden pass-through, ${checks} projected bounds checks with true object-centred framing`);

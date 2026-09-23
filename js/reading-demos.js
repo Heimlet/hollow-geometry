@@ -1,0 +1,21 @@
+import {TOURS} from './tour-data.js';
+/** Stable chapter IDs: editing/reordering the film cannot silently change a link. */
+export const READING_DEMOS=[
+  {topic:'phi',section:'Убрать кусок — и получить ту же форму',label:'Посмотреть деление прямоугольников и спирали',tour:'golden',chapter:'rectangle-division'},
+  {topic:'phi',section:'В Метатроне можно заглянуть внутрь',label:'Увидеть три золотые плоскости',tour:'golden',chapter:'golden-planes'},
+  {topic:'phi',section:'Вот эта простота и поражает',label:'Посмотреть, как звезда повторяет себя',tour:'golden',chapter:'nested-stars'},
+  {topic:'icosahedron',section:'Три плоскости задают весь объём',label:'Увидеть прямоугольники внутри икосаэдра',tour:'golden',chapter:'golden-planes'},
+  {topic:'spiral',section:'Весь рост задаёт одно действие',label:'Посмотреть рост точной спирали',tour:'golden',chapter:'spiral-growth'},
+  {topic:'dodecahedron',section:'Большое продолжается в малом',label:'Заглянуть во вложенные звёзды',tour:'golden',chapter:'nested-stars'},
+  {topic:'pentagram',section:'Откуда появляется следующая звезда',label:'Посмотреть рождение следующей звезды',tour:'golden',chapter:'nested-stars'},
+  {topic:'octahedron',section:'Мост к икосаэдру',label:'Увидеть золотой мост между телами',tour:'golden',chapter:'golden-bridge'},
+  {topic:'merkaba',section:'Оставить общее — получить октаэдр',label:'Посмотреть общий объём тетраэдров',tour:'merkaba',chapter:'intersection'},
+  {topic:'platonic',section:'Что у них общего',label:'Начать путешествие по пяти телам',tour:'platonic',chapter:'five-solids'},
+  {topic:'fruit',section:'Один, шесть, ещё шесть',label:'Смотреть тур «Плод жизни»',tour:'fruit',chapter:'first-circle'},
+  {topic:'fruit',section:'Как из кругов рождается куб Метатрона',label:'Увидеть переход от кругов к линиям',tour:'fruit',chapter:'fruit-network'},
+  {topic:'metatron',section:'Что именно построено в этой сцене',label:'Посмотреть плоский Плод жизни',tour:'fruit',chapter:'first-circle'},
+];
+export function resolveReadingDemo(demo) {
+  const tour=TOURS[demo.tour],index=tour?.steps.findIndex(step=>step.id===demo.chapter);
+  return tour&&index>=0?{tour:demo.tour,index,name:tour.name,title:tour.steps[index].title}:null;
+}

@@ -9,7 +9,7 @@ for(const [id,tour]of Object.entries(TOURS)) {
   assert.ok(tourDuration(id)>=180,id);
   let state=reduce(initialState(),{type:'tour/start',id});
   for(let i=0;i<tour.steps.length;i++) {
-    assert.equal(state.tour.index,i);assert.ok(Object.isFrozen(state));assert.ok(ALL_IDS.some(key=>state.objects[key].visible));
+    assert.equal(state.tour.index,i);assert.ok(Object.isFrozen(state));assert.ok(tour.steps[i].scene.fruit||ALL_IDS.some(key=>state.objects[key].visible));
     assert.equal(state.presetId,null);assert.equal(state.display.autoRotate,false);
     const start=state;
     const mid=reduce(state,{type:'tour/seek',elapsed:tour.steps[i].seconds/2});

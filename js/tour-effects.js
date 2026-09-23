@@ -5,7 +5,7 @@ export function tourFaceOpacity(recipe,p) {
   const count=recipe.objects?.filter(id=>id!=='_metatron_').length||1;
   const low=recipe.faceFloor??(recipe.golden?.018:.035);
   const high=recipe.golden?.16:count>3?.24:.46;
-  const fadeAt=recipe.camera?.symbol?.from??.9;
+  const fadeAt=recipe.faceDissolveAt??recipe.camera?.symbol?.from??.9;
   // First reveal a readable shell; dissolve it before the symmetry becomes exact.
   const reveal=ease(p/.3),dissolve=1-ease((p-(fadeAt-.23))/.23);
   return low+(high-low)*reveal*dissolve;
