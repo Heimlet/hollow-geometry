@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Куб Метатрона — 3D Сакральная Геометрия</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="sidebar">
+  <div class="sb-head">
+    <h1>✡ Куб Метатрона</h1>
+    <p>Сакральная Геометрия — 3D</p>
+    <div class="hdr-btns">
+      <button onclick="toggleAll(true)">Вкл. всё</button>
+      <button onclick="toggleAll(false)">Выкл. всё</button>
+      <button onclick="resetCamera()">⟲ Камера</button>
+    </div>
+  </div>
+  <div id="groups"></div>
+</div>
+<div id="info"></div>
+<div id="proj-label"></div>
+<button class="fbtn" id="sb-toggle" onclick="document.getElementById('sidebar').classList.toggle('hidden')">☰</button>
+<button class="fbtn" id="fs-btn" title="Полный экран" onclick="document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()">⛶</button>
+
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/"
+}}
+</script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
