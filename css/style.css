@@ -326,6 +326,10 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .experience-mode button,.tour-player button{font:inherit;cursor:pointer;color:#b7c6db;background:#ffffff06;border:1px solid #ffffff1b;border-radius:8px;padding:8px 13px;font-size:12px;white-space:nowrap}
 .experience-mode button:hover,.tour-player button:hover:enabled{background:#a4cfff18;color:white;border-color:#a4cfff55}
 .experience-mode button[aria-pressed=true]{color:#edf4ff;background:#abc9ff17;border-color:#c8dcff44}
+.experience-mode .experience-tours{display:inline-flex;align-items:center;gap:7px;color:#f6dfaf;background:#e6bb6120;border-color:#e6bb6170;font-weight:650;box-shadow:0 0 18px #e6bb610c}
+.experience-mode .experience-tours[aria-pressed=true]{color:#ffe8ba;background:#e6bb6130;border-color:#e6bb6188}
+.experience-mode .experience-tours:hover{color:#fff2d6;background:#e6bb6140;border-color:#f4d699}
+.experience-tours svg{width:17px;height:17px;flex:none;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}
 .experience-brand{display:none;font-size:16px;color:#edf4ff;font-weight:500;letter-spacing:.3px}
 .mode-simple #sidebar,.mode-simple #app-toolbar,.mode-simple .golden-story{display:none}
 .mode-simple .experience-mode{left:0;right:0;top:0;height:64px;padding:12px 24px;background:linear-gradient(#080d1ce8,#080d1c00)}

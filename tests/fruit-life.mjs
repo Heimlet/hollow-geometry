@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
-import {fruitOfLife,fruitCircle} from '../js/fruit-life.js';
+import {fruitOfLife,fruitCircle,fruitVolume} from '../js/fruit-life.js';
 import {TOURS} from '../js/tour-data.js';
 import {initialState,reduce} from '../js/state.js';
 for(const radius of [.1,.65,3]) {
@@ -18,12 +18,29 @@ for(const radius of [.1,.65,3]) {
 assert.deepEqual(Object.keys(TOURS).slice(0,2),['metatron','fruit']);
 let state=reduce(initialState(),{type:'tour/start',id:'fruit'});
 for(let i=0;i<TOURS.fruit.steps.length;i++) {
-  state=reduce(state,{type:'tour/step',index:i});assert.ok(Object.values(state.objects).every(o=>!o.visible),'The planar Fruit never inherits the 3D node constellation');
+  state=reduce(state,{type:'tour/step',index:i});assert.ok(Object.values(state.objects).every(o=>!o.visible),'The dedicated sphere construction never inherits laboratory objects');
+}
+for(const a of [.1,1,3]) {
+  const f=fruitVolume(a),r=f.radius,planar=fruitOfLife(r);
+  assert.equal(f.centers.length,14);assert.equal(f.allCenters.length,20);
+  assert.equal(f.representatives.length,13);assert.equal(f.groups.filter(g=>g===0).length,2);assert.ok(f.groups.every(g=>g>=0));
+  for(const [i,center]of f.centers.entries())assert.ok(Math.hypot(...f.project(center).map((x,k)=>x-planar.centers[f.groups[i]][k]))<1e-12);
+  const unique=[];for(const p of f.allCenters.map(f.project))if(!unique.some(q=>Math.hypot(...p.map((v,k)=>v-q[k]))<1e-10))unique.push(p);
+  assert.equal(unique.length,19,'Flower has exactly 19 distinct projected circles');
+  for(const p of unique){const distances=unique.map(q=>Math.hypot(...p.map((v,k)=>v-q[k]))).filter(d=>d>1e-10);assert.ok(Math.abs(Math.min(...distances)-2*r)<1e-10,'Flower centres lie one enlarged radius apart');}
+  assert.equal(f.cubeEdges.length,12);assert.equal(f.octaEdges.length,12);assert.equal(f.pairs.length,78);
+  for(const tetra of f.tetrahedra){assert.equal(tetra.length,6);for(const [i,j]of tetra)assert.ok(Math.abs(Math.hypot(...f.centers[i].map((v,k)=>v-f.centers[j][k]))-2*Math.SQRT2*a)<1e-10);}
+  for(const corner of f.centers.slice(0,8))assert.ok(Math.abs(corner.reduce((sum,x)=>sum+Math.abs(x/3),0)-a)<1e-10,'Inner cube vertices touch outer octahedron faces');
 }
 const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
 const source=(await readFile(new URL('../js/fruit-scene.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three)).replace("'./fruit-life.js'",JSON.stringify(new URL('../js/fruit-life.js',import.meta.url).href));
 const {createFruitScene}=await import(url(source)),{Scene}=await import(three),scene=new Scene(),study=createFruitScene(scene),root=scene.children[0];
 const snapshot=()=>{const result=[];root.traverse(o=>{if(o.material)result.push({visible:o.visible,opacity:o.material.opacity,range:o.geometry.drawRange.count,scale:o.scale.toArray()});});return {rotation:root.rotation.toArray(),result};};
 for(const step of TOURS.fruit.steps){study.update(step.scene.fruit,.8);const end=snapshot();study.update(step.scene.fruit,.2);study.update(step.scene.fruit,.8);assert.deepEqual(snapshot(),end);}
+const spheres=root.children.filter(o=>o.isMesh);
+study.update('fruit',1);assert.equal(spheres.filter(o=>o.visible).length,14);
+study.update('flower',1);assert.equal(spheres.filter(o=>o.visible).length,20);assert.ok(spheres.every(o=>o.scale.x===2));
+study.update('network',1);assert.equal(spheres.filter(o=>o.visible).length,14);assert.ok(spheres.every(o=>o.scale.x===1));
+study.update('fruit',.8);const before=snapshot();study.update('flower',1);study.update('fruit',.8);assert.deepEqual(snapshot(),before,'Chapter re-entry restores all radii and visibility');
 study.update(null,0);assert.equal(root.visible,false);study.dispose();assert.equal(scene.children.length,0);
-console.log('PASS: Fruit of Life radii, tangencies, 60° symmetry, 78 pairs, menu order, isolated planar scene, reversible ten-chapter rendering and cleanup');
+console.log('PASS: Fruit of Life radii, tangencies, 60° symmetry, 78 pairs, menu order, 14 spheres → 13 circles, Flower of Life with 19 circles, nested cube contact, reversible spatial chapters and cleanup');

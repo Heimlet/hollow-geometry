@@ -2,3 +2,15 @@
 _site/
 __pycache__/
 *.pyc
+
+# Local credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.netrc
+.npmrc
+.codex/

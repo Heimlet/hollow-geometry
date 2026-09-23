@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { TOURS } from '../js/tour-data.js';
-import { tourFaceOpacity } from '../js/tour-effects.js';
+import { tourFaceOpacity,tourObjectAlpha } from '../js/tour-effects.js';
 const threeURL=pathToFileURL(process.argv[2]).href,THREE=await import(threeURL);
 const url=source=>'data:text/javascript;base64,'+Buffer.from(source).toString('base64');
 const projectionURL=url((await readFile(new URL('../js/projection.js',import.meta.url),'utf8')).replace("from 'three'",`from '${threeURL}'`));
@@ -31,6 +31,19 @@ for(const tour of Object.values(TOURS))for(const chapter of tour.steps) {
   }
   if(chapter.scene.faces!==false)assert.ok(tourFaceOpacity(chapter.scene,.32)>tourFaceOpacity(chapter.scene,1)*2,chapter.title);
 }
+// Cubes precede octahedra, the paired tetrahedra precede the exact star.
+const intro=TOURS.merkaba.steps.slice(0,5).map(step=>step.scene);
+assert.deepEqual(intro[0].objects,['cube']);assert.deepEqual(intro[1].objects,['cube']);
+assert.equal(intro[1].depth,2);assert.equal(intro[1].scale,1/3);
+assert.deepEqual(intro[2].objects,['cube','octahedron']);
+assert.equal(tourObjectAlpha(intro[1],0,1,'cube'),0);assert.equal(tourObjectAlpha(intro[1],1,1,'cube'),1);
+assert.equal(tourObjectAlpha(intro[1],0,0,'cube'),1);
+for(const level of [0,1]) {
+  assert.equal(tourObjectAlpha(intro[3],.3,level,'merkaba_up'),1);
+  assert.equal(tourObjectAlpha(intro[3],.3,level,'merkaba_down'),0);
+  assert.equal(tourObjectAlpha(intro[3],.6,level,'merkaba_down'),1);
+}
+for(const p of [.7,.9,1]){const shot=shotAt(intro[4],base,p);assert.ok(shot.direction.distanceTo(diagonal)<1e-12);assert.equal(shot.depth,0);}
 // Rendering with real projection matrices: actual bounds stay above the player,
 // at both desktop/mobile aspect ratios, during all stages of separation.
 let checks=0;
@@ -63,4 +76,4 @@ for(const [width,height,panel] of [[1280,900,330],[1366,768,340],[390,844,360],[
 }
 const vp=stageViewport(1280,900,330),small=[new THREE.Vector3(-2,-2,-2),new THREE.Vector3(2,2,2)];
 assert.ok(fitTourFrame(small,base,vp).height<14,'A compact scene does not inherit the exploded endpoint zoom');
-console.log(`PASS: 94 continuous camera/opacity scripts, exact symmetric finales, golden pass-through, ${checks} projected bounds checks with true object-centred framing`);
+console.log(`PASS: ${Object.values(TOURS).reduce((n,t)=>n+t.steps.length,0)} continuous camera/opacity scripts, exact symmetric finales, golden pass-through, ${checks} projected bounds checks with true object-centred framing`);

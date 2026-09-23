@@ -3,12 +3,12 @@ import { getState, actions, subscribe } from './state.js';
 import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
-import { tourFaceOpacity,recursionMoment } from './tour-effects.js';
+import { tourFaceOpacity,recursionMoment,tourObjectAlpha } from './tour-effects.js';
 import { createFruitScene } from './fruit-scene.js';
 import { createMetatronStudy } from './metatron-study.js';
 import { derivedObjects,traditionalFields } from './lab.js';
 import { captureVisibleParts,createTourTransition } from './tour-transitions.js';
-import { scene,projectionDepth } from './scene.js';
+import { scene,projectionDepth,camera,controls } from './scene.js';
 import { cancelCameraAnimation } from './presets.js';
 import { el, button } from './lab-controls.js';
 import { tourIcon } from './tour-icons.js';
@@ -67,9 +67,9 @@ export function updateTourStage(dt) {
 export function applyTourEffects() {
   const state=getState(),recipe=tourStep(state)?.scene;
   nodeStudy.update(levels[0]?.mc,recipe?.nodeStudy,tourProgress(state));
-  fruitScene.update(recipe?.fruit,tourProgress(state));
+  fruitScene.update(recipe?.fruit,tourProgress(state),camera.position.clone().sub(controls.target).normalize());
   if(!recipe)return;
-  const p=tourProgress(state),reveal=smooth(Math.min(1,p/.8));effectActive=true;
+  const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
   for(const level of levels) {
     if(recipe.effect==='nodes')level.mc.nodes.forEach((node,i)=>{node.visible=level.mc.nVis&&p*14>=i;node.material.opacity=Math.min(1,Math.max(0,p*14-i));});
     if(recipe.effect==='network')level.mc.lines.geometry.setDrawRange(0,Math.floor(78*reveal)*2);
@@ -81,8 +81,9 @@ export function applyTourEffects() {
     for(const object of Object.values(level.objs)) {
       if(!object.vis)continue;
       if(recipe.effect==='edges')object.edges.geometry.setDrawRange(0,Math.floor(object.edges.geometry.attributes.position.count*reveal/2)*2);
-      object.fMat.opacity=tourFaceOpacity(recipe,p)*alpha;
-      if(!recipe.golden)object.eMat.opacity=.97*alpha;
+      const layerAlpha=alpha*tourObjectAlpha(recipe,p,level.idx,object.id);
+      object.fMat.opacity=tourFaceOpacity(recipe,p)*layerAlpha;
+      if(!recipe.golden)object.eMat.opacity=.97*layerAlpha;
     }
   }
   for(const owner of derivedObjects)if(owner.object.vis)owner.object.fMat.opacity=tourFaceOpacity(recipe,p);
@@ -90,7 +91,9 @@ export function applyTourEffects() {
 export function initTours() {
   const mode=el('nav',null,'experience-mode');mode.setAttribute('aria-label','Режим интерфейса');
   mode.append(el('span','Hollow Geometry','experience-brand'));
-  const toursButton=button(mode,'Туры',()=>actions.interface('simple'));
+  const toursButton=button(mode,'',()=>actions.interface('simple'));
+  toursButton.className='experience-tours';toursButton.append(tourIcon('tours'),el('span','Туры'));
+  toursButton.title='Выбрать путешествие';
   const advanced=button(mode,'Лаборатория',()=>actions.interface('advanced'));
   const gentle=button(mode,'≈ Мягко',()=>actions.display({gentleOrbit:!getState().display.gentleOrbit}));
   gentle.title='Мягкое вращение камеры';gentle.setAttribute('aria-label',gentle.title);

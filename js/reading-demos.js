@@ -11,9 +11,9 @@ export const READING_DEMOS=[
   {topic:'octahedron',section:'Мост к икосаэдру',label:'Увидеть золотой мост между телами',tour:'golden',chapter:'golden-bridge'},
   {topic:'merkaba',section:'Оставить общее — получить октаэдр',label:'Посмотреть общий объём тетраэдров',tour:'merkaba',chapter:'intersection'},
   {topic:'platonic',section:'Что у них общего',label:'Начать путешествие по пяти телам',tour:'platonic',chapter:'five-solids'},
-  {topic:'fruit',section:'Один, шесть, ещё шесть',label:'Смотреть тур «Плод жизни»',tour:'fruit',chapter:'first-circle'},
+  {topic:'fruit',section:'Один, шесть, ещё шесть',label:'Смотреть тур «Плод и Цветок жизни»',tour:'fruit',chapter:'first-circle'},
   {topic:'fruit',section:'Как из кругов рождается куб Метатрона',label:'Увидеть переход от кругов к линиям',tour:'fruit',chapter:'fruit-network'},
-  {topic:'metatron',section:'Что именно построено в этой сцене',label:'Посмотреть плоский Плод жизни',tour:'fruit',chapter:'first-circle'},
+  {topic:'metatron',section:'Что именно построено в этой сцене',label:'Увидеть Плод жизни в объёме',tour:'fruit',chapter:'first-circle'},
 ];
 export function resolveReadingDemo(demo) {
   const tour=TOURS[demo.tour],index=tour?.steps.findIndex(step=>step.id===demo.chapter);

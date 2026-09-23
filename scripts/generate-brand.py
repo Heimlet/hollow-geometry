@@ -55,12 +55,10 @@ font_path=next((p for p in fonts if p.exists()),None)
 if not font_path:raise SystemExit('Install Arial or DejaVu Sans to regenerate the banner')
 def text(x,y,copy,size,color):
     d.text((x*S,y*S),copy,font=ImageFont.truetype(str(font_path),size*S),fill=color)
-text(64,102,'ГЕОМЕТРИЯ  /  В ДВИЖЕНИИ',15,(137,165,193,255))
 text(59,197,'Hollow',82,(236,244,252,255))
 text(59,283,'Geometry',82,(239,207,150,255))
 line([(64,403),(112,403)],(239,207,150,210),2)
-text(64,429,'Симметрия. Глубина. Золотое сечение.',21,(177,199,220,255))
-text(64,528,'9 интерактивных путешествий',16,(134,163,190,255))
+text(64,429,'просто о пустом.',21,(177,199,220,255))
 im.resize((W,H),Image.Resampling.LANCZOS).save(ASSETS/'social-card.png',optimize=True)
 
 # A hollow isometric cube: the three axes terminate around an open hexagonal core.

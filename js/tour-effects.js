@@ -4,7 +4,7 @@ export function tourFaceOpacity(recipe,p) {
   if(recipe.faces===false)return 0;
   const count=recipe.objects?.filter(id=>id!=='_metatron_').length||1;
   const low=recipe.faceFloor??(recipe.golden?.018:.035);
-  const high=recipe.golden?.16:count>3?.24:.46;
+  const high=recipe.facePeak??(recipe.golden?.16:count>3?.24:.46);
   const fadeAt=recipe.faceDissolveAt??recipe.camera?.symbol?.from??.9;
   // First reveal a readable shell; dissolve it before the symmetry becomes exact.
   const reveal=ease(p/.3),dissolve=1-ease((p-(fadeAt-.23))/.23);
@@ -18,4 +18,12 @@ export function recursionMoment(p,index,ratio=.38) {
   const reveal=index===0?1:ease((p-start)/.1);
   const retreat=index<2?1-.82*ease((p-.43)/.18)*(1-ease((p-.82)/.16)):1;
   return {scale:index===0?1:1+(1/ratio-1)*(1-build),alpha:reveal*retreat};
+}
+
+/** Stagger whole objects without changing the underlying visibility settings. */
+export function tourObjectAlpha(recipe,p,level,id) {
+  const key=`${level}:${id}`,appear=recipe.appear?.[key]??recipe.appear?.[id];
+  const dim=recipe.dim?.[key]??recipe.dim?.[id];
+  const visible=appear?ease((p-appear[0])/(appear[1]-appear[0])):1;
+  return visible*(dim?1-(1-(dim[2]??0))*ease((p-dim[0])/(dim[1]-dim[0])):1);
 }

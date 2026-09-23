@@ -1,6 +1,6 @@
 /** One reusable, independent 3D miniature for reading cards. The miniature owns its geometry snapshots. */
 import * as THREE from 'three';
-import {fruitOfLife,fruitCircle} from './fruit-life.js';
+import {fruitVolume} from './fruit-life.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { levels } from './levels.js';
 import { COLORS } from './constants.js';
@@ -45,9 +45,14 @@ export function mountKnowledgePreview(parent,topic,title) {
   container.append(renderer.domElement,caption);parent.append(container);
   for(const id of ids) {
     if(id==='_fruit_') {
-      const f=fruitOfLife();
-      f.centers.forEach((center,i)=>{const geometry=new THREE.BufferGeometry().setFromPoints(fruitCircle(center,f.radius).flat().map(p=>new THREE.Vector3(...p)));group.add(new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:i?0x9bd9ef:0xf2cc84,toneMapped:false})));});
-      caption.textContent='13 равных кругов · один, шесть, ещё шесть. Плоское построение.';
+      const f=fruitVolume(),u=new THREE.Vector3(1,0,-1).normalize(),v=new THREE.Vector3(-1,2,-1).normalize();
+      for(const center of f.centers){
+        const sphere=new THREE.Mesh(new THREE.SphereGeometry(f.radius,24,16),new THREE.MeshPhongMaterial({color:0x9bd9ef,transparent:true,opacity:.12,depthWrite:false}));sphere.position.set(...center);group.add(sphere);
+        const points=[];for(let i=0;i<96;i++)for(const j of [i,i+1])points.push(new THREE.Vector3(...center).addScaledVector(u,f.radius*Math.cos(j*Math.PI/48)).addScaledVector(v,f.radius*Math.sin(j*Math.PI/48)));
+        group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(points),new THREE.LineBasicMaterial({color:0xf2cc84,toneMapped:false})));
+      }
+      for(const [pairs,color]of [[f.cubeEdges,0x9bd9ef],[f.octaEdges,0xc6adff]])group.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pairs.flatMap(pair=>pair.map(i=>new THREE.Vector3(...f.centers[i])))),new THREE.LineBasicMaterial({color,transparent:true,opacity:.55,toneMapped:false})));
+      caption.textContent='Поверните: 14 сфер складываются в 13 кругов при взгляде по диагонали куба.';
     } else if(id==='_pentagram_') {
       for(let level=0;level<3;level++) {
         const r=((1+Math.sqrt(5))/2)**(-2*level),points=Array.from({length:5},(_,i)=>new THREE.Vector3(r*Math.cos(Math.PI/2+i*Math.PI*2/5+level*Math.PI/5),r*Math.sin(Math.PI/2+i*Math.PI*2/5+level*Math.PI/5),0));
@@ -63,7 +68,7 @@ export function mountKnowledgePreview(parent,topic,title) {
   for(const child of group.children)child.geometry.setDrawRange(0,Infinity);
   group.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(group),center=box.getCenter(new THREE.Vector3());radius=box.getBoundingSphere(new THREE.Sphere()).radius;
   group.position.copy(center).negate();camera.zoom=1;camera.up.set(0,1,0);camera.position.set(1,1,1).normalize().multiplyScalar(radius*5);controls.target.set(0,0,0);
-  if(topic==='pentagram'||topic==='fruit')camera.position.set(0,0,radius*5);
+  if(topic==='pentagram')camera.position.set(0,0,radius*5);
   controls.enableDamping=false;controls.update();controls.enableDamping=true;controls.enabled=true;active=true;width=height=0;
 }
 export function updateKnowledgePreview() {

@@ -20,6 +20,8 @@ jobs:
       pages: read
     steps:
       - uses: actions/checkout@v6
+      - name: Check public repository content
+        run: python3 scripts/audit-repository.py
       - name: Read Pages URL
         uses: actions/configure-pages@v5
         id: pages

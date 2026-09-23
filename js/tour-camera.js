@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { fruitOfLife,fruitCircle } from './fruit-life.js';
+import { fruitVolume } from './fruit-life.js';
 import { camera,controls,projectionDepth,getViewHeight,setViewHeight,setDepth,setCameraFrameOffset,settleControls } from './scene.js';
 import { levels } from './levels.js';
 import { derivedObjects,traditionalFields } from './lab.js';
@@ -14,7 +14,7 @@ export function queueTourShot(options={}){cancelCameraAnimation();settleControls
 export function cancelTourShot(){pending=false;flight=null;}
 export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
-  if(tourStep(getState())?.scene.fruit){const f=fruitOfLife();return f.centers.flatMap(c=>fruitCircle(c,f.radius,24).flat().map(p=>new THREE.Vector3(...p)));}
+  if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (['flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
   const points=[];
   for(const level of levels){
     for(const object of Object.values(level.objs)) {

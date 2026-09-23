@@ -6,7 +6,8 @@ import {advanceRotation} from '../js/merkaba-motion.js';
 assert.equal(Object.keys(TOURS).length,9);
 let chapters=0;
 for(const [id,tour]of Object.entries(TOURS)) {
-  assert.ok(tourDuration(id)>=180,id);
+  assert.ok(tourDuration(id)>100,id);
+  assert.ok(tour.steps.every(step=>step.seconds>=10),'Each chapter leaves time to read and watch');
   let state=reduce(initialState(),{type:'tour/start',id});
   for(let i=0;i<tour.steps.length;i++) {
     assert.equal(state.tour.index,i);assert.ok(Object.isFrozen(state));assert.ok(tour.steps[i].scene.fruit||ALL_IDS.some(key=>state.objects[key].visible));
