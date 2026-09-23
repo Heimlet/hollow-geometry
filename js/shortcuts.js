@@ -30,7 +30,7 @@ export function initShortcuts() {
   },true);
   window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end);window.addEventListener('blur',end);
   document.addEventListener('keydown',event=>{
-    if(!desktop.matches)return;
+    if(!desktop.matches||getState().ui.topic)return;
     if(event.code==='Escape')close();
     if(event.isComposing || event.target.closest('textarea, [contenteditable=true], input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=button])'))return;
     const command=event.ctrlKey||event.metaKey;

@@ -372,3 +372,78 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .tour-reset{display:none;top:72px;left:18px;font-size:20px}.touring .tour-reset{display:flex}
 @media(max-width:360px){.tour-controls{gap:4px}.tour-controls .tour-play{min-width:103px}.tour-controls button{padding:8px}.tour-player{padding-left:12px;padding-right:12px}.mode-simple .experience-mode{padding-left:12px;padding-right:12px}.experience-brand{font-size:11px}.experience-mode button{padding-left:7px;padding-right:7px}}
 .touring #fs-btn{left:auto;right:18px;top:72px;bottom:auto}
+
+/* A reading pause stays inside the film. The laboratory is an explicit exit. */
+.tour-player{transition:background .25s,border-color .25s,box-shadow .25s}
+.tour-player-head .tour-eyebrow{flex:1}
+.tour-player .tour-topic{display:inline;padding:0;border:0;border-bottom:1px dotted #a6c5de88;border-radius:0;background:none;font:inherit;line-height:inherit;color:#c4e3f3;white-space:normal}
+.tour-player .tour-topic:hover{background:none;color:#fff;border-color:#fff}
+.tour-states{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px;font-size:10px;letter-spacing:.2px}
+.tour-states span{padding:5px 8px;border-radius:5px;background:#83c9e70d;color:#9fb6d1;border:1px solid #9ac5ec20}
+.tour-states [data-locked=true]{color:#c2bcdf;background:#a38bd30d}
+.tour-player[data-playback=paused]{border-color:#eac079aa;background:#211c20f5;box-shadow:0 0 0 1px #d5a95218,0 18px 60px #0008}
+.tour-player[data-playback=paused] .tour-states span:first-child{font-weight:750;color:#ffe0a1;border-color:#edc78080;background:#e1ae4926}
+.tour-player[data-playback=paused] .tour-play{background:#ebca8d;color:#25202b;border-color:#ffe0aa;font-weight:700}
+.tour-player[data-playback=paused] .tour-progress span{background:#edc780;box-shadow:0 0 10px #edc78066}
+.tour-player[data-playback=complete]{border-color:#87d9b880}
+.tour-player[data-playback=complete] .tour-states span:first-child{color:#a2e8c8;font-weight:650}
+.tour-status{display:block;min-height:15px}
+.tour-player .tour-exit{display:block;margin:8px 0 0 auto;padding:3px 0;border:0;background:none;color:#8da4bd;font-size:10px;white-space:normal;text-align:right}
+.tour-player .tour-exit:hover{color:#d8e8fa;background:none}
+.phi-library{display:block;margin:24px auto 0;padding:11px 18px;font:inherit;font-size:13px;color:#edcf92;border:1px solid #d8ad6144;border-radius:9px;background:#e2ad5010;cursor:pointer}
+.knowledge-dialog{position:fixed;inset:0;margin:auto;width:min(700px,calc(100vw - 32px));max-width:none;max-height:calc(100dvh - 48px);padding:0;border:1px solid #bba77a55;border-radius:18px;background:#111928;color:#b5c5d9;box-shadow:0 24px 100px #000a;overflow:hidden}
+.knowledge-dialog[open]{display:flex;flex-direction:column}
+.knowledge-dialog::backdrop{background:#030711a8;backdrop-filter:blur(8px)}
+.knowledge-close{position:absolute;top:12px;right:14px;z-index:1;width:32px;height:32px;border:1px solid #afbdd02b;border-radius:50%;background:#142033;color:#c6d2e2;font-size:23px;line-height:1;cursor:pointer}
+.knowledge-body{padding:32px 34px 22px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#64748b55 transparent}
+.knowledge-body>.tour-eyebrow{padding-right:26px;color:#dabf88}
+.knowledge-body h2{font-size:27px;line-height:1.25;font-weight:550;letter-spacing:-.5px;color:#f0e5d0;margin:13px 20px 18px 0}
+.knowledge-body h3{font-size:16px;line-height:1.4;font-weight:550;color:#deebf5;margin:24px 0 9px}
+.knowledge-body p{font-size:14px;line-height:1.85;margin:0}
+.knowledge-body .knowledge-lead{font-size:16px;line-height:1.8;color:#d2dcea}
+.knowledge-body .knowledge-note{font-size:12px;color:#91a8c0;line-height:1.75}
+.knowledge-footer{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 24px;border-top:1px solid #adc3df20;background:#141e30}
+.knowledge-resume{width:100%;padding:12px 20px;border:1px solid #f0d9a4;border-radius:8px;background:#e7c487;color:#222330;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.knowledge-leave{background:none;border:0;color:#99b5d3;font:inherit;font-size:12px;cursor:pointer;padding:4px 8px}
+.knowledge-sources a{display:block;color:#8dc7e9;font-size:12px;line-height:1.7;margin:8px 0;text-underline-offset:3px}
+.knowledge-related{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.knowledge-related button,.phi-choices button{border:1px solid #9bbfdf33;background:#8cb6e20c;padding:8px 11px;border-radius:7px;font:inherit;font-size:12px;color:#b0cce4;cursor:pointer}
+.phi-choices{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.phi-choices button[aria-pressed=true]{color:#f3d698;background:#e3b76818;border-color:#e3b76877}
+.phi-experiment svg{display:block;width:min(100%,320px);margin:12px auto 16px;background:#080e1a;border-radius:50%}
+.knowledge-dialog :is(button,a):focus-visible,.tour-player button:focus-visible,.phi-library:focus-visible{outline:2px solid #efd197;outline-offset:4px}
+@media(max-width:700px){
+  .tour-player{padding:12px 14px 10px}.tour-player h2{font-size:16px;margin-bottom:6px}.tour-narration{max-height:100px}
+  .tour-controls .tour-play{min-width:0;flex:1}.tour-controls button{font-size:11px;padding:8px}
+  .tour-states{gap:4px;margin-top:8px;font-size:9px}.tour-states span{padding:4px 6px}
+  .tour-status{font-size:9px;margin-top:6px}.tour-options{margin-top:4px}.tour-player .tour-exit{margin-top:5px;font-size:9px}
+  .knowledge-dialog{width:calc(100vw - 20px);max-height:calc(100dvh - 24px);border-radius:13px}
+  .knowledge-body{padding:26px 22px 20px}.knowledge-body h2{font-size:23px}.knowledge-body p{font-size:13px}.knowledge-body .knowledge-lead{font-size:14px}
+  .knowledge-footer{padding:12px 18px;gap:8px}.knowledge-leave{font-size:11px;line-height:1.5}
+}
+@media(prefers-reduced-motion:reduce){.tour-player{transition:none}.knowledge-dialog::backdrop{backdrop-filter:none}}
+.knowledge-related h3{flex-basis:100%;margin-bottom:2px}
+@media(min-width:1100px) and (min-height:600px){
+  .tour-player{width:440px;left:auto;right:24px;bottom:28px;transform:none;padding:20px;max-height:calc(100dvh - 110px);overflow:auto}
+  .tour-player h2{font-size:22px}.tour-narration{max-height:190px;font-size:13px}
+  .tour-player-head{gap:10px}.tour-player-head .tour-eyebrow{max-width:280px}
+}
+.tour-progress{display:flex;gap:4px;top:0;left:14px;right:14px;height:12px;background:none;overflow:visible}
+.tour-player .tour-progress button{position:relative;flex:1;min-width:0;height:12px;margin:0;padding:0;border:0;border-radius:0;background:transparent;overflow:hidden}
+.tour-progress button:before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:2px;background:#a9c7ee25}
+.tour-progress button span{position:absolute;top:0;left:0;height:3px;border-radius:2px;background:#c7e4ff;box-shadow:none}
+.tour-progress button[data-status=current] span{box-shadow:0 0 8px #97ccff88}
+.tour-player .tour-progress button:hover{background:none}.tour-progress button:hover:before{height:5px;background:#bfdfff44}
+.touring .golden-scene-ink{opacity:var(--tour-ink-opacity,1)}
+.tour-player[data-playback=paused] .tour-play:hover:enabled{background:#f4d59c;color:#25202b;border-color:#ffe6b4}
+@media(max-width:700px){.tour-player{max-height:calc(100dvh - 190px);overflow:auto}}
+.knowledge-dialog .tour-topic{display:inline;font:inherit;line-height:inherit;padding:0;border:0;border-bottom:1px dotted #a6c5de77;border-radius:0;background:none;color:#c1dfed;cursor:pointer;text-align:inherit}
+.knowledge-dialog .tour-topic:hover{color:#f5ddb2;border-color:#f5ddb2}
+.tour-controls .tour-return{margin-left:auto;font-size:11px;padding:8px 10px}
+@media(max-width:700px){.tour-controls .tour-return{font-size:0;width:31px;min-width:31px;padding:7px}.tour-return:before{content:'↶';font-size:15px}}
+.golden-scene-length[hidden]{display:none!important}
+.knowledge-preview{margin:0 0 22px;border:1px solid #bdd6f321;border-radius:12px;background:radial-gradient(ellipse at center,#21304a77,#080e1aa8);overflow:hidden}
+.knowledge-preview canvas{display:block;width:100%;height:210px;cursor:grab;touch-action:none}
+.knowledge-preview canvas:active{cursor:grabbing}.knowledge-preview canvas:focus-visible{outline:2px solid #efd197;outline-offset:-3px}
+.knowledge-preview figcaption{text-align:center;color:#8a9fb9;font-size:10px;padding:0 12px 12px;line-height:1.5}
+@media(max-width:700px){.knowledge-preview canvas{height:180px}.knowledge-preview figcaption{font-size:9px}}

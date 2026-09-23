@@ -7,6 +7,7 @@ updateStarfield();renderStarfield();assert.equal(scene.calls[0],'clear');assert.
 for(const points of sky.scene.children){assert.equal(points.material.sizeAttenuation,true);const positions=points.geometry.attributes.position,radii=new Set();for(let i=0;i<positions.count;i++){const radius=Math.hypot(positions.getX(i),positions.getY(i),positions.getZ(i));assert.ok(radius>=29.99&&radius<=115.01);radii.add(Math.round(radius));}assert.ok(radii.size>75);}
 const original=sky.camera.position.clone();scene.camera.position.multiplyScalar(100);updateStarfield();assert.ok(sky.camera.position.distanceTo(original)<1e-9,'FOV compensation must not move sky out of the sphere');
 scene.camera.position.set(-30,10,40);scene.camera.lookAt(scene.controls.target);updateStarfield();assert.equal(sky.camera.quaternion.equals(scene.camera.quaternion),true,'Sky rotation must follow orbit exactly');
+scene.camera.setViewOffset(1280,800,230,-22,1280,800);updateStarfield();assert.equal(sky.camera.view.offsetX,230);assert.equal(sky.camera.view.offsetY,-22);scene.camera.clearViewOffset();updateStarfield();assert.equal(sky.camera.view.enabled,false);
 actions.display({starCount:8000});updateStarfield();assert.equal(sky.scene.children.reduce((sum,p)=>sum+p.geometry.drawRange.count,0),8000);
 actions.display({stars:false});scene.calls.length=0;renderStarfield();assert.deepEqual(scene.calls,['clear','depth']);
 console.log('PASS: genuinely spatial stars, depth attenuation, exact orbit synchronization, stable sky under FOV compensation, density and disabled rendering');

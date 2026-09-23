@@ -27,6 +27,9 @@ export function updateStarfield() {
   // the observer outside the sky. A small physical orbit retains depth parallax.
   skyCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(4).addScaledVector(controls.target,.02);
   skyCamera.quaternion.copy(camera.quaternion);
+  const view=camera.view;
+  if(view?.enabled)skyCamera.setViewOffset(innerWidth,innerHeight,view.offsetX,view.offsetY,innerWidth,innerHeight);
+  else if(skyCamera.view?.enabled)skyCamera.clearViewOffset();
   if(skyCamera.aspect!==innerWidth/innerHeight){skyCamera.aspect=innerWidth/innerHeight;skyCamera.updateProjectionMatrix();}
 }
 export function renderStarfield() {

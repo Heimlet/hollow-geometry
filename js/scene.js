@@ -43,6 +43,14 @@ function syncOrbit() {
 }
 syncOrbit();subscribe((state,previous)=>{if(state.display.gentleOrbit!==previous.display.gentleOrbit)syncOrbit();});
 
+export function setCameraFrameOffset(offsetY=0,offsetX=0) {
+  for(const c of [orthographic,perspective]) {
+    if(Math.abs(offsetY)<.001&&Math.abs(offsetX)<.001){if(c.view?.enabled)c.clearViewOffset();}
+    else if(!c.view?.enabled||c.view.offsetY!==offsetY||c.view.offsetX!==offsetX||c.view.fullWidth!==innerWidth||c.view.fullHeight!==innerHeight)
+      c.setViewOffset(innerWidth,innerHeight,offsetX,offsetY,innerWidth,innerHeight);
+  }
+}
+
 export function getViewHeight() { return viewHeight(camera, controls.target); }
 export function setViewHeight(height) {
   if (camera.isPerspectiveCamera) {

@@ -1,4 +1,6 @@
-import { initTours, updateTours, applyTourEffects, tourOrbit, resetTourCamera } from './tours.js';
+import { updateKnowledgePreview } from './knowledge-preview.js';
+import { openTourReading } from './tour-reading.js';
+import { initTours, updateTours, applyTourEffects, applyTourTransition, restoreTourMaterials, updateTourStage, resetTourCamera } from './tours.js';
 import { updateLab } from './lab.js';
 import { drawLabProjection } from './lab-projection.js';
 /**
@@ -39,7 +41,7 @@ document.querySelectorAll('.hdr-btns button').forEach(button=>button.disabled=fa
 initShortcuts();
 initTours();
 
-const updatePicking = initPicking(showInfo);
+const updatePicking = initPicking(id=>getState().tour.id?openTourReading(id):showInfo(id));
 
 // ── Animation loop ──
 const clock = new THREE.Clock();
@@ -51,19 +53,22 @@ function animate() {
 
   updateCamAnim();
   updateTours(dt);
-  controls.autoRotate = (getState().display.autoRotate || tourOrbit()) && !isCamAnimating();
-  controls.autoRotateSpeed = tourOrbit() ? .38 : getState().display.speed * 8;
+  controls.autoRotate = (getState().display.autoRotate && !getState().tour.id) && !isCamAnimating();
+  controls.autoRotateSpeed = getState().display.speed * 8;
 
-  // Node pulsation
+  // Decorative motion follows the same paused timeline as the film.
+  const motionTime=getState().tour.id?getState().tour.elapsed:t;
   for (const lv of levels) {
     if (!lv.mc.vis) continue;
-    const bs = 1 + 0.06 * Math.sin(t * 1.5 + lv.idx);
-    lv.mc.nodes.forEach((n, i) => n.scale.setScalar(bs + 0.04 * Math.sin(t * 2 + i * 0.5)));
+    const bs = 1 + 0.06 * Math.sin(motionTime * 1.5 + lv.idx);
+    lv.mc.nodes.forEach((n, i) => n.scale.setScalar(bs + 0.04 * Math.sin(motionTime * 2 + i * 0.5)));
   }
 
   controls.update(dt);
   updateLab(dt);
+  updateTourStage(dt);
   applyTourEffects();
+  applyTourTransition(dt);
   updatePicking();
   updateGolden();
   updateStudies(dt);
@@ -71,6 +76,8 @@ function animate() {
   updateGoldenScenes(dt);
   renderStarfield();
   if(getState().ui.mode==='advanced'||getState().tour.id)renderer.render(scene, camera);
+  restoreTourMaterials();
+  updateKnowledgePreview();
   drawProjectionGuide();
   drawLabProjection();
 }

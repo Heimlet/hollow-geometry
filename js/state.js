@@ -1,3 +1,4 @@
+import { KNOWLEDGE } from './tour-knowledge.js';
 import { PLATONIC_TYPES, MIRROR_PAIRS, pairOf } from './mirror-data.js';
 import { ASSEMBLIES, VIEW_CONTEXTS, contextForObjects } from './exploration-data.js';
 import { initialLab, labChange } from './lab-state.js';
@@ -23,7 +24,7 @@ export function initialState() {
   return freeze({ objects: Object.fromEntries(ALL_IDS.map(id => [id, {
     visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: opacity[id] ?? .12,
   }])), recursion: { depth: 1, scale: .35 }, presetId: null,
-  lab: initialLab(), viewContext: 'platonic', ui:{mode:'simple'}, tour:initialTour(),
+  lab: initialLab(), viewContext: 'platonic', ui:{mode:'simple',topic:null}, tour:initialTour(),
   study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, turns: 3, size: 1, attached: false },
   goldenScene: { id: 'none', progress: 0, running: false },
   display: { autoRotate: false, speed: .15, stars: true, starCount: 2400, gentleOrbit:true, guide: false, golden: false } });
@@ -32,6 +33,15 @@ function requireValid(condition, message) { if (!condition) throw new Error(mess
 export function reduce(state, action) {
   let next = state;
   switch (action.type) {
+    case 'knowledge/open': {
+      requireValid(KNOWLEDGE[action.topic],'Unknown reading topic');
+      next={...state,ui:{...state.ui,topic:action.topic},tour:{...state.tour,playing:false}};break;
+    }
+    case 'knowledge/close': {
+      next={...state,ui:{...state.ui,topic:null}};
+      if(action.resume&&state.tour.id&&state.tour.phase!=='complete')next=reduce(next,{type:'tour/control',patch:{playing:true}});
+      break;
+    }
     case 'ui/mode': {
       requireValid(['simple','advanced'].includes(action.mode),'Invalid interface mode');
       next={...state,ui:{mode:action.mode},tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
@@ -43,7 +53,7 @@ export function reduce(state, action) {
     }
     case 'tour/control': {
       requireValid(Object.entries(action.patch).every(([k,v])=>['playing','auto'].includes(k)&&typeof v==='boolean'),'Invalid tour controls');
-      next={...state,tour:{...state.tour,...action.patch}};
+      next={...state,tour:{...state.tour,...action.patch},ui:{...state.ui,...(action.patch.playing?{topic:null}:{})}};
       if(!state.tour.id)next.tour.playing=false;
       else if(action.patch.playing===true&&state.tour.elapsed>=TOURS[state.tour.id].steps[state.tour.index].seconds)
         next=enterTourStep(next,state.tour.id,(state.tour.index+1)%TOURS[state.tour.id].steps.length,next.tour.auto);
@@ -56,7 +66,7 @@ export function reduce(state, action) {
     case 'tour/tick': {
       requireValid(Number.isFinite(action.seconds)&&action.seconds>=0,'Invalid tour tick');next=tickTour(state,action.seconds);break;
     }
-    case 'tour/stop': next={...state,tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
+    case 'tour/stop': next={...state,ui:{...state.ui,topic:null},tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
     case 'metatron/selection': {
       const ids=PLATONIC_TYPES.flatMap(pairOf);
       requireValid(typeof action.visible==='boolean','Invalid Metatron selection');
@@ -330,6 +340,8 @@ export function createStore() {
 }
 export const { getState, dispatch, subscribe, getHistory, beginHistoryGroup, endHistoryGroup, undo, redo } = createStore();
 export const actions = {
+  readTopic: topic => dispatch({type:'knowledge/open',topic,history:false}),
+  closeTopic: (resume=true) => dispatch({type:'knowledge/close',resume,history:false}),
   interface: mode => dispatch({type:'ui/mode',mode,history:false}),
   startTour: id => dispatch({type:'tour/start',id}),
   tourStep: index => dispatch({type:'tour/step',index}),

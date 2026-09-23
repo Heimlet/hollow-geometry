@@ -20,7 +20,7 @@ export function enterTourStep(state,id,index=0,auto=state.tour.auto) {
   const explode=recipe.explode??(recipe.effect==='assemble'?1:0);
   if(recipe.assembly){lab.explode.scope='components';lab.collections[recipe.assembly].explode=explode;}
   else lab.explode.value=explode;
-  const next={...state,objects,lab,presetId:null,viewContext:'tour',ui:{...state.ui,mode:'simple'},
+  const next={...state,objects,lab,presetId:null,viewContext:'tour',ui:{...state.ui,mode:'simple',topic:null},
     recursion:{depth:recipe.depth||1,scale:recipe.scale||.35},display:{...state.display,autoRotate:false,golden:false,guide:false},
     study:{...state.study,mode:'none',running:false},goldenScene:{id:recipe.golden||'none',progress:recipe.goldenFrom||0,running:false},
     tour:{id,index,elapsed:0,playing:true,auto,phase:'watch'}};
@@ -38,9 +38,9 @@ export function frameTour(state,elapsed) {
   if(['counter','tradition'].includes(recipe.effect)) {
     const tradition=recipe.effect==='tradition';
     lab={...lab,rotation:{...lab.rotation,mode:tradition?'tradition':'counter',running:false,
-      up:wrapAngle(elapsed*(tradition?34:18)),down:wrapAngle(-elapsed*(tradition?21:18))}};
+      up:wrapAngle(elapsed*1.15*(tradition?34:18)),down:wrapAngle(-elapsed*1.15*(tradition?21:18))}};
   }
-  if(recipe.golden)goldenScene={id:recipe.golden,progress:(recipe.goldenFrom||0)+((recipe.goldenTo??1)-(recipe.goldenFrom||0))*smooth(p),running:false};
+  if(recipe.golden)goldenScene={id:recipe.golden,progress:(recipe.goldenFrom||0)+((recipe.goldenTo??1)-(recipe.goldenFrom||0))*smooth(Math.min(1,p/(recipe.buildUntil||1))),running:false};
   return {...state,lab,goldenScene,tour:{...state.tour,elapsed}};
 }
 export function tickTour(state,seconds) {

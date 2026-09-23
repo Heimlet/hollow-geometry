@@ -88,6 +88,8 @@ export function initPicking(showInfo) {
     const hits = hitsAt(event.clientX, event.clientY);
     if (!hits.length) { selected = null; hovered = null; return; }
     if (hits.length === 1) { select(hits[0]); return; }
+    const inTour=!!getState().tour.id;
+    if(inTour)actions.tourControl({playing:false});
     focusBeforePicker = document.activeElement;
     picker.replaceChildren();
     const heading = document.createElement('p'); heading.textContent = 'Выберите фигуру под курсором';
@@ -105,16 +107,16 @@ export function initPicking(showInfo) {
       toggle.addEventListener('change', () => actions.objectVisibility(owner.id, toggle.checked));visibility.append(toggle);
       const settings = settingLink('Настройки', keyFor(owner));
       settings.addEventListener('click', () => closePicker());
-      row.append(visibility, button, settings); picker.appendChild(row);pickerRows.push({owner,toggle,row});
+      if(inTour)row.append(button);else row.append(visibility, button, settings); picker.appendChild(row);pickerRows.push({owner,toggle,row});
     }
-    const help = document.createElement('p');help.className = 'pick-help';help.textContent = 'Чекбокс — видимость на всех уровнях. Название — описание.';picker.append(help);syncPicker(getState());
+    const help = document.createElement('p');help.className = 'pick-help';help.textContent = inTour?'Тур на паузе. Выберите название, чтобы прочитать о фигуре.':'Чекбокс — видимость на всех уровнях. Название — описание.';picker.append(help);syncPicker(getState());
     hovered = null; picker.hidden = false;
     position(picker, event.clientX + 12, event.clientY + 12);
     picker.querySelector('.pick-item').focus();
   });
   document.addEventListener('pointerdown', event => { if (!picker.contains(event.target) && event.target !== label) closePicker(); });
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') { closePicker(true); selected = null; hovered = null; }
+    if (event.key === 'Escape'&&!getState().ui.topic) { closePicker(true); selected = null; hovered = null; }
   });
   controls.addEventListener('start', () => { closePicker(); hovered = null; });
   window.addEventListener('golden-inspect', () => { selected = null; hovered = null; preview = null; closePicker(); });
@@ -152,6 +154,7 @@ export function initPicking(showInfo) {
     if (labelKey !== owner.key) {
       labelKey = owner.key;
       const name = settingLink(title(owner), keyFor(owner));
+      if(getState().tour.id){name.title=`Подробнее: ${title(owner)}`;name.setAttribute('aria-label',name.title);}
       const info = document.createElement('button'); info.className = 'label-info'; info.textContent = 'i';
       info.title = 'Описание фигуры'; info.setAttribute('aria-label', `Описание: ${title(owner)}`);
       info.addEventListener('click', () => select(owner)); label.replaceChildren(name, info);

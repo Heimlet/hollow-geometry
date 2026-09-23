@@ -1,5 +1,8 @@
 /** Animated proofs drawn from the actual source meshes, in their world coordinates. */
 import * as THREE from 'three';
+import { tourFaceOpacity } from './tour-effects.js';
+import { tourStep } from './tour-data.js';
+import { tourProgress } from './tour-state.js';
 import { PHI } from './constants.js';
 import { GOLDEN_SCENES } from './golden-scene-data.js';
 import { getState, actions, subscribe } from './state.js';
@@ -64,7 +67,8 @@ function dot(point,color,alpha=1,radius=3.4) {
 }
 function polygon(points,color,alpha) {
   const p=points.map(project);if(p.some(v=>!v.visible))return;
-  ctx.globalAlpha=alpha;ctx.fillStyle=color;ctx.beginPath();p.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.closePath();ctx.fill();
+  const state=getState(),recipe=tourStep(state)?.scene;
+  ctx.globalAlpha=alpha*(recipe?tourFaceOpacity(recipe,tourProgress(state))/.035:1);ctx.fillStyle=color;ctx.beginPath();p.forEach((v,i)=>i?ctx.lineTo(v.x,v.y):ctx.moveTo(v.x,v.y));ctx.closePath();ctx.fill();
 }
 function annotate(index,point,text,role='short') {
   const label=labels[index],p=project(point);label.hidden=!p.visible||p.x<0||p.x>innerWidth||p.y<56||p.y>innerHeight;
@@ -180,7 +184,7 @@ export function initGoldenScenesUI(parent) {
   const back=button(buttons,'←',()=>step(-1));back.setAttribute('aria-label','Предыдущий шаг φ');
   const next=button(buttons,'→',()=>step(1));next.setAttribute('aria-label','Следующий шаг φ');
   button(buttons,'↻',()=>actions.startGoldenScene(getState().goldenScene.id)).setAttribute('aria-label','Повторить сценарий φ');
-  button(buttons,'Почему φ?',explain);
+  button(buttons,'Чем интересно φ?',explain);
   const zoom=button(card,'В центр звезды',()=>{
     const target=center(data.face.points),direction=target.clone().normalize().multiplyScalar(30);
     flyCamera(direction,.65/Math.min(1,innerWidth/innerHeight),1500,target);
