@@ -14,6 +14,7 @@ import { cancelCameraAnimation } from './presets.js';
 import { el, button } from './lab-controls.js';
 import { tourIcon } from './tour-icons.js';
 import { initTourReading,linkTourText } from './tour-reading.js';
+import { mountTorusPreface } from './tour-preface.js';
 import { queueTourShot,cancelTourShot,tourCameraBusy,updateTourCamera,tourCameraStatus } from './tour-camera.js';
 let player, effectActive=false, status, animationState, cameraState,returnCamera;
 const transition=createTourTransition(scene);
@@ -119,7 +120,7 @@ export function initTours() {
     const meta=el('span',`${tour.reading==='torus'?'Финал · ':''}${minutes(id)} · ${tour.steps.length} глав`,'tour-meta');
     card.append(icon,el('strong',tour.name),el('span',tour.description,'tour-description'),meta,el('span','↗','tour-card-play'));
   }
-  welcome.append(musicRow,grid);document.body.append(welcome);
+  welcome.append(musicRow,grid);mountTorusPreface(welcome);document.body.append(welcome);
   player=el('section',null,'tour-player');player.hidden=true;player.setAttribute('aria-label','Управление путешествием');
   const progress=el('nav',null,'tour-progress');progress.setAttribute('aria-label','Прогресс по главам');
   const head=el('div',null,'tour-player-head'),chapter=el('span',null,'tour-eyebrow');

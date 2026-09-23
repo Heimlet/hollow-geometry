@@ -49,3 +49,21 @@ assert.equal(getState().objects._metatron_.visible,false);assert.equal(getState(
 assert.equal(resolveReadingDemo({tour:'golden',chapter:'missing'}),null);
 assert.throws(()=>reduce(getState(),{type:'tour/start',id:'golden',index:999}));
 console.log('PASS: all reading links resolve stable chapter IDs, selection is inert, confirmed jump replaces scene atomically');
+
+const {TORUS_PREFACE}=await import('../js/tour-preface-data.js');
+const references=TORUS_PREFACE.sections.flatMap(s=>s.text.filter(p=>typeof p!=='string'));
+const chapterLinks=[...references.filter(p=>p.tour),TORUS_PREFACE.start];
+const beforePreface=getState();
+for(const link of chapterLinks){
+  const chapter=resolveReadingDemo(link);assert.ok(chapter,`${link.tour}/${link.chapter}`);
+  assert.equal(TOURS[link.tour].steps.filter(s=>s.id===link.chapter).length,1,'Preface chapter destinations stay unambiguous');
+}
+assert.equal(getState(),beforePreface,'Rendering preface destinations must not change the scene');
+for(const link of references.filter(p=>p.url)){assert.equal(new URL(link.url).protocol,'https:');assert.ok(link.title);}
+for(const link of chapterLinks){
+  const chapter=resolveReadingDemo(link);
+  const opened=reduce(beforePreface,{type:'tour/start',id:chapter.tour,index:chapter.index});
+  assert.equal(opened.tour.id,link.tour);assert.equal(TOURS[opened.tour.id].steps[opened.tour.index].id,link.chapter);
+  assert.equal(opened.tour.elapsed,0);assert.equal(opened.ui.topic,null);
+}
+console.log('PASS: every preface link targets a unique chapter; research links are identified; chapter previews leave state unchanged');

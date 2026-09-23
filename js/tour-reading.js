@@ -4,6 +4,24 @@ import { KNOWLEDGE,topicFor } from './tour-knowledge.js';
 import { actions,getState,subscribe } from './state.js';
 import { el,button } from './lab-controls.js';
 import { linkText,openSetting } from './settings-links.js';
+let pendingDemo=null;
+/** One confirmation path for chapter links in reading cards and on the home page. */
+export function appendChapterLink(parent,demo,{inline=false,warningParent=parent,cancelLabel='Остаться в справке'}={}) {
+  const target=resolveReadingDemo(demo);if(!target)return null;
+  const watch=button(parent,inline?demo.label:`▷ ${demo.label}`,()=>{
+    pendingDemo?.remove();
+    const warning=el('aside',null,'knowledge-tour-confirm');warning.setAttribute('role','alert');
+    const state=getState();
+    warning.append(el('strong',`Открыть главу «${target.title}»?`),el('p',`Текущая сцена и её настройки будут заменены сценарием этой главы.${state.tour.id?' Вы покинете текущий тур и начнёте выбранную главу с начала.':''}`));
+    const row=el('div');
+    const cancel=button(row,cancelLabel,()=>{warning.remove();pendingDemo=null;watch.focus({preventScroll:true});});
+    button(row,'Начать показ',()=>actions.startTour(target.tour,target.index));
+    warning.append(row);warningParent.append(warning);pendingDemo=warning;
+    warning.scrollIntoView({block:'nearest',behavior:'smooth'});cancel.focus({preventScroll:true});
+  });
+  watch.className=inline?'preface-chapter':'knowledge-watch';watch.title=`${target.name} · глава ${target.index+1}: ${target.title}`;
+  return watch;
+}
 export function openTourReading(key){const topic=topicFor(key);if(!topic)return false;actions.readTopic(topic);return true;}
 export function linkTourText(root,context) {
   linkText(root,context);
@@ -48,22 +66,8 @@ export function initTourReading() {
   dialog.append(body,footer);document.body.append(dialog);let previous=null,returnFocus=null;const scrollPositions=new Map();
   dialog.addEventListener('cancel',event=>{event.preventDefault();actions.closeTopic();});
   dialog.addEventListener('click',event=>{if(event.target===dialog&&event.clientX){const r=dialog.getBoundingClientRect();if(event.clientX<r.left||event.clientX>r.right||event.clientY<r.top||event.clientY>r.bottom)actions.closeTopic();}});
-  let pendingDemo=null;
-  function watchButton(section,demo) {
-    const target=resolveReadingDemo(demo);if(!target)return;
-    const watch=button(section,`▷ ${demo.label}`,()=>{
-      pendingDemo?.remove();
-      const warning=el('aside',null,'knowledge-tour-confirm');warning.setAttribute('role','alert');
-      const state=getState();
-      warning.append(el('strong',`Открыть главу «${target.title}»?`),el('p',`Текущая сцена и её настройки будут заменены сценарием этой главы.${state.tour.id?' Вы покинете текущий тур и начнёте выбранную главу с начала.':''}`));
-      const row=el('div');
-      const cancel=button(row,'Остаться в справке',()=>{warning.remove();pendingDemo=null;watch.focus();});
-      button(row,'Начать показ',()=>actions.startTour(target.tour,target.index));
-      warning.append(row);section.append(warning);pendingDemo=warning;
-      warning.scrollIntoView({block:'nearest',behavior:'smooth'});cancel.focus({preventScroll:true});
-    });watch.className='knowledge-watch';watch.title=`${target.name} · глава ${target.index+1}`;
-  }
   function sync(state,previousState,action={}) {
+    if(['tour/start','ui/mode','knowledge/open'].includes(action.type)){pendingDemo?.remove();pendingDemo=null;}
     const key=state.ui.topic||null;if(key===previous)return;if(previous)scrollPositions.set(previous,body.scrollTop);previous=key;
     back.hidden=!(state.ui.topicTrail?.length);
     if(!key){hideKnowledgePreview();if(dialog.open)dialog.close();if(returnFocus?.isConnected)returnFocus.focus({preventScroll:true});return;}
@@ -78,7 +82,7 @@ export function initTourReading() {
         section.append(card);
       }
       if(references.length){const citations=el('div',null,'knowledge-citations');for(const index of references){const [label,url]=entry.sources[index],a=el('a',label);a.href=url;a.target='_blank';a.rel='noopener noreferrer';citations.append(a);}section.append(citations);}
-      body.append(section);READING_DEMOS.filter(d=>d.topic===key&&d.section===title).forEach(d=>watchButton(section,d));if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
+      body.append(section);READING_DEMOS.filter(d=>d.topic===key&&d.section===title).forEach(d=>appendChapterLink(section,d));if(key==='phi'&&title==='Один угол — целый узор')phyllotaxis(body);});
     if(entry.related.length){const related=el('div',null,'knowledge-related');related.append(el('h3','Связанные идеи'));entry.related.forEach(id=>{const b=button(related,KNOWLEDGE[id].title,()=>actions.readTopic(id));b.dataset.topic=id;});body.append(related);}
     if(entry.sources.length){const sources=el('div',null,'knowledge-sources');sources.append(el('h3','Источники и дальше'));for(const [title,url]of entry.sources){const a=el('a',title);a.href=url;a.target='_blank';a.rel='noopener noreferrer';sources.append(a);}body.append(sources);}
     body.querySelectorAll('p').forEach(paragraph=>linkTourText(paragraph,key));

@@ -17,9 +17,27 @@ assert.ok((TORUS_OUTER.major+TORUS_OUTER.tube)/(TORUS.major+TORUS.tube)<1.1,'Two
 assert.ok(TORUS_OUTER.tube>TORUS.tube&&TORUS_OUTER.height>TORUS.height);
 const knot=torusCurve(2,3);assert.ok(Math.hypot(...knot[0].map((v,i)=>v-knot.at(-1)[i]))<1e-10);
 for(let i=1;i<=18;i++)assert.ok(Math.hypot(...torusPoint(i*tau,i*tau*phi).map((v,k)=>v-torusPoint(0,0)[k]))>1e-3,'Phi winding has no return after a whole large turn');
-assert.equal(Object.keys(TOURS).at(-1),'torus');assert.equal(TOURS.torus.steps.length,9);
-assert.ok(tourDuration('torus')>=90&&tourDuration('torus')<=150,'Finale stays short');
-assert.equal(TOURS.torus.steps[0].scene.fruit,'network');assert.equal(TOURS.torus.steps[2].scene.golden,'spiral');
+assert.equal(Object.keys(TOURS).at(-1),'torus');
+assert.ok(tourDuration('torus')>=90&&tourDuration('torus')<=180,'Finale stays short');
+assert.equal(TOURS.torus.steps[0].scene.fruit,'network');
+const rectangleIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-rectangles');
+const depthIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-rectangle-depth');
+const axisIndex=TOURS.torus.steps.findIndex(s=>s.scene.axisGuide);
+assert.ok(rectangleIndex>=0&&depthIndex===rectangleIndex+1&&axisIndex>depthIndex,'Golden subdivision and its continuation precede the vertical axis');
+for(const index of [rectangleIndex,depthIndex]) {
+  const chapter=TOURS.torus.steps[index];
+  const initial=reduce(initialState(),{type:'tour/start',id:'torus',index});
+  const halfway=reduce(initial,{type:'tour/seek',elapsed:chapter.seconds*.5});
+  assert.equal(initial.goldenScene.id,'division');assert.equal(initial.objects.icosahedron.visible,true);
+  assert.equal(initial.lab.layers.intersection,false);assert.equal(initial.lab.layers.hull,false);
+  assert.equal(chapter.scene.axisGuide,undefined);
+  assert.ok(halfway.goldenScene.progress>initial.goldenScene.progress,'Rectangles and spirals draw during the chapter');
+  const axisState=reduce(halfway,{type:'tour/step',index:axisIndex});
+  assert.equal(axisState.goldenScene.id,'none');assert.equal(axisState.objects.icosahedron.visible,false,'The golden source leaves with its overlay');
+  const returned=reduce(axisState,{type:'tour/step',index});
+  assert.deepEqual(returned.goldenScene,initial.goldenScene,'Returning starts the construction again');
+}
+assert.equal(TOURS.torus.steps[depthIndex].scene.divisionFrom,TOURS.torus.steps[rectangleIndex].scene.divisionTo??6,'The close-up continues the existing subdivisions');
 for(const topic of ['torus','vortex'])for(const [,text,refs=[]]of KNOWLEDGE[topic].sections){assert.ok(text.length>30);for(const ref of refs)assert.match(KNOWLEDGE[topic].sources[ref][1],/^https:\/\//);}
 assert.equal(KNOWLEDGE.vortex.sections.filter(s=>s[3]).length,4,'Vorticity has its own short, sourced formula card');
 for(const id of ['torus-birth','torus-weave'])assert.equal(TOURS.torus.steps.find(s=>s.id===id).scene.reading,'vortex');

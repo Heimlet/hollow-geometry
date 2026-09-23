@@ -473,6 +473,29 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .knowledge-tour-confirm div{display:flex;flex-wrap:wrap;gap:8px}.knowledge-tour-confirm button{padding:9px 12px;border:1px solid #dbc6a455;border-radius:6px;font:inherit;font-size:12px;background:transparent;color:#eee0cb;cursor:pointer}
 .knowledge-tour-confirm button:last-child{background:#e7c487;color:#252330;font-weight:700}
 
+/* A quiet reading coda after the films, with explicit links into their chapters. */
+.tour-preface{max-width:760px;margin:60px auto 24px;padding:40px 30px 8px;border-top:1px solid #edc78030;color:#aebed3}
+.preface-mark{color:#a2dce0;margin-bottom:18px}.preface-mark svg{width:54px;height:54px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.tour-preface>.tour-eyebrow{color:#bca77e;letter-spacing:1.8px;font-size:10px;margin-bottom:14px}
+.tour-preface h2{font-size:28px;font-weight:500;line-height:1.35;letter-spacing:-.6px;color:#e0e8f4;margin-bottom:18px}
+.tour-preface p{font-size:14px;line-height:1.85;margin:0}
+.tour-preface>.preface-lead{color:#879ab4;font-size:15px;max-width:610px}
+.tour-preface>section{margin-top:30px}
+.tour-preface h3{font-size:16px;font-weight:500;line-height:1.5;color:#d4dfef;margin-bottom:9px}
+.preface-chapter,.preface-research{display:inline;padding:0;border:0;background:none;font:inherit;line-height:inherit;text-align:inherit;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.preface-chapter{color:#e7cc96;text-decoration-color:#e7cc965e;text-decoration-style:dotted}
+.preface-chapter:hover{color:#ffe8b7;text-decoration-color:currentColor}
+.preface-research{color:#9dc9df;text-decoration-color:#9dc9df55}
+.preface-research:after{content:'↗';font-size:.7em;vertical-align:super;margin-left:2px}
+.preface-research:hover{color:#c9eaff;text-decoration-color:currentColor}
+.preface-chapter:focus-visible,.preface-research:focus-visible,.preface-reference:focus-visible{outline:2px solid #edc780;outline-offset:4px;border-radius:2px}
+.preface-footer{margin-top:34px;padding-top:24px;border-top:1px solid #ffffff12}
+.preface-footer>p{margin-bottom:14px;color:#c9d7e8}
+.preface-footer .knowledge-watch{margin:0 18px 12px 0}
+.preface-reference{border:0;padding:8px 0;background:none;color:#95adc9;font:inherit;font-size:12px;text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+.preface-reference:hover{color:#d5e5fa}
+@media(max-width:600px){.tour-preface{margin-top:38px;padding:28px 3px 12px}.tour-preface h2{font-size:24px}.tour-preface>section{margin-top:26px}.tour-preface p{font-size:13px}.tour-preface>.preface-lead{font-size:14px}.tour-preface h3{font-size:15px}}
+
 .tour-menu-tools{align-items:center;justify-content:space-between;gap:16px}.tour-menu-tools .phi-library{width:auto;margin:0;text-align:left}.tour-menu-tools .tour-playlist{flex-shrink:0}
 
 .tour-player .tour-reading-shortcut{display:block;margin-top:10px;padding:6px 0;color:#9edee6;background:none;border:0;font-size:11px;text-align:left;text-decoration:underline;text-underline-offset:4px}
