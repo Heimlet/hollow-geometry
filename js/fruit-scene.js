@@ -23,24 +23,24 @@ export function createFruitScene(scene) {
   function update(kind,p,viewDirection=axis) {
     root.visible=!!kind;if(!kind)return;
     const aligned=Math.abs(viewDirection.dot(axis)),tilt=Math.sqrt(Math.max(0,1-aligned*aligned));
-    const flower=kind==='flower'?ease(p/.32):kind==='network'?1-ease(p/.2):0;
-    const radiusScale=1+flower,extra=kind==='flower'?ease((p-.3)/.3):kind==='network'?1-ease(p/.18):0;
+    const opening=kind==='opening',unfold=kind==='spheres';
+    const flower=opening?1:unfold?1-ease((p-.35)/.4):kind==='flower'?ease(p/.32):kind==='network'?1-ease(p/.2):0;
+    const radiusScale=1+flower,extra=opening?1:unfold?flower:kind==='flower'?ease((p-.3)/.3):kind==='network'?1-ease(p/.18):0;
+    const volume=opening?0:unfold?ease((p-.08)/.22):1;
     data.allCenters.forEach((_,i)=>{
-      let reveal=i<14?1:extra;
-      if(kind==='opening')reveal*=ease((p-(i%7)*.015)/.13);
+      const reveal=i<14?1:extra;
       const central=i<14&&data.groups[i]===0;
       spheres[i].scale.setScalar(radiusScale);rings[i].scale.setScalar(radiusScale);meridians[i].forEach(m=>m.scale.setScalar(radiusScale));
-      spheres[i].material.opacity=reveal*(kind==='spheres'?(central?.32:.12):.025+.08*tilt)*(1-.4*flower);
+      spheres[i].material.opacity=volume*reveal*(unfold?(central?.32:.12):.025+.08*tilt)*(1-.4*flower);
       // Golden great circles coincide with sphere silhouettes only along [111].
       rings[i].material.opacity=reveal*(.25+.7*aligned**10)*(kind==='network'?.5:1);
       if(i===0)rings[i].material.opacity*=1-aligned**20; // coincident back pole in the canonical view
-      meridians[i].forEach(m=>m.material.opacity=reveal*(.025+.28*tilt));
-      const visible=reveal>.001;spheres[i].visible=rings[i].visible=visible;meridians[i].forEach(m=>m.visible=visible);
+      meridians[i].forEach(m=>m.material.opacity=volume*reveal*(.025+.28*tilt));
+      rings[i].visible=reveal>.001;spheres[i].visible=reveal*volume>.001;meridians[i].forEach(m=>m.visible=spheres[i].visible);
     });
     scaffold.forEach(line=>{line.material.opacity=0;line.geometry.setDrawRange(0,Infinity);});
     const reveal=(line,t,alpha=1)=>{line.material.opacity=alpha;line.geometry.setDrawRange(0,2*Math.floor(line.geometry.attributes.position.count/2*ease(t)));};
-    if(kind==='opening'){cube.material.opacity=.45*ease((p-.35)/.25);octa.material.opacity=.45*ease((p-.55)/.2);}
-    if(kind==='spheres'){cube.material.opacity=.18;octa.material.opacity=.18;}
+    if(unfold){cube.material.opacity=octa.material.opacity=.18*ease((p-.6)/.3);}
     if(kind==='cube'){reveal(cube,p/.2);reveal(inner,(p-.2)/.2);reveal(octa,(p-.43)/.22);}
     if(kind==='geometry'){cube.material.opacity=.3;inner.material.opacity=.3;octa.material.opacity=.55;reveal(up,p/.25);reveal(down,(p-.28)/.25);}
     if(kind==='fruit'){cube.material.opacity=octa.material.opacity=.12*(1-ease(p/.5));up.material.opacity=down.material.opacity=.15*(1-ease(p/.5));}

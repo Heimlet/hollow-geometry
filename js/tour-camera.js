@@ -17,7 +17,7 @@ export function queueTourShot(options={}){cancelCameraAnimation();settleControls
 export function cancelTourShot(){pending=false;flight=null;}
 export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
-  if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (['flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
+  if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (['opening','spheres','flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
   const points=[];
   if(tourStep(getState())?.scene.torus)points.push(...torusFramePoints);
   else if(tourStep(getState())?.scene.axisGuide)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));
@@ -50,10 +50,11 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   const resized=viewport&&(viewport.width!==innerWidth||viewport.height!==innerHeight);
   viewport=stageViewport(innerWidth,innerHeight,panelHeight,panelWidth);
   setCameraFrameOffset(viewport.offsetY,viewport.offsetX);
+  const cut=pending&&recipe.camera?.cut;
   if(pending) {
     base=recipe.golden?goldenSceneView(recipe.golden,recipe.detail):{direction:new THREE.Vector3(3,2,4).normalize(),target:new THREE.Vector3()};
     if(recipe.dir)base.direction=new THREE.Vector3(...recipe.dir).normalize();
-    flight={elapsed:0,direction:camera.position.clone().sub(controls.target).normalize(),target:controls.target.clone(),height:getViewHeight(),depth:projectionDepth};pending=false;
+    flight=cut?null:{elapsed:0,direction:camera.position.clone().sub(controls.target).normalize(),target:controls.target.clone(),height:getViewHeight(),depth:projectionDepth};pending=false;
   }
   const chapterKey=`${state.tour.id}:${state.tour.index}`;
   const p=tourProgress(state),finish=p===1&&finishedKey!==chapterKey&&recipe.camera?.mode!=='free'&&(recipe.camera?.releaseAt??1)>=1;
@@ -85,7 +86,7 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   } else {
     // Follow the actual growing bounds, rather than zooming out to an endpoint
     // before separation starts. Padding absorbs this short smoothing lag.
-    height=finish?goal.height:THREE.MathUtils.lerp(getViewHeight(),goal.height,1-Math.exp(-12*Math.min(dt,.05)));
+    height=finish||cut?goal.height:THREE.MathUtils.lerp(getViewHeight(),goal.height,1-Math.exp(-12*Math.min(dt,.05)));
   }
   controls.target.copy(target);camera.up.set(0,1,0);camera.position.copy(target).addScaledVector(direction,30);
   setViewHeight(height);

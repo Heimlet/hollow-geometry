@@ -34,10 +34,21 @@ for(const a of [.1,1,3]) {
 }
 const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
 const source=(await readFile(new URL('../js/fruit-scene.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three)).replace("'./fruit-life.js'",JSON.stringify(new URL('../js/fruit-life.js',import.meta.url).href));
-const {createFruitScene}=await import(url(source)),{Scene}=await import(three),scene=new Scene(),study=createFruitScene(scene),root=scene.children[0];
+const {createFruitScene}=await import(url(source)),{Scene,Vector3}=await import(three),scene=new Scene(),study=createFruitScene(scene),root=scene.children[0];
 const snapshot=()=>{const result=[];root.traverse(o=>{if(o.material)result.push({visible:o.visible,opacity:o.material.opacity,range:o.geometry.drawRange.count,scale:o.scale.toArray()});});return {rotation:root.rotation.toArray(),result};};
 for(const step of TOURS.fruit.steps){study.update(step.scene.fruit,.8);const end=snapshot();study.update(step.scene.fruit,.2);study.update(step.scene.fruit,.8);assert.deepEqual(snapshot(),end);}
 const spheres=root.children.filter(o=>o.isMesh);
+study.update('opening',0);const opening=snapshot();
+for(const p of [.01,.2,.5,.8,1]){study.update('opening',p);assert.deepEqual(snapshot(),opening,'The first chapter remains a fully drawn, static Flower of Life');}
+assert.ok(spheres.every(o=>!o.visible&&o.material.opacity===0),'The first chapter cannot reveal shaded spheres');
+const visibleLines=()=>root.children.filter(o=>o.isLineSegments&&o.visible&&o.material.opacity>1e-8);
+assert.equal(visibleLines().length,19,'Only the 19 gold circles are visible: no meridians, scaffold or duplicate central contour');
+assert.ok(visibleLines().every(o=>o.scale.x===2));
+study.update('spheres',0);assert.deepEqual(snapshot(),opening,'The second chapter begins with exactly the same circles');
+study.update('spheres',.45,new Vector3(3,1,-1).normalize());
+assert.ok(spheres.some(o=>o.visible&&o.material.opacity>0),'Only the second chapter reveals volume');
+study.update('spheres',1);assert.equal(spheres.filter(o=>o.visible).length,14);assert.ok(spheres.every(o=>o.scale.x===1));
+study.update('opening',.5);assert.deepEqual(snapshot(),opening,'Going back removes every trace of the volume');
 study.update('fruit',1);assert.equal(spheres.filter(o=>o.visible).length,14);
 study.update('flower',1);assert.equal(spheres.filter(o=>o.visible).length,20);assert.ok(spheres.every(o=>o.scale.x===2));
 study.update('network',1);assert.equal(spheres.filter(o=>o.visible).length,14);assert.ok(spheres.every(o=>o.scale.x===1));

@@ -13,7 +13,7 @@ export const READING_DEMOS=[
   {topic:'platonic',section:'Что у них общего',label:'Начать путешествие по пяти телам',tour:'platonic',chapter:'five-solids'},
   {topic:'fruit',section:'Один, шесть, ещё шесть',label:'Смотреть тур «Плод и Цветок жизни»',tour:'fruit',chapter:'first-circle'},
   {topic:'fruit',section:'Как из кругов рождается куб Метатрона',label:'Увидеть переход от кругов к линиям',tour:'fruit',chapter:'fruit-network'},
-  {topic:'metatron',section:'Что именно построено в этой сцене',label:'Увидеть Плод жизни в объёме',tour:'fruit',chapter:'first-circle'},
+  {topic:'metatron',section:'Что именно построено в этой сцене',label:'Увидеть Плод жизни в объёме',tour:'fruit',chapter:'circles-depth'},
   {topic:'vortex',section:'Два тетраэдра — два движения',label:'Посмотреть встречное вращение внутри тора',tour:'torus',chapter:'torus-weave'},
   {topic:'torus',section:'Меркаба в центре',label:'Посмотреть, как вокруг звезды рождается тор',tour:'torus',chapter:'torus-birth'},
   {topic:'torus',section:'Формы рождаются из движения',label:'Вращать тетраэдры и увидеть новые тела',tour:'torus',chapter:'torus-intersection'},

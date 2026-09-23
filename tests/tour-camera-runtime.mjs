@@ -32,4 +32,21 @@ actions.closeTopic(true);rig.queueTourShot();for(let i=0;i<60;i++)frame();assert
 actions.startTour('platonic');actions.tourStep(11);rig.queueTourShot();for(let i=0;i<60;i++)frame();assert.equal(scene.controls.enabled,false);
 actions.seekTour(100);rig.cancelTourShot();rig.updateTourCamera(.025,330,440);assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-8);assert.equal(scene.projectionDepth,0);assert.equal(scene.camera.isOrthographicCamera,true);
 actions.stopTour();rig.updateTourCamera(.025,330,440);assert.equal(scene.controls.enabled,true);assert.equal(scene.controls.enablePan,true);assert.equal(scene.camera.view.enabled,false);
+
+// Static introduction must be exact from its first rendered frame, even after
+// an arbitrary laboratory viewpoint. Volume starts only on the next chapter.
+scene.camera.position.set(-20,7,3);scene.controls.target.set(2,3,1);scene.controls.update();scene.setDepth(.6);
+actions.startTour('fruit');rig.queueTourShot();rig.updateTourCamera(.025,330,440);
+const initialPose={position:scene.camera.position.clone(),target:scene.controls.target.clone(),projection:scene.camera.projectionMatrix.clone()};
+assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-10);
+assert.equal(scene.projectionDepth,0);assert.equal(rig.tourCameraBusy(),false,'No entry fly-through exposes the spatial construction');
+for(let i=0;i<120;i++)frame();
+assert.ok(scene.camera.position.distanceTo(initialPose.position)<1e-10);assert.ok(scene.controls.target.distanceTo(initialPose.target)<1e-10);
+assert.deepEqual(scene.camera.projectionMatrix.elements,initialPose.projection.elements,'Static chapter never drifts or zooms');
+assert.equal(scene.controls.enabled,false);
+actions.tourStep(1);rig.queueTourShot();for(let i=0;i<60;i++)frame();
+assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-10,'Second chapter starts on the same axis');
+actions.tickTour(8);rig.updateTourCamera(.025,330,440);
+assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())>.2,'The second chapter gradually leaves the flat viewpoint');
+console.log('PASS: static Flower of Life from the first render, fixed orthographic framing, continuous second-chapter reveal');
 console.log('PASS: free orbit keeps time running, return flight preserves playback and restores scripted direction, reading freezes, guided camera locks, exact finale and clean exit');

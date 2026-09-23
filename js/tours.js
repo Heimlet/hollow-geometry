@@ -24,7 +24,7 @@ const torusScene=createTorusScene(scene);
 let transitionKey=null,lastGolden=null,fadeInk=false;
 export function applyTourTransition(dt) {
   const state=getState(),key=state.tour.id?`${state.tour.id}:${state.tour.index}`:null;
-  if(key!==transitionKey){fadeInk=lastGolden!==state.goldenScene.id;lastGolden=state.goldenScene.id;transitionKey=key;}
+  if(key!==transitionKey){if(tourStep(state)?.scene.camera?.cut)transition.reset();fadeInk=lastGolden!==state.goldenScene.id;lastGolden=state.goldenScene.id;transitionKey=key;}
   const blend=transition.apply(key,key?captureVisibleParts(levels,derivedObjects,traditionalFields):new Map(),dt,state.tour.playing);
   document.body.style.setProperty('--tour-ink-opacity',fadeInk?blend:1);
 }
