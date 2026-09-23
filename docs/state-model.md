@@ -438,16 +438,20 @@ the previous mismatch as a negative control.
 ## Continuous finale and the cube witness
 
 The finale has 13 chapters. Chapter six holds the canonical pair for about six
-seconds: its hull is the outer cube, its intersection the octahedron, and the
-highlighted small cube joins the octahedron's face centres (side ratio 1:3).
+seconds: the current pair stays inside its small cube, while a gold cube at
+three times its size reveals the next scale. An intermediate octahedron connects
+the current corners (its face centres) to that future cube.
 `cubeWitnessPhase` eases the angular velocity to zero and back; entry/exit speed
 still matches the neighbouring chapters.
 
 Chapters seven through thirteen share `expansionFrom` / `expansionDuration`.
 `expansionAt` is the single scale frame for source bodies, hull/intersection,
 torus shells, vertex markers and the camera. The clock does not restart on chapter
-changes, reading, pause, or backward/forward seeking. Camera framing slightly lags
-growth while its retreat remains monotonic in unnormalised world coordinates.
+changes, reading, pause, or backward/forward seeking. The visible figure doubles over most of a twelve-second cycle; the camera then
+retreats to make room for the next expansion. Its retreat remains monotonic in
+unnormalised world coordinates. Torus shells and their scale echoes remain hidden
+during cube growth and vertex tracing: the meridian sweep first draws them in
+chapter nine, after which they follow the same ongoing expansion.
 
 Expansion is stored logarithmically. Once the source reaches nine render units,
 a common change of units bounds coordinates without changing any screen-space
@@ -460,3 +464,25 @@ All temporary scales and teaching layers are restored on leaving the sequence.
 `tests/torus.mjs` checks the held canonical pose, exact contacts, shared growth
 clock, pool continuity, long-run resource identity, seeking and cleanup.
 The camera runtime suite also checks the final orthographic clipping planes.
+
+
+## Flower of Life: construction before depth
+
+The first four chapters stay on the exact [111] orthographic view: static
+nineteen-circle Flower, progressive cube edges, two triangular silhouettes, then
+return to the whole circle pattern. `FRUIT_PLANAR` is shared by rendering and
+camera bounds. Spheres and meridians remain invisible throughout these chapters.
+The triangular outlines use the actual later tetrahedron vertices; no separate
+screen overlay is introduced. The return fades these lines and restores the same
+circle radii/opacity and framing as the opening. Only `circles-depth` then tilts
+the camera and reveals spheres. Stable chapter IDs preserve reading destinations.
+
+Growth phase also owns counterrotation: each factor of three adds exactly a
+quarter turn, so the eight original vertices occupy the next cube corners and
+the live intersection becomes its next octahedron at the same instant. Colour
+matched preview curves lead each source vertex to that exact target. Their
+preallocated exponential quarter-turn curves only change matrices and draw count
+(start remains zero), so screen-line buffers can be reused. The dense green live
+intersection carries the visual emphasis; dim source tetrahedra and cube outlines
+explain it. Five pooled octahedron contours show upcoming and previous scales,
+including the exact overlap at arrival, without accumulating scene objects.

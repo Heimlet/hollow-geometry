@@ -44,9 +44,25 @@ assert.ok(spheres.every(o=>!o.visible&&o.material.opacity===0),'The first chapte
 const visibleLines=()=>root.children.filter(o=>o.isLineSegments&&o.visible&&o.material.opacity>1e-8);
 assert.equal(visibleLines().length,19,'Only the 19 gold circles are visible: no meridians, scaffold or duplicate central contour');
 assert.ok(visibleLines().every(o=>o.scale.x===2));
-study.update('spheres',0);assert.deepEqual(snapshot(),opening,'The second chapter begins with exactly the same circles');
+assert.deepEqual(TOURS.fruit.steps.slice(0,5).map(s=>s.scene.fruit),['opening','planar-cube','planar-star','return','spheres']);
+for(const chapter of TOURS.fruit.steps.slice(0,4)){
+ assert.ok(chapter.scene.camera.path.every(k=>JSON.stringify(k.dir)==='[1,1,1]'),'Flat construction never tilts the camera');
+ assert.ok(chapter.scene.camera.depth.every(k=>k[1]===0),'Flat construction is exactly orthographic');
+ for(const p of [0,.3,.7,1]){study.update(chapter.scene.fruit,p);assert.ok(spheres.every(s=>!s.visible),'Shaded volume waits until after the return to circles');}
+}
+const cube=root.children.find(o=>o.name==='Fruit cube'),triangles=root.children.filter(o=>o.name.startsWith('Planar star'));
+study.update('planar-cube',.4);const drawn=cube.geometry.drawRange.count;study.update('planar-cube',.5);assert.ok(cube.geometry.drawRange.count>drawn,'Cube edges draw progressively');
+study.update('planar-star',.3);assert.ok(triangles[0].geometry.drawRange.count>0);assert.equal(triangles[1].geometry.drawRange.count,0,'The two triangles appear in order');
+study.update('planar-star',1);assert.ok(triangles.every(o=>o.geometry.drawRange.count===o.geometry.attributes.position.count));
+for(const tetra of fruitVolume().tetrahedra){
+ const f=fruitVolume(),edges=tetra.filter(pair=>pair.every(k=>f.groups[k]!==0));assert.equal(edges.length,3);
+ const lengths=edges.map(([a,b])=>Math.hypot(...f.project(f.centers[a]).map((v,k)=>v-f.project(f.centers[b])[k])));
+ assert.ok(Math.max(...lengths)-Math.min(...lengths)<1e-12,'Both projected silhouettes are exact equilateral triangles');
+}
+study.update('return',1);assert.deepEqual(snapshot(),opening,'The general view returns to the original circles before revealing depth');
+study.update('spheres',0);assert.deepEqual(snapshot(),opening,'The spatial chapter begins with exactly the restored circles');
 study.update('spheres',.45,new Vector3(3,1,-1).normalize());
-assert.ok(spheres.some(o=>o.visible&&o.material.opacity>0),'Only the second chapter reveals volume');
+assert.ok(spheres.some(o=>o.visible&&o.material.opacity>0),'Only the spatial chapter reveals volume');
 study.update('spheres',1);assert.equal(spheres.filter(o=>o.visible).length,14);assert.ok(spheres.every(o=>o.scale.x===1));
 study.update('opening',.5);assert.deepEqual(snapshot(),opening,'Going back removes every trace of the volume');
 study.update('fruit',1);assert.equal(spheres.filter(o=>o.visible).length,14);

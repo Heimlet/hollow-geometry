@@ -96,7 +96,8 @@ export function applyTourEffects() {
   }
   for(const owner of derivedObjects)if(owner.object.vis){
     const alpha=recipe.cubeWitness&&owner.kind==='hull'?Math.max(cubeWitnessInk(p),smooth((Math.abs(Math.cos(2*state.lab.rotation.up*Math.PI/180))-.9)/.1)):1;
-    owner.object.fMat.opacity=tourFaceOpacity({...recipe,...recipe.derived?.[owner.kind]},p)*alpha;owner.object.eMat.opacity=.85*alpha;
+    const layer=recipe.derived?.[owner.kind],pulse=recipe.coreEmphasis&&owner.kind==='intersection'?.1*Math.cos(2*state.lab.rotation.up*Math.PI/180)**24:0;
+    owner.object.fMat.opacity=(tourFaceOpacity({...recipe,...layer},p)+pulse)*alpha;owner.object.eMat.opacity=(layer?.edgeOpacity??.85)*alpha;
   }
 }
 export function initTours() {

@@ -3,7 +3,7 @@ import { TOURS, tourStep } from './tour-data.js';
 import { initialLab } from './lab-state.js';
 import { GOLDEN_SCENES } from './golden-scene-data.js';
 import { wrapAngle } from './merkaba-motion.js';
-import { cubeWitnessPhase } from './torus-math.js';
+import { cubeWitnessPhase,expansionAt } from './torus-math.js';
 export const initialTour=()=>({id:null,index:0,elapsed:0,playing:false,auto:true,phase:'idle'});
 export const smooth=value=>{const t=Math.max(0,Math.min(1,value));return t*t*(3-2*t);};
 export const tourProgress=state=>state.tour.id?Math.min(1,state.tour.elapsed/tourStep(state).seconds):0;
@@ -48,7 +48,7 @@ export function frameTour(state,elapsed) {
     // Match angular velocity at chapter boundaries while retaining exact cube alignments.
     const slope=8*step.seconds/(to-from||1);
     const phase=recipe.cubeWitness?cubeWitnessPhase(p,slope):recipe.continuousMotion?smooth(p)+slope*(p-smooth(p)):smooth((p-.05)/((recipe.rotationUntil??.95)-.05));
-    const angle=from+(to-from)*phase;
+    const angle=recipe.expansionFrom===undefined?from+(to-from)*phase:recipe.expansionAngle+90*expansionAt(recipe,p).level;
     lab={...lab,rotation:{...lab.rotation,mode:'counter',running:false,up:angle,down:-angle}};
   }
   if(recipe.golden)goldenScene={id:recipe.golden,progress:(recipe.goldenFrom||0)+((recipe.goldenTo??1)-(recipe.goldenFrom||0))*smooth(Math.min(1,p/(recipe.buildUntil||1))),running:false};

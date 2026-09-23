@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { TORUS_AXIS,TORUS_POLE,torusBounds,expansionAt } from './torus-math.js';
-import { fruitVolume } from './fruit-life.js';
+import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,cubeWitnessView } from './torus-math.js';
+import { fruitVolume,FRUIT_PLANAR } from './fruit-life.js';
 import { camera,controls,projectionDepth,getViewHeight,setViewHeight,setDepth,setCameraFrameOffset,settleControls } from './scene.js';
 import { levels } from './levels.js';
 import { derivedObjects,traditionalFields } from './lab.js';
@@ -17,10 +17,11 @@ export function queueTourShot(options={}){cancelCameraAnimation();settleControls
 export function cancelTourShot(){pending=false;flight=null;}
 export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
-  if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (['opening','spheres','flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
+  if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (FRUIT_PLANAR.includes(kind)||['spheres','flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
   const points=[];
   if(tourStep(getState())?.scene.torus){const r=tourStep(getState()).scene;points.push(...torusFramePoints.map(p=>p.clone().multiplyScalar(expansionAt(r,tourProgress(getState())).scale)));}
   else if(tourStep(getState())?.scene.axisGuide)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));
+  if(tourStep(getState())?.scene.cubeWitness)points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(cubeWitnessView(tourProgress(getState())))));
   for(const level of levels){
     for(const object of Object.values(level.objs)) {
       if(!object.group.visible)continue;

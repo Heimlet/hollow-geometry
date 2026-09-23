@@ -1,6 +1,6 @@
 /** Editorial tour scripts. Times are active viewing seconds, excluding camera flights. */
 import { PLATONIC_TYPES } from './mirror-data.js';
-import { CUBE_HOLD,expansionViewZoom } from './torus-math.js';
+import { CUBE_HOLD,expansionAt,expansionViewZoom } from './torus-math.js';
 import { COMPOUNDS } from './compound-data.js';
 const P=PLATONIC_TYPES,M=['merkaba_up','merkaba_down'];
 const members=id=>COMPOUNDS.find(c=>c.id===id).members;
@@ -22,6 +22,9 @@ export const TOURS={
   ]},
   fruit:{name:'Плод и Цветок жизни',eyebrow:'РИСУНОК, КОТОРЫЙ СТАНОВИТСЯ ОБЪЁМОМ',icon:'❋',color:'#efcd92',description:'Золотые круги раскрываются в сферы. Внутри — кубы, октаэдр и два тетраэдра.',steps:[
     {...step('Цветок жизни','Цветок жизни — узор из одинаковых пересекающихся кругов. Здесь их девятнадцать: из повторения рождаются лепестки и шестилучевая симметрия. В нём легко узнать цветок, хотя ни один лепесток не нарисован отдельно. Симметрия помогает взгляду находить порядок; повторяющийся ритм может ощущаться спокойным. А притягивает сочетание простоты и изобилия: всего один круг, повторённый много раз, — и столько переплетений.',{fruit:'opening',objects:[],dir:[1,1,1],faces:false},20),id:'first-circle'},
+    {...step('Куб ещё на плоскости','Останемся внутри плоского рисунка. Соединим выбранные центры кругов: появляется шестиугольный контур и линии к его центру. Глаз уже узнаёт куб, хотя глубины на экране ещё нет. Этот каркас точно совпадает с видом настоящего куба вдоль диагонали. Круги не исчезли — они всё время задавали места его вершин.',{fruit:'planar-cube',objects:[],dir:[1,1,1],faces:false},14),id:'flower-flat-cube'},
+    {...step('Звезда из тех же центров','Теперь соединяем вершины через одну. Сначала один равносторонний треугольник, затем встречный — возникает Звезда Давида. Куб и звезда раскрываются в одном узоре кругов. Пока это плоские линии; через мгновение мы увидим, какие объёмные тела могут за ними стоять.',{fruit:'planar-star',objects:[],dir:[1,1,1],faces:false},14),id:'flower-flat-star'},
+    {...step('Вернёмся к кругам','Отступим к целому рисунку. Куб и звезда растворяются, снова остаются золотые окружности Цветка жизни. Мы уже знаем, что искать внутри. Теперь изменим только направление взгляда — и плоская картина раскроет глубину.',{fruit:'return',objects:[],dir:[1,1,1],faces:false},12),id:'flower-return'},
     {...step('Круги раскрываются в глубину','Теперь взгляд медленно уходит в сторону: за золотыми окружностями проявляются прозрачные сферы. Это один из способов придать плоскому узору объём. Уменьшим сферы и уберём шесть дополнительных: останется пространственная основа Плода жизни. В ней четырнадцать сфер, но с исходного ракурса видны только тринадцать кругов — две сферы совпадают в центре. Поворот раскрывает то, что прятало совпадение.',{fruit:'spheres',objects:[],dir:[1,1,1],faces:false},22),id:'circles-depth'},
     step('Куб, октаэдр — и снова куб','Восемь сфер стоят в вершинах куба, ещё шесть — в центрах его граней. Соединяем эти шесть центров и получаем октаэдр. Внутрь него вписывается меньший куб: его вершины касаются треугольных граней. Малый куб, октаэдр и внешний куб связаны ещё до того, как мы провели линии. Рисунок по очереди раскрывает отношения, которые можно видеть одновременно.',{fruit:'cube',objects:[],dir:[1,1,1],faces:false},20),
     step('Два тетраэдра из тех же вершин','Берём четыре чередующиеся вершины куба — получается тетраэдр. Оставшиеся четыре дают встречный. Куб и октаэдр помогают увидеть, как эта пара устроена в объёме. Затем камера выходит на ось, и сложная конструкция на мгновение узнаётся как звезда.',{fruit:'geometry',objects:[],dir:[1,1,1],faces:false},20),
@@ -123,10 +126,10 @@ export const TOURS={
     {...step('Прямоугольник, который сохраняет себя','Убираем квадрат — и оставшаяся часть снова оказывается золотым прямоугольником. Ещё раз, и ещё: каждое деление сохраняет пропорцию φ. В трёх перпендикулярных плоскостях одновременно растут спирали, входя в эти уменьшающиеся прямоугольники. Углы трёх исходных прямоугольников задают вершины икосаэдра: именно золотое отношение позволяет его рёбрам быть равными.',{golden:'division',faceDissolveAt:.72},22),id:'torus-rectangles'},
     {...step('Два витка — и ещё два','Приблизимся к точке, в которой сходится рисунок. То, что казалось почти точкой, снова раскрывается в прямоугольники и повороты спирали. Ещё два витка — то же правило, без последнего шага. Для тетраэдров и тора φ не является условием построения; здесь оно даёт другой способ продолжать знакомую форму. Дальше попробуем продолжение через вращение.',{golden:'division',divisionFrom:6,divisionTo:14,detail:true,focusSize:.6,faceDissolveAt:.72},18),id:'torus-rectangle-depth'},
     {...step('Движение рождает третье тело','Два тетраэдра вращаются навстречу вокруг золотой вертикальной оси — как внутри стоящего перед вами куба. Зелёным выделено всё, что принадлежит обоим сразу. Начальный октаэдр меняется: одни грани сходятся, другие раскрываются. Из двух неизменных тел рождается целое семейство новых форм.',{objects:M,intersection:true,effect:'counterCycle',reading:'vortex',faces:false,derived:{intersection:{faces:true,faceFloor:.18,facePeak:.48}},dim:{merkaba_up:[0,.22,.38],merkaba_down:[0,.22,.5]}},16),id:'torus-intersection'},
-    {...step('Восемь точек вспоминают куб','Четыре розовые вершины и четыре голубые занимают восемь углов куба. Остановимся здесь. Куб — внешняя оболочка этой пары, а общий объём внутри — октаэдр. Золотой малый куб соединяет центры восьми граней октаэдра: его сторона втрое меньше внешнего. Два масштаба связаны одной конструкцией. Теперь уберём подсказку и продолжим вращение: следите, как восемь крайних точек снова собирают куб.',{objects:M,intersection:true,hull:true,cubeWitness:true,effect:'counterCycle',faces:false,derived:{intersection:{faces:true,faceFloor:.1,facePeak:.22},hull:{faces:true,faceFloor:.04,facePeak:.09}},dim:{merkaba_up:[0,.1,.16],merkaba_down:[0,.1,.16]}},26),id:'torus-hull'},
-    {...step('Следующий куб уже связан с этим','Та же пара продолжает вращаться и расширяться. Малый куб переходит в больший, а впереди проступает следующий масштаб. У этого правила нет последней оболочки. Может ли пространство быть устроено так, чтобы росту не требовался край? Пока оставим вопрос открытым. Вокруг движущихся вершин намечается замкнутая петля: она растёт вместе с ними. Проследим, какую поверхность позволяет раскрыть это движение.',{objects:M,torus:'growth',growth:true,faces:false},24),id:'torus-expansion'},
-    {...step('У формы появляется след','Взгляните на расширяющуюся пару иначе: сохраняем круговой путь каждой вершины при её текущем размере. Проявляются две горизонтальные окружности. Они уже были возможны, пока тетраэдры стояли неподвижно; вращение сделало их видимыми. Намеченная петля проходит через обе окружности. Теперь знакомый бублик можно прочитать изнутри — через движения, из которых складывается его поверхность.',{objects:M,torus:'traces',reading:'vortex',faces:false},16),id:'torus-orbits'},
-    {...step('След раскрывается в поверхность','Петля касается обеих окружностей вершин. Обойдём с ней общую вертикальную ось — за линией раскрывается поверхность тора, рядом её близкая копия. Тетраэдры продолжают увеличиваться, и оба тора расширяются вместе с ними: точки контакта остаются на месте относительно фигур. Круговой путь получил ещё одну степень свободы. Так замкнутая линия стала поверхностью; вытянутость петли — наш выбор в этом построении.',{objects:M,torus:'birth',reading:'vortex',faces:false},22),id:'torus-birth'},
+    {...step('Восемь точек вспоминают куб','Плотное зелёное ядро — общий объём двух тетраэдров. Вокруг него виден нынешний куб. Золотой каркас — следующий куб, втрое больший, а прозрачный зелёный октаэдр внутри него — будущее место ядра. Нынешние вершины лежат в центрах его граней; цветные пути ведут их к углам большого куба. Запомним эти два масштаба. Подсказка уходит, вращение продолжается — и внутренний объём растёт к намеченной границе.',{objects:M,intersection:true,hull:true,cubeWitness:true,effect:'counterCycle',faces:false,derived:{intersection:{faces:true,faceFloor:.1,facePeak:.22},hull:{faces:true,faceFloor:.04,facePeak:.09}},dim:{merkaba_up:[0,.1,.16],merkaba_down:[0,.1,.16]}},26),id:'torus-hull'},
+    {...step('Внутренний объём раскрывает следующий масштаб','Следите за плотной зелёной фигурой — общим объёмом двух тетраэдров. Вращение меняет её грани, расширение ведёт к прозрачному октаэдру впереди. Когда размер утраивается, восемь крайних точек точно занимают углы следующего куба, а ядро — следующий октаэдр. Цветные пути показывают эту связь заранее. Камера отступает, и переход продолжается. У правила нет последней оболочки. Может ли и пространству для роста не требоваться край?',{objects:M,torus:'growth',growth:true,faces:false},24),id:'torus-expansion'},
+    {...step('У формы появляется след','Взгляните на расширяющуюся пару иначе: сохраняем круговой путь каждой вершины при её текущем размере. Проявляются две горизонтальные окружности. Они уже были возможны, пока тетраэдры стояли неподвижно; вращение сделало их видимыми. Пока перед нами только круговые пути. Можно ли продолжить их ещё одним замкнутым движением? В следующем шаге линия начнёт раскрывать поверхность — прямо вокруг той же вращающейся пары.',{objects:M,torus:'traces',reading:'vortex',faces:false},16),id:'torus-orbits'},
+    {...step('След раскрывается в поверхность','Из круговых следов вершин вытягивается петля: она точно проходит через обе окружности. Обойдём с ней общую вертикальную ось — за линией раскрывается поверхность тора, рядом её близкая копия. Тетраэдры продолжают увеличиваться, и оба тора расширяются вместе с ними: точки контакта остаются на месте относительно фигур. Круговой путь получил ещё одну степень свободы. Так замкнутая линия стала поверхностью; вытянутость петли — наш выбор в этом построении.',{objects:M,torus:'birth',reading:'vortex',faces:false},22),id:'torus-birth'},
     {...step('Два обхода завязывают узор','Расширение не останавливается, но связи остаются прежними. По тору можно идти вокруг отверстия и одновременно обходить его трубку. Два больших оборота и три малых замыкают линию в трилистник. Узел увеличивается вместе с поверхностью, сохраняя переплетение. Сложный рисунок целиком заключён в отношении двух простых движений: 2 к 3.',{objects:M,torus:'weave',reading:'vortex',faces:false,effect:'counter'},18),id:'torus-weave'},
     {...step('Повторение, которое не повторится','Теперь отношение угловых скоростей равно φ. Каждое вращение само по себе периодично, но вместе они никогда точно не вернутся к началу. В математической модели нить подойдёт сколь угодно близко к каждой точке тора. Здесь виден лишь конечный отрезок этого бесконечного пути.',{objects:M,torus:'golden',faces:false,dim:{merkaba_up:[0,.3,.24],merkaba_down:[0,.3,.24]}},20),id:'torus-golden'},
     {...step('Расширение без последней оболочки','Старые контуры уходят внутрь, новые масштабы раскрываются снаружи. Та же пара тетраэдров, та же связь куба с октаэдром, тот же тор. Размеры меняются непрерывно, а устройство сохраняется. «Геометрия не развивается — она раскрывается» — так можно прочитать этот путь: следующая форма присутствует как возможность, а движение позволяет её увидеть. Даже взгляд на всё целиком остаётся лишь одним из возможных взглядов.',{objects:M,torus:'whole',faces:false},18),id:'torus-whole'},
@@ -150,7 +153,8 @@ for(const tour of Object.values(TOURS))for(const chapter of tour.steps) {
       r.derived={intersection:{faces:true,faceFloor:.12,facePeak:.28},hull:{faces:true,faceFloor:.02,facePeak:.045}};
       r.dim={merkaba_up:[0,.15,.6],merkaba_down:[0,.15,.6]};
     }
-    if(r.cubeWitness)r.camera={mode:'guided',path:[{at:0,dir:[3,1.1,6]},{at:.72,dir:[3,1.1,6]},{at:1,dir:[3,1.1,6]}],depth:[[0,0],[1,0]],symbol:{from:CUBE_HOLD.from,to:CUBE_HOLD.to,label:'Остановка · внешний куб, октаэдр и малый куб 1 : 3'}};
+    if(r.cubeWitness){r.coreEmphasis=true;r.derived={intersection:{faces:true,faceFloor:.34,facePeak:.34,edgeOpacity:1},hull:{faces:true,faceFloor:.012,facePeak:.012,edgeOpacity:.22}};}
+    if(r.cubeWitness)r.camera={mode:'guided',path:[{at:0,dir:[3,1.1,6]},{at:.72,dir:[3,1.1,6]},{at:1,dir:[3,1.1,6]}],depth:[[0,0],[1,0]],symbol:{from:CUBE_HOLD.from,to:CUBE_HOLD.to,label:'Остановка · плотное зелёное ядро → прозрачный октаэдр ×3'}};
     if(r.torus==='golden')r.camera={mode:'guided',releaseAt:.78,path:[{at:0,dir:[3,1.1,6]},{at:.72,dir:[0,.8,6]},{at:1,dir:[0,.8,6]}],depth:[[0,.18],[.72,0],[1,0]]};
     if(r.torus==='whole')r.camera={mode:'guided',releaseAt:.8,path:[{at:0,dir:[2,1,6]},{at:.75,dir:[0,.8,6]},{at:1,dir:[0,.8,6]}],depth:[[0,.18],[.75,0],[1,0]],symbol:{from:.75,to:.8,label:'Два тора · одна вертикальная ось'}};
   }
@@ -158,6 +162,7 @@ for(const tour of Object.values(TOURS))for(const chapter of tour.steps) {
     const front=[1,1,1],side=[3,1,-1];
     r.camera={mode:'guided',depth:[[0,0],[1,0]],path:[{at:0,dir:front},{at:.45,dir:side},{at:1,dir:front}]};
     if(r.fruit==='opening')r.camera={mode:'guided',cut:true,path:[{at:0,dir:front},{at:1,dir:front}],depth:[[0,0],[1,0]]};
+    if(['planar-cube','planar-star','return'].includes(r.fruit))r.camera={mode:'guided',path:[{at:0,dir:front},{at:1,dir:front}],depth:[[0,0],[1,0]],zoom:r.fruit==='planar-cube'?[[0,1],[.6,1.32],[1,1.32]]:r.fruit==='return'?[[0,1.32],[.85,1],[1,1]]:[[0,1.32],[1,1.32]]};
     if(r.fruit==='spheres')r.camera.path=[{at:0,dir:front},{at:.12,dir:front},{at:.6,dir:[3,1,-1]},{at:1,dir:[2,-1,3]}];
     if(r.fruit==='cube')r.camera.path=[{at:0,dir:[2,-1,3]},{at:.55,dir:[3,2,4]},{at:1,dir:front}];
     if(['geometry','network'].includes(r.fruit))r.camera.path=[{at:0,dir:[3,1,4]},{at:.7,dir:front},{at:1,dir:front}];
@@ -178,14 +183,15 @@ for(const tour of Object.values(TOURS))for(const chapter of tour.steps) {
   else if(r.effect==='explode'){r.orbit=true;r.camera={mode:'guided',arc:.5,depth:[[0,0],[.4,.35],[1,.35]]};}
   else r.camera={mode:'guided',depth:[[0,0],[1,0]],...(!r.golden&&!r.dir?{releaseAt:.8}:{})};
 }
-let finalAngle=0,expansionTime=null;
+let finalAngle=0,expansionTime=null,expansionAngle=0;
 for(const chapter of TOURS.torus.steps){const r=chapter.scene;if(r.effect!=='counterCycle')continue;
-  r.continuousMotion=true;r.rotationFrom=finalAngle;r.rotationTo=finalAngle+(r.growth?360:180);finalAngle=r.rotationTo;
-  if(r.growth)expansionTime=0;
+  r.continuousMotion=true;r.rotationFrom=finalAngle;r.rotationTo=finalAngle+180;
+  if(r.growth){expansionTime=0;expansionAngle=finalAngle;}
   if(expansionTime!==null){
-    r.expansionFrom=expansionTime;r.expansionDuration=chapter.seconds;
-    r.dim={merkaba_up:[-1,0,.6],merkaba_down:[-1,0,.6]};
-    r.derived={intersection:{faces:true,faceFloor:.2,facePeak:.2},hull:{faces:true,faceFloor:.03,facePeak:.03}};
+    r.expansionFrom=expansionTime;r.expansionDuration=chapter.seconds;r.expansionAngle=expansionAngle;
+    r.rotationFrom=expansionAngle+90*expansionAt(r,0).level;r.rotationTo=expansionAngle+90*expansionAt(r,1).level;
+    r.coreEmphasis=true;r.dim={merkaba_up:[-1,0,.2],merkaba_down:[-1,0,.2]};
+    r.derived={intersection:{faces:true,faceFloor:.34,facePeak:.34,edgeOpacity:1},hull:{faces:true,faceFloor:.008,facePeak:.008,edgeOpacity:.16}};
     // A shared clock also keeps the viewpoint continuous across chapter titles.
     const start=expansionTime;
     r.camera={mode:'guided',path:Array.from({length:33},(_,i)=>{
@@ -194,6 +200,7 @@ for(const chapter of TOURS.torus.steps){const r=chapter.scene;if(r.effect!=='cou
     }),depth:[[0,0],[1,0]],zoom:Array.from({length:65},(_,i)=>[i/64,expansionViewZoom(start+chapter.seconds*i/64)])};
     expansionTime+=chapter.seconds;
   }
+  finalAngle=r.rotationTo;
 }
 // Optical comparison begins with depth, then proves the exact square/hexagon.
 for(const chapter of TOURS.projections.steps) {

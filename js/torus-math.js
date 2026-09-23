@@ -8,14 +8,19 @@ export const TORUS_OUTER=Object.fromEntries(Object.entries(TORUS).map(([key,valu
 export const TORUS_CONTACT=Math.asin(A/height);
 export const ORBIT_SEEDS=Array.from({length:8},(_,i)=>{const p=[i&1?A:-A,i&2?A:-A,i&4?A:-A];return {point:[p[0],-p[2],p[1]],side:Math.sign(p[0]*p[1]*p[2])};});
 export function orbitPoint(seed,angle){const [x,y,z]=seed.point,a=angle*seed.side;return [x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a),z];}
+export const expansionPath=(seed,segments=192)=>Array.from({length:segments+1},(_,i)=>orbitPoint(seed,i/segments*Math.PI/2).map(x=>x*3**(i/segments)));
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+export function expansionLevel(time){
+  const t=Math.min(2,time);
+  return time/10-(1/90)*(t-t**3/4+t**4/16);
+}
 // One clock from chapter seven to the end. Logarithmic units keep indefinitely
 // repeated growth numerically small; every visible layer shares this frame.
 // The pooled reference shells retain their exact relative sizes when units change.
 export function expansionAt(recipe={},p=0){
   if(recipe.expansionFrom===undefined)return {active:false,time:0,level:0,scale:recipe.worldScale||1};
   const time=recipe.expansionFrom+Math.max(0,Math.min(1,p))*recipe.expansionDuration;
-  const level=time<2?time*time/40:(time-1)/10;
+  const level=expansionLevel(time);
   return {active:true,time,level,scale:3**Math.min(level,2)};
 }
 export function expansionReferences(level,scale){
@@ -25,9 +30,12 @@ export function expansionReferences(level,scale){
     return {scale:scale*relative,alpha:ease((relative-.12)/.18)*(1-ease((relative-2)/1))};
   });
 }
-// Let growth lead the framing slightly, then let the camera catch up. In the
-// unnormalised scene its retreat remains monotonic; the torus stays in view.
-export const expansionViewZoom=time=>.96+.12*(1-Math.cos(time*Math.PI/6))/2;
+// Let the visible body double before the camera catches up for the next cycle.
+// Its world-space retreat remains monotonic even during the growing close-up.
+export function expansionViewZoom(time){
+  const phase=(time%12)/12;
+  return .52*2**(phase<.8?ease(phase/.8):1-ease((phase-.8)/.2));
+}
 // A deliberate still moment at the exact canonical cube, with zero angular
 // velocity on either side of the hold and the usual 8°/s at chapter boundaries.
 export const CUBE_HOLD={from:.36,to:.62};
@@ -39,6 +47,7 @@ export function cubeWitnessPhase(p,slope){
   return hermite((p-to)/(1-to),.5,1,0,slope*(1-to));
 }
 export const cubeWitnessInk=p=>ease((p-.23)/.13)*(1-ease((p-.62)/.1));
+export const cubeWitnessView=p=>1+2*ease((p-.12)/.2);
 export const TORI=[TORUS,TORUS_OUTER];
 export const TORUS_AXIS=[0,1,0];
 export const TORUS_POLE=4.75;

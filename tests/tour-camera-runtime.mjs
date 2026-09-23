@@ -48,11 +48,16 @@ for(let i=0;i<120;i++)frame();
 assert.ok(scene.camera.position.distanceTo(initialPose.position)<1e-10);assert.ok(scene.controls.target.distanceTo(initialPose.target)<1e-10);
 assert.deepEqual(scene.camera.projectionMatrix.elements,initialPose.projection.elements,'Static chapter never drifts or zooms');
 assert.equal(scene.controls.enabled,false);
-actions.tourStep(1);rig.queueTourShot();for(let i=0;i<60;i++)frame();
-assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-10,'Second chapter starts on the same axis');
+const {TOURS:fruitScripts}=await import('../js/tour-data.js');
+for(const index of [1,2,3]){
+ actions.tourStep(index);rig.queueTourShot();actions.seekTour(fruitScripts.fruit.steps[index].seconds*.55);for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
+ assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-10,'Cube and star stay in the same flat projection');assert.equal(scene.projectionDepth,0);
+}
+actions.tourStep(fruitScripts.fruit.steps.findIndex(s=>s.id==='circles-depth'));rig.queueTourShot();for(let i=0;i<60;i++)frame();
+assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-10,'Volume chapter starts on the restored circle axis');
 actions.tickTour(8);rig.updateTourCamera(.025,330,440);
-assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())>.2,'The second chapter gradually leaves the flat viewpoint');
-console.log('PASS: static Flower of Life from the first render, fixed orthographic framing, continuous second-chapter reveal');
+assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())>.2,'The volume chapter gradually leaves the flat viewpoint');
+console.log('PASS: static Flower of Life from the first render, fixed orthographic framing, flat cube/star, return to circles and subsequent depth reveal');
 console.log('PASS: free orbit keeps time running, return flight preserves playback and restores scripted direction, reading freezes, guided camera locks, exact finale and clean exit');
 // The expanded finale must also fit in depth, not only in the screen rectangle.
 const {TOURS}=await import(await load('tour-data')),{torusBounds,expansionAt}=await import(await load('torus-math'));

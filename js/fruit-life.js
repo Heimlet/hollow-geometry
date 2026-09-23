@@ -1,4 +1,5 @@
 /** The planar Fruit of Life: 13 equal, tangent circles on six radial rays. */
+export const FRUIT_PLANAR=Object.freeze(['opening','planar-cube','planar-star','return']);
 export function fruitOfLife(radius=.65) {
   const centers=[[0,0,0]];
   for(const ring of [1,2])for(let i=0;i<6;i++) {
