@@ -91,14 +91,15 @@ function normalOf(finding) {
 }
 function alignFinding() {
   if (!current) return;
-  const normal = normalOf(current);
+  const finding=getGoldenFinding();
+  const normal = normalOf(finding);
   if (normal.dot(camera.position.clone().sub(controls.target)) < 0) normal.negate();
-  const center = current.points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(current.points.length);
+  const center = finding.points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(finding.points.length);
   actions.clearPreset();
   actions.display({autoRotate:false});
   setDepth(0); settleControls();
   controls.target.copy(center); camera.position.copy(center).addScaledVector(normal,30);
-  const radius = Math.max(...current.points.map(point=>point.distanceTo(center)));
+  const radius = Math.max(...finding.points.map(point=>point.distanceTo(center)));
   setViewHeight(radius*2.8/Math.min(1,innerWidth/innerHeight)); controls.update();
 }
 function select(key, open = false) {
@@ -180,18 +181,19 @@ subscribe((state,previous)=>{
 });
 export function updateGolden() {
   if (!badge) return;
+  if(current) {const source=levels[current.level]?.objs[current.source]?.group;if(source){overlay.position.copy(source.position);overlay.quaternion.copy(source.quaternion);overlay.updateMatrixWorld(true);}}
   badge.hidden = !current || !getState().display.golden;
   for (const [role,label] of lengthLabels) {
     label.hidden = badge.hidden || !lengthAnchors.has(role);
     if (label.hidden) continue;
-    const point = lengthAnchors.get(role).clone().project(camera);
+    const point = lengthAnchors.get(role).clone().applyMatrix4(overlay.matrixWorld).project(camera);
     label.hidden = point.z < -1 || point.z > 1;
     label.textContent = `${role === 'long' ? 'φa' : 'a'} = ${format(current[role])}`;
     label.style.left = Math.max(8,Math.min(innerWidth-120,(point.x+1)*innerWidth/2+8))+'px';
     label.style.top = Math.max(8,Math.min(innerHeight-35,(1-point.y)*innerHeight/2-24))+'px';
   }
   if (badge.hidden) return;
-  const center = current.points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(current.points.length).project(camera);
+  const center = current.points.reduce((sum,p)=>sum.add(p),new THREE.Vector3()).divideScalar(current.points.length).applyMatrix4(overlay.matrixWorld).project(camera);
   if (center.z < -1 || center.z > 1) { badge.hidden=true; return; }
   badge.style.left = Math.max(10,Math.min(innerWidth-130,(center.x+1)*innerWidth/2+14))+'px';
   badge.style.top = Math.max(100,Math.min(innerHeight-45,(1-center.y)*innerHeight/2+14))+'px';
@@ -207,4 +209,4 @@ export function inspectGoldenAt(x,y) {
   if (!hits.length) return false;
   explain(); return true;
 }
-export function getGoldenFinding() { return current; }
+export function getGoldenFinding() { if(!current)return null; const matrix=levels[current.level].objs[current.source].group.matrixWorld; return {...current,points:current.points.map(p=>p.clone().applyMatrix4(matrix))}; }

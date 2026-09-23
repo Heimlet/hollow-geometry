@@ -1,3 +1,4 @@
+import { COMPOUNDS, COMPONENT_COLORS } from './compound-data.js';
 /**
  * Mathematical constants, color palette, object IDs, and info card data.
  * All geometric radii derive from R_META (the cuboctahedron circumradius).
@@ -69,7 +70,7 @@ export const INFO = {
     name:'Меркаба ▲', nameEn:'Merkaba Up', V:4, E:6, F:4,
     faceType:'Треугольники', sym:'T_d', dual:'—',
     element:'💫 Ян', schlaefli:'—',
-    desc:'Восходящий тетраэдр. Совпадает с Платоновым тетраэдром. 4 вершины куба чётной подгруппы. Вращается по часовой стрелке.',
+    desc:'Восходящий тетраэдр. Совпадает с Платоновым тетраэдром. 4 вершины куба чётной подгруппы. Направление вращения задаётся в исследовательском режиме.',
   },
   merkaba_down: {
     name:'Меркаба ▼', nameEn:'Merkaba Down', V:4, E:6, F:4,
@@ -90,3 +91,8 @@ export const INFO = {
     desc:'13 узлов (центр + кубооктаэдр) = 78 линий. Содержит проекции всех 5 Платоновых тел.',
   },
 };
+
+for (const compound of COMPOUNDS.filter(c=>c.id!=='merkaba')) compound.members.forEach((id,i)=>{
+  OBJ_IDS.push(id); COLORS[id]=COMPONENT_COLORS[i];
+  const base=INFO[compound.kind];INFO[id]={...base,name:`${base.name} ${i+1} · ${compound.name}`,nameEn:compound.id,desc:`Компонент ${i+1} соединения «${compound.name}». Цвет и номер сохраняются при рекурсии и сборке.`};
+});

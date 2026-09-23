@@ -1,3 +1,5 @@
+import { updateLab } from './lab.js';
+import { drawLabProjection } from './lab-projection.js';
 /**
  * Entry point — imports all modules, runs the animation loop, sets up events.
  * Start a local server to run:  npx serve .  or  python3 -m http.server
@@ -52,11 +54,13 @@ function animate() {
   }
 
   controls.update();
+  updateLab(dt);
   updatePicking();
   updateGolden();
   updateStudies(dt);
   renderer.render(scene, camera);
   drawProjectionGuide();
+  drawLabProjection();
 }
 
 animate();

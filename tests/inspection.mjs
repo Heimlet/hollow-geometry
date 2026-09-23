@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 const threeURL = pathToFileURL(process.argv[2]).href;
 const THREE = await import(threeURL);
 const url = text => 'data:text/javascript;base64,' + Buffer.from(text).toString('base64');
-const constants = url(await readFile(new URL('../js/constants.js', import.meta.url), 'utf8'));
+const constants = url((await readFile(new URL('../js/constants.js', import.meta.url), 'utf8')).replace("'./compound-data.js'", JSON.stringify(new URL('../js/compound-data.js', import.meta.url).href)));
 const hintsSource = (await readFile(new URL('../js/preset-hints.js', import.meta.url), 'utf8'))
   .replace("'three'", JSON.stringify(threeURL)).replace("'./constants.js'", JSON.stringify(constants));
 const { TimedHint } = await import(url(hintsSource));

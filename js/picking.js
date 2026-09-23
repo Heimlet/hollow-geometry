@@ -1,3 +1,4 @@
+import { derivedObjects } from './lab.js';
 /** Inspection UI is transient: it never changes scene visibility or materials. */
 import * as THREE from 'three';
 import { INFO } from './constants.js';
@@ -29,7 +30,7 @@ export function initPicking(showInfo) {
     const owners = new Map();
     for (const level of levels) {
       for (const [id, object] of Object.entries(level.objs)) {
-        if (!object.vis || !(object.eVis || (object.fVis && object.op > 0))) continue;
+        if (!object.vis || !object.group.visible || !(object.eVis || (object.fVis && object.op > 0))) continue;
         const owner = { id, object, level: level.idx, key: `${id}:${level.idx}`, edges: object.edges };
         // Solid volumes remain pickable in wireframe view, including interior solids.
         owners.set(object.mesh, owner);
@@ -42,6 +43,7 @@ export function initPicking(showInfo) {
         if (meta.lVis && meta.op > 0) owners.set(meta.lines, owner);
       }
     }
+    for(const owner of derivedObjects) if(owner.object.vis){if(owner.object.fVis)owners.set(owner.object.mesh,owner);if(owner.object.eVis)owners.set(owner.edges,owner);}
     return owners;
   }
   function hitsAt(x, y) {
@@ -58,7 +60,7 @@ export function initPicking(showInfo) {
   }
   function select(owner) { selected = owner; hovered = null; showInfo(owner.id); closePicker(); }
   let labelKey = null;
-  const keyFor = owner => `object.${owner.id === 'metatron' ? '_metatron_' : owner.id}`;
+  const keyFor = owner => owner.kind ? `lab.${owner.kind}` : `object.${owner.id === 'metatron' ? '_metatron_' : owner.id}`;
   function position(element, x, y) {
     element.style.left = Math.max(8, Math.min(x, innerWidth - element.offsetWidth - 8)) + 'px';
     element.style.top = Math.max(8, Math.min(y, innerHeight - element.offsetHeight - 8)) + 'px';
@@ -109,7 +111,7 @@ export function initPicking(showInfo) {
     selected = [...candidates().values()].find(owner => owner.id === event.detail) || null;
   });
   subscribe((state, previous) => {
-    if (state.objects !== previous.objects || state.recursion !== previous.recursion || state.presetId !== previous.presetId) {
+    if (state.objects !== previous.objects || state.recursion !== previous.recursion || state.presetId !== previous.presetId || state.lab.collections.tetra5.mirror !== previous.lab.collections.tetra5.mirror || state.lab.layers !== previous.lab.layers) {
       selected = null; hovered = null; preview = null; closePicker(); outline.visible = false; label.hidden = true;
       document.getElementById('info').classList.remove('vis');
     }

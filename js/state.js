@@ -1,3 +1,5 @@
+import { COMPOUNDS } from './compound-data.js';
+import { initialLab, labChange } from './lab-state.js';
 /** Single source of truth for scene configuration. No DOM or Three.js objects.
  * Commands are atomic; subscribers only render committed, immutable snapshots.
  */
@@ -14,8 +16,9 @@ function freeze(value) {
 }
 export function initialState() {
   return freeze({ objects: Object.fromEntries(ALL_IDS.map(id => [id, {
-    visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: opacity[id],
+    visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: opacity[id] ?? .12,
   }])), recursion: { depth: 1, scale: .35 }, presetId: null,
+  lab: initialLab(),
   study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, attached: false },
   display: { autoRotate: false, speed: .15, stars: true, guide: false, golden: false } });
 }
@@ -23,6 +26,33 @@ function requireValid(condition, message) { if (!condition) throw new Error(mess
 export function reduce(state, action) {
   let next = state;
   switch (action.type) {
+    case 'lab/change': {
+      next = {...state,lab:labChange(state.lab,action.section,action.patch,action.id)};
+      if(action.section==='layers') {
+        const layers={...next.lab.layers};
+        for(const kind of ['hull','intersection']) {
+          if(action.patch[kind]===false){layers[kind+'Faces']=false;layers[kind+'Edges']=false;}
+          if(action.patch[kind]===true&&!state.lab.layers[kind]){layers[kind+'Faces']=action.patch[kind+'Faces']??true;layers[kind+'Edges']=action.patch[kind+'Edges']??true;}
+          if(action.patch[kind+'Faces']===true||action.patch[kind+'Edges']===true)layers[kind]=true;
+        }
+        next.lab={...next.lab,layers};
+      }
+      if ((action.section==='layers' && ['hull','intersection','projection','hullFaces','hullEdges','intersectionFaces','intersectionEdges'].some(k=>action.patch[k]===true)) || (action.section==='rotation' && action.patch.running)) {
+        if(!state.objects.merkaba_up.visible && !state.objects.merkaba_down.visible) {
+          next.objects={...state.objects}; for(const id of ['merkaba_up','merkaba_down'])next.objects[id]={...state.objects[id],visible:true,faces:true,edges:true};
+        }
+      }
+      break;
+    }
+    case 'compound/solo': {
+      const pack=COMPOUNDS.find(c=>c.id===action.id);requireValid(pack && pack.members.includes(action.member),'Invalid component');
+      const restore=state.lab.collections[pack.id].restore || Object.fromEntries(pack.members.map(id=>[id,state.objects[id]]));
+      const objects={...state.objects};for(const id of pack.members)objects[id]={...objects[id],visible:id===action.member,edges:id===action.member,faces:id===action.member};
+      next={...state,objects,presetId:null,lab:labChange(state.lab,'collections',{restore},pack.id)};break;
+    }
+    case 'compound/restore': {
+      const restore=state.lab.collections[action.id]?.restore;if(restore)next={...state,objects:{...state.objects,...restore},presetId:null,lab:labChange(state.lab,'collections',{restore:null},action.id)};break;
+    }
     case 'study/change': {
       const study = {...state.study, ...action.patch};
       requireValid(['none','spiral','rectangle','pentagram'].includes(study.mode) &&
@@ -51,6 +81,11 @@ export function reduce(state, action) {
       });
       // Explicit manual appearance edits exit preset mode; no invisible overrides.
       next = { ...state, objects, presetId: null };
+      if (!objects.merkaba_up.visible && !objects.merkaba_down.visible) next.lab = {...state.lab,
+        rotation:{...state.lab.rotation,running:false},layers:{...state.lab.layers,source:true,hull:false,intersection:false,projection:false,hullFaces:false,hullEdges:false,intersectionFaces:false,intersectionEdges:false}};
+      if(patch.visible===true && action.ids.some(id=>['merkaba_up','merkaba_down'].includes(id)) && !state.objects.merkaba_up.visible && !state.objects.merkaba_down.visible) next.lab={...next.lab,layers:{...next.lab.layers,source:true}};
+      for(const pack of COMPOUNDS) if(pack.members.every(id=>!objects[id].visible)) next.lab=labChange(next.lab,'collections',{direction:0,explode:0},pack.id);
+      if(action.ids.length===ALL_IDS.length && patch.visible===false) next={...next,study:{...state.study,mode:'none',running:false},lab:{...next.lab,explode:{...next.lab.explode,value:0,direction:0},collections:Object.fromEntries(Object.entries(next.lab.collections).map(([id,c])=>[id,{...c,explode:0,direction:0}]))}};
       break;
     }
     case 'preset/select': {
@@ -109,6 +144,9 @@ export function createStore() {
 }
 export const { getState, dispatch, subscribe } = createStore();
 export const actions = {
+  solo: (id,member) => dispatch({type:'compound/solo',id,member}),
+  restore: id => dispatch({type:'compound/restore',id}),
+  lab: (section, patch, id) => dispatch({ type: 'lab/change', section, patch, id }),
   study: patch => dispatch({ type: 'study/change', patch }),
   objects: (ids, patch) => dispatch({ type: 'objects/change', ids, patch }),
   preset: id => dispatch({ type: 'preset/select', id }),

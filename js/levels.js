@@ -1,3 +1,5 @@
+import { COMPOUNDS } from './compound-data.js';
+import { compoundCoordinates, hull, packGeometry, packEdges } from './polyhedra-math.js';
 /**
  * Recursion levels — each level contains a complete set of all objects
  * (Metatron's Cube + all Platonic solids + Merkaba + cuboctahedron)
@@ -12,6 +14,8 @@ import { scene } from './scene.js';
 import { getState, subscribe } from './state.js';
 import { getPreset } from './preset-data.js';
 
+const coordinates = compoundCoordinates(1);
+const templates = Object.fromEntries(['tetra5','tetra5Mirror','tetra10','cube5'].map(key=>[key,coordinates[key].map(points=>hull(points))]));
 export const levels = [];
 function applySettings(level, state) {
   const presetFocus = getPreset(state.presetId)?.obj;
@@ -79,6 +83,10 @@ function createLevel(scale, idx) {
     make('cuboctahedron', mkGeom(d.v, d.f), mkEdges(d.v, d.e), COLORS.cuboctahedron);
   }
 
+  for(const compound of COMPOUNDS.filter(c=>c.id!=='merkaba')) {
+    const key=compound.id==='tetra5' && getState().lab.collections.tetra5.mirror?'tetra5Mirror':compound.id;
+    compound.members.forEach((id,i)=>make(id,packGeometry(templates[key][i]).scale(cR,cR,cR),packEdges(templates[key][i]).scale(cR,cR,cR),COLORS[id]));
+  }
   return lvl;
 }
 
@@ -105,7 +113,7 @@ function buildLevels(state) {
 
 // Rebuild is a rendering consequence, never a second UI command.
 subscribe((state, previous) => {
-  if (state.recursion.depth !== previous.recursion.depth || state.recursion.scale !== previous.recursion.scale) {
+  if (state.lab.collections.tetra5.mirror !== previous.lab.collections.tetra5.mirror || state.recursion.depth !== previous.recursion.depth || state.recursion.scale !== previous.recursion.scale) {
     buildLevels(state);
   } else if (state.objects !== previous.objects || state.presetId !== previous.presetId) {
     levels.forEach(level => applySettings(level, state));

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 const url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
-const constants=url(await readFile(new URL('../js/constants.js',import.meta.url),'utf8'));
+const constants=url((await readFile(new URL('../js/constants.js',import.meta.url),'utf8')).replace("'./compound-data.js'",JSON.stringify(new URL('../js/compound-data.js',import.meta.url).href)));
 const {PHI}=await import(constants);
 const source=(await readFile(new URL('../js/studies-math.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(pathToFileURL(process.argv[2]).href)).replace("'./constants.js'",JSON.stringify(constants));
 const {spiralPoint,rectangleSquares,nestedStars}=await import(url(source));

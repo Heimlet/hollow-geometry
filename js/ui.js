@@ -1,3 +1,5 @@
+import { COMPOUNDS } from './compound-data.js';
+import { initLabUI } from './lab-ui.js';
 /**
  * Sidebar UI — groups, toggles, sliders, preset buttons.
  * All DOM construction happens here; other modules stay DOM-free.
@@ -170,16 +172,12 @@ export function initUI() {
     groupsEl.appendChild(buildGrp('Платоновы тела', '⬡', ids.map((id, i) => buildObjRow(id, lbl[i], COLORS[id]))));
   }
 
-  // G3: Merkaba
-  groupsEl.appendChild(buildGrp('Меркаба', '✦', [
-    buildObjRow('merkaba_up', 'Тетраэдр ▲', COLORS.merkaba_up),
-    buildObjRow('merkaba_down', 'Тетраэдр ▼', COLORS.merkaba_down),
-  ]));
-
-  // G4: Compound structures
-  groupsEl.appendChild(buildGrp('Составные', '◈', [
-    buildObjRow('cuboctahedron', 'Кубооктаэдр', COLORS.cuboctahedron),
-  ]));
+  const catalog=document.createElement('section');catalog.className='compound-catalog';
+  const title=document.createElement('h2');title.textContent='Соединения многогранников';catalog.append(title);
+  registerSetting('group.compound',catalog,title.textContent);
+  for(const pack of COMPOUNDS){const group=buildGrp(pack.name,'◈',pack.members.map((id,i)=>buildObjRow(id,pack.id==='merkaba'?`Тетраэдр ${i?'▼':'▲'}`:`${pack.kind==='cube'?'Куб':'Тетраэдр'} ${i+1}`,COLORS[id])));group.dataset.compound=pack.id;catalog.append(group);}
+  groupsEl.append(catalog);
+  groupsEl.appendChild(buildGrp('Другие многогранники','◇',[buildObjRow('cuboctahedron','Кубооктаэдр',COLORS.cuboctahedron)]));
 
   // G5: 2D Projections (camera presets)
   {
@@ -256,7 +254,8 @@ export function initUI() {
   registerSetting('display.guide', panel.querySelector('.guide-control'), 'Направляющая проекции');
   registerSetting('camera.depth', panel.querySelector('#camera-depth'), 'Глубина перспективы');
   const groupKeys = { 'Платоновы тела': 'group.platonic', 'Меркаба': 'group.merkaba',
-    'Куб Метатрона': 'group.metatron', 'Составные': 'group.compound',
+    'Куб Метатрона': 'group.metatron', 'Другие многогранники': 'group.other',
+    ...Object.fromEntries(COMPOUNDS.map(c=>[c.name,`group.${c.id}`])),
     '2D Проекции': 'presets', 'Рекурсия': 'recursion', 'Отображение': 'display' };
   groupsEl.querySelectorAll('.grp').forEach(group => {
     const name = group.querySelector('.ttl').textContent;
@@ -293,6 +292,7 @@ export function initUI() {
   groupsEl.querySelectorAll('.grp-hdr .ttl').forEach(title => {
     const text = title.textContent; title.replaceChildren(settingLink(text, groupKeys[text]));
   });
+  initLabUI(groupsEl);
   initSettingsNavigation();
   linkText(document.querySelector('.sb-head h1'));
   panel.querySelectorAll('.camera-hint, .camera-help').forEach(el => linkText(el));
@@ -310,11 +310,12 @@ export function initUI() {
     sync();
   });
   document.querySelectorAll('#groups input').forEach(input => {
-    if (input.closest('.camera-settings, .golden-panel')) return;
+    if (input.hasAttribute('aria-label') || input.closest('.camera-settings, .golden-panel')) return;
     const row = input.closest('.obj-row');
     const name = row?.querySelector('.nm')?.textContent || row?.querySelector('.obj-hdr')?.textContent || '';
     const label = input.closest('.ctrl')?.querySelector('label')?.textContent || name || input.closest('.grp')?.querySelector('.ttl')?.textContent;
-    input.setAttribute('aria-label', `${name && label !== name ? name + ': ' : ''}${label || 'Настройка'}`);
+    const collection = row?.closest('[data-compound]')?.querySelector('.ttl')?.textContent;
+    input.setAttribute('aria-label', `${collection && !collection.startsWith('Меркаба') ? collection + ': ' : ''}${name && label !== name ? name + ': ' : ''}${label || 'Настройка'}`);
   });
 
   let renderedPreset;
