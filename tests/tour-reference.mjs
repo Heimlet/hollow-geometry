@@ -28,7 +28,7 @@ const testScene=new THREE.Scene(),torus=createTorusScene(testScene),root=testSce
 const sourcePoints=o=>{const attr=o.geometry.attributes.position;return Array.from({length:Math.min(attr.count,24)},(_,i)=>new THREE.Vector3().fromBufferAttribute(attr,i).applyMatrix4(o.matrixWorld));};
 const overlayMatrices=()=>{root.updateMatrixWorld(true);const result=new Map();root.traverse(o=>{if(o.geometry)result.set(o,o.matrixWorld.clone());});return result;};
 let tested=0;
-for(let chapter=index;chapter<TOURS.torus.steps.length;chapter++)for(const progress of [.05,.27,.64,.99]){
+for(let chapter=index;chapter<TOURS.torus.steps.length;chapter++)for(const progress of [0,.05,.25,.27,.5,.64,.75,.99,1]){
  actions.startTour('torus',chapter);actions.seekTour(tourStep(getState()).seconds*progress);
  const state=getState(),r=tourStep(state).scene,e=expansionAt(r,tourProgress(state),state.tour.motion),yaw=frame(state),q=new THREE.Quaternion().setFromAxisAngle(vertical,yaw),matrix=new THREE.Matrix4().makeRotationFromQuaternion(q);
  applyTourReference(levels,derivedObjects,0,true);updateLab(0);
@@ -42,6 +42,22 @@ for(let chapter=index;chapter<TOURS.torus.steps.length;chapter++)for(const progr
  for(const o of objects)sourcePoints(o).forEach((p,i)=>near(p.distanceTo(original.get(o)[i].clone().applyQuaternion(q)),0,'Source and derived meshes share exactly one rigid frame change'));
  if(!r.referenceFrame.enter||r.expansionDuration*progress>=4)near(levels[0].objs.merkaba_down.group.getWorldQuaternion(new THREE.Quaternion()).angleTo(fixedBlue),0,'Blue orientation is constant, including across chapters');
  const anchors=merkabaAnchors(levels[0]);
+ if(r.hullOutline){
+  const outline=derivedObjects.find(o=>o.kind==='hull'&&o.level===0),inverse=outline.object.group.matrixWorld.clone().invert();
+  assert.equal(state.objects.cube.visible,false,'The misleading independent cube is absent in close views');
+  for(const p of anchors){
+   const local=new THREE.Vector3(p[0],p[2],-p[1]).applyMatrix4(inverse);
+   const distances=outline.data.faces.map(face=>face.normal.dot(local)-face.constant);
+   assert.ok(distances.every(d=>d<1e-5),'Every real source vertex lies inside the displayed hull, including after observer capture');
+   near(Math.min(...distances.map(Math.abs)),0,'Every support touches the enclosing contour',1e-5);
+  }
+  near(Math.max(...anchors.map(p=>p[2]))-Math.min(...anchors.map(p=>p[2])),2*cubeHalfHeight(levels[0]),'The corrected contour preserves the cube-defined height used by the torus',1e-5);
+  if(Math.abs(Math.sin(2*state.lab.rotation.up*Math.PI/180))<1e-8){
+   assert.equal(outline.data.vertices.length,8,'At alignment all eight cube corners are present');
+   assert.equal(outline.data.faces.length,6,'At alignment the hull is a cube with six square faces');
+   assert.ok(outline.data.faces.every(f=>f.indices.length===4));
+  }
+ }
  torus.update(r.torus,progress,0,{...options,anchors,referenceYaw:yaw});root.updateMatrixWorld(true);
  for(const [o,m]of originalOverlay){const expected=matrix.clone().multiply(m);o.matrixWorld.elements.forEach((x,i)=>near(x,expected.elements[i],'Spirals, construction cubes, surfaces and marks keep the same relative transforms',2e-5));}
  const surface=root.getObjectByName('Inner torus · intersection').children.find(o=>o.isMesh),inverse=surface.matrixWorld.clone().invert();

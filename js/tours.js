@@ -139,7 +139,8 @@ export function applyTourEffects() {
     const layer=recipe.derived?.[owner.kind],pulse=recipe.coreEmphasis&&owner.kind==='intersection'?.1*Math.cos(2*state.lab.rotation.up*Math.PI/180)**24:0;
     const proof=recipe.sourceSurfaces?1-torusSourceMix(recipe,p):1;
     owner.object.fMat.opacity=(tourFaceOpacity({...recipe,...layer},p)+pulse)*alpha*proof;owner.object.eMat.opacity=(layer?.edgeOpacity??.85)*alpha*proof;
-    if(recipe.pairFocus||recipe.spiralFocus){const focus=1-smooth(p/.12)*(1-smooth((p-.87)/.13));owner.object.fMat.opacity*=focus;owner.object.eMat.opacity*=focus;}
+    if(recipe.pairFocus||recipe.spiralFocus){const focus=1-smooth(p/.12)*(1-smooth((p-.87)/.13));owner.object.fMat.opacity*=focus;if(!(recipe.hullOutline&&owner.kind==='hull'))owner.object.eMat.opacity*=focus;}
+    if(recipe.hullOutline&&owner.kind==='hull')owner.object.eMat.opacity=(layer?.edgeOpacity??.16)+.42*torusMacroFocus(p);
     if(recipe.intersectionWitness&&owner.kind==='intersection'){owner.object.eMat.opacity*=smooth((p-.2)/.07);owner.object.fMat.opacity*=smooth((p-.15)/.1);}
     if(recipe.tetraWitness&&owner.kind==='hull'){const mix=smooth((p-.82)/.18);const entry=smooth(p/.12);owner.object.fMat.opacity=(.004+.004*mix)*alpha*entry;owner.object.eMat.opacity=(.12+.04*mix)*alpha*entry;}
     if(recipe.tetraWitness&&owner.kind==='intersection'){const focus=tetraWitnessAppearance(p);owner.object.fMat.opacity=focus.coreFaces+.1*focus.handoff*Math.cos(2*state.lab.rotation.up*Math.PI/180)**24;owner.object.eMat.opacity=focus.coreEdges;}
@@ -184,7 +185,10 @@ export function initTours() {
     cards.set(id,card);markViewed(id);
   }
   const premise=el('p','Геометрия не развивается — она раскрывается.','tour-premise');
-  welcome.append(musicRow,premise,grid,finale);mountTorusPreface(welcome);document.body.append(welcome);
+  welcome.append(musicRow,premise,grid,finale);mountTorusPreface(welcome);
+  const credit=el('footer',null,'tour-credit'),author=el('a','Александр Пыхарев ↗');
+  author.href='https://pykharev.ru/';author.rel='author noopener noreferrer';author.target='_blank';author.setAttribute('aria-label','Автор — Александр Пыхарев · личный сайт, откроется в новой вкладке');
+  credit.append(el('span','Автор — '),author);welcome.append(credit);document.body.append(welcome);
   player=el('section',null,'tour-player');player.hidden=true;player.setAttribute('aria-label','Управление путешествием');
   const progress=el('nav',null,'tour-progress');progress.setAttribute('aria-label','Прогресс по главам');
   const head=el('div',null,'tour-player-head'),chapter=el('span',null,'tour-eyebrow');
@@ -192,7 +196,8 @@ export function initTours() {
   const reading=button(player,'О торе: тело, космос, физика',()=>actions.readTopic(tourStep(getState())?.scene.reading||TOURS[getState().tour.id]?.reading));reading.className='tour-reading-shortcut';reading.hidden=true;
   const title=el('h2'),text=el('p',null,'tour-narration'),controlsRow=el('div',null,'tour-controls');
   const previous=button(controlsRow,'←',()=>actions.tourStep(getState().tour.index-1));previous.setAttribute('aria-label','Предыдущая глава');
-  const play=el('button','Пауза','tour-play');play.type='button';controlsRow.append(play);
+  const play=el('button',null,'tour-play'),playLabel=el('span','Пауза'),playKey=el('kbd','Пробел','tour-play-key');
+  playKey.setAttribute('aria-hidden','true');play.type='button';play.setAttribute('aria-keyshortcuts','Space');play.append(playLabel,playKey);controlsRow.append(play);
   bindTourPlayback(play,()=>getState().tour.playing,playing=>actions.tourControl({playing}));
   const restart=button(controlsRow,'↻ Начать заново',()=>actions.restartTour());restart.className='tour-restart';restart.setAttribute('aria-label','Начать заново');restart.hidden=true;
   const next=button(controlsRow,'Дальше →',()=>actions.tourStep(getState().tour.index+1));next.setAttribute('aria-label','Следующая глава');
@@ -256,7 +261,7 @@ export function initTours() {
       node.setAttribute('aria-current',index===state.tour.index?'step':'false');
     });
     restart.hidden=state.tour.index!==tour.steps.length-1;restart.disabled=state.tour.phase==='restarting';
-    play.hidden=state.tour.phase==='complete'&&!step.scene.endless;setControlText(play,state.tour.playing?'Ⅱ Пауза и осмотр':'▶ Продолжить тур');
+    play.hidden=state.tour.phase==='complete'&&!step.scene.endless;setControlText(playLabel,state.tour.playing?'Ⅱ Пауза и осмотр':'▶ Продолжить тур');
     wait.checked=!state.tour.auto;
     if(previousState?.tour.playing&&!state.tour.playing)cancelTourShot();
     if(previousState&&!previousState.tour.playing&&state.tour.playing&&!chapterChanged&&state.tour.phase!=='restarting')queueTourShot();

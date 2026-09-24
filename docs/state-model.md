@@ -666,6 +666,17 @@ not on every animation snapshot. `tests/tour-playback.mjs` checks interruption a
 every chapter boundary, duplicate-event suppression, cancellation and keyboard
 activation.
 
+The pause button keeps its changing label in a separate span, preserving the
+desktop-only `Пробел` hint through animation updates. The hint follows the same
+width/hover/pointer media query as keyboard shortcuts; touch layouts omit it.
+
+Torus close views use the live convex hull as their outer contour. A separate
+canonical cube would cut through the relatively rotated pair. The hull remains
+visible while the intersection fades, touches the actual source vertices, and
+becomes a cube at canonical alignments. Its height retains the same value used
+by the torus construction. The reference-frame suite checks containment, contacts,
+and canonical cube topology after the observer transform and scale changes.
+
 ### Torus height and the featured finale
 
 `torus-measure.js` projects drafting dimensions from the two actual illuminated

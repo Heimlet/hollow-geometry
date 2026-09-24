@@ -356,6 +356,15 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .tour-player-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}.tour-player-head .tour-eyebrow{font-size:9px;line-height:1.6;letter-spacing:1px}.tour-player-head button{background:none;border:0;padding:2px;font-size:11px;color:#89a4c8}
 .tour-player h2{font-size:20px;line-height:1.3;letter-spacing:-.3px;font-weight:500;margin-bottom:8px}.tour-narration{font-size:13px;line-height:1.7;color:#a8bbd3;max-height:130px;overflow:auto;scrollbar-width:thin}.tour-narration .settings-link{text-decoration-color:#6c8aad80;color:inherit}.tour-narration .settings-link:hover{color:#c7e4ff}
 .tour-controls{display:flex;gap:6px;align-items:center;margin-top:14px}.tour-controls .tour-play{min-width:150px;background:#b3d4ff1e;border-color:#b3d4ff5c;color:#e4efff}.tour-controls button:disabled{opacity:.25;cursor:default}.tour-controls .tour-inspect{margin-left:auto;background:transparent;font-size:11px}
+.tour-play-key{display:none}
+.tour-credit{margin-top:44px;padding:24px 0 4px;border-top:1px solid #ffffff12;text-align:center;font-size:12px;color:#8d9cb0}
+.tour-credit a{color:#c4ae83;text-decoration:none;text-underline-offset:4px}
+.tour-credit a:hover{text-decoration:underline;color:#efd197}
+.tour-credit a:focus-visible{outline:2px solid #efd197;outline-offset:5px;border-radius:2px}
+@media(min-width:701px) and (hover:hover) and (pointer:fine){
+  .tour-controls .tour-play{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+  .tour-play-key{display:block;font-family:inherit;font-size:9px;line-height:1.1;font-weight:400;letter-spacing:.3px;opacity:.65}
+}
 .tour-status{font-size:10px;line-height:1.5;color:#738eae;margin-top:9px}.tour-options{margin-top:7px;color:#88a1c1;font-size:10px}.tour-options summary{cursor:pointer;width:max-content;padding:4px 0}.tour-options .lab-check{font-size:11px}.tour-chapters{display:grid;grid-template-columns:1fr 1fr;gap:5px;max-height:150px;overflow:auto;padding:3px}.tour-chapters button{font-size:10px;white-space:normal;text-align:left}.tour-chapters button[aria-current=step]{border-color:#a7d4ff88;color:#daedff}
 .tour-menu[hidden],.tour-player[hidden]{display:none}.touring .golden-story{display:none!important}
 .touring #info{top:75px;bottom:auto;max-height:35vh}.mode-simple #object-picker{z-index:130}

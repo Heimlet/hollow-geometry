@@ -235,6 +235,7 @@ console.log('PASS: reversible golden coupling and cube-defined torus height, con
 
 for(const id of ['torus-pair','torus-orbits']){
  const index=TOURS.torus.steps.findIndex(s=>s.id===id),state=reduce(initialState(),{type:'tour/start',id:'torus',index});
- assert.equal(state.objects.cube.visible,true);assert.equal(state.objects.cube.faces,false,'The macro cube is a contour, not an opaque green panel');
+ assert.equal(state.objects.cube.visible,false,'An independently rotated canonical cube must not cut through the pair');
+ assert.equal(state.lab.layers.hull,true,'The enclosing contour comes from the actual eight moving vertices');
  for(const body of ['merkaba_up','merkaba_down'])assert.equal(state.objects[body].faces,true,'The macro shot reveals actual tetrahedron surfaces');
 }
