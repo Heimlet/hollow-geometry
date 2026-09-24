@@ -243,7 +243,11 @@ export function initTours() {
     const chapterChanged=key!==currentKey || ['tour/start','tour/step'].includes(action.type) || action.type.startsWith('history/');
     if(chapterChanged) {
       clearEffects();currentKey=key;title.textContent=step.title;text.textContent=step.text;
-      if(step.scene.dimensions)text.replaceChildren(...step.text.split(/(разрешаем)/u).map(part=>part==='разрешаем'?el('span',part,'tour-gold'):part));
+      const goldText=[...(step.goldText||[]),...(step.scene.dimensions?['разрешаем']:[])];
+      let textParts=[step.text];
+      for(const phrase of goldText)textParts=textParts.flatMap(part=>typeof part==='string'
+        ?part.split(phrase).flatMap((fragment,index)=>index?[el('span',phrase,'tour-gold'),fragment]:[fragment]):[part]);
+      text.replaceChildren(...textParts);
       if(!quietFinale)linkTourText(text);
       if(!matchMedia('(prefers-reduced-motion: reduce)').matches)for(const node of [title,text])node.animate([{opacity:.3,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'}],{duration:260,easing:'ease-out'});
       chapter.textContent=`${tour.name} · ${state.tour.index+1} / ${tour.steps.length}`;
