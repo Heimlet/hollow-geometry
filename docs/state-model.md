@@ -624,3 +624,36 @@ axis and extends near/far coverage, preserving all screen XY coordinates.
 A finally block restores the interactive camera, including on render errors.
 The sky pass, camera transitions and free orbit use the original pose. Projection
 regressions cover both branches, top/side/bottom views and near-rebase scales.
+
+
+### Following the blue tetrahedron
+
+From `torus-pair`, a four-second smooth velocity capture changes only the
+rendering reference frame. `torusReferenceYaw` uses the original unwrapped angle
+and the incoming chapter speed. After capture, blue has constant orientation
+while pink advances at twice the original angular speed. Both continue to scale.
+The state still stores the original counterrotation; the relative golden law is
+therefore 180° between bodies per ×φ, rather than changing the growth rate.
+
+`applyTourReference` applies one common vertical rotation to level groups and
+live hull/intersection roots after `updateLab`. Torus teaching geometry receives
+the same rotation; world-space source anchors are converted back into its local
+frame before construction. Camera bounds, picking and the dodecahedron marks
+follow the transformed geometry. The guide shapes keep their original golden
+pitch, but move in this observer frame; blue's vertex trajectory is radial.
+Pause, reverse, chapter handoffs, endless motion and numerical rebasing retain
+this frame. Leaving the tour clears the transient parent rotation.
+
+`tests/tour-reference.mjs` checks actual rendered sources, derived meshes,
+teaching-layer matrices and torus contacts at 36 poses, as well as smooth capture,
+fixed blue orientation and the unchanged relative growth law.
+
+### Immediate playback control
+
+`tour-playback.js` stops a running film on primary pointer contact, before a
+chapter can advance during the gesture. Its paired click is consumed, preventing
+an accidental immediate resume. Resume, keyboard and assistive clicks keep native
+button behaviour. Text nodes in playback controls only change with their labels,
+not on every animation snapshot. `tests/tour-playback.mjs` checks interruption at
+every chapter boundary, duplicate-event suppression, cancellation and keyboard
+activation. These bring the regression collection to 29 suites.

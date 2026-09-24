@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,expansionZoom,cubeWitnessView,traceEntrance,torusMacroFocus,EXPANSION_TARGET_SCALE } from './torus-math.js';
+import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,expansionZoom,cubeWitnessView,traceEntrance,torusMacroFocus,torusReferenceYaw,EXPANSION_TARGET_SCALE } from './torus-math.js';
 import { fruitVolume,FRUIT_PLANAR } from './fruit-life.js';
 import { dimensionFrame,dimensionSequence } from './dimension-scene.js';
 import { torusOpeningHandoff } from './tour-effects.js';
@@ -23,6 +23,9 @@ export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
   if(tourStep(getState())?.scene.dimensions){const f=fruitVolume(),sequence=dimensionSequence(tourProgress(getState()),tourStep(getState()).scene.dimensionUntil),t=dimensionFrame(sequence.build).network,scale=(f.halfSide/(f.halfSide+2*f.radius)*(1-t)+t)*sequence.framingScale;return f.flowerBounds.map(p=>new THREE.Vector3(...p).multiplyScalar(scale));}
   if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (FRUIT_PLANAR.includes(kind)||['spheres','flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
+  const state=getState(),recipe=tourStep(state)?.scene;
+  const referenceRotation=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up));
+  const referenceOrientation=referenceRotation.clone().multiply(torusOrientation);
   const points=[];
   if(tourStep(getState())?.scene.networkHandoff){
     const handoff=torusOpeningHandoff(tourProgress(getState()));
@@ -37,14 +40,14 @@ function scenePoints() {
       const phase=e.turns-2*Math.floor(e.turns/2),reveal=e.turns<.2?1:smooth(phase/.2);
       let target=e.scale*(1+(EXPANSION_TARGET_SCALE-1)*reveal)/((1+Math.sqrt(5))/2)**phase;
       if(r.torus==='traces'){target=THREE.MathUtils.lerp(e.scale*1.8,target,traceEntrance(tourProgress(getState())));target=THREE.MathUtils.lerp(target,e.scale*1.15,macro);}
-      points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(target)));
-    }else if(['pair','inscription'].includes(r.torus))points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*(3-1.85*macro))));
-    else if(r.torus==='spiral')points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*1.8)));
-    else points.push(...torusFramePoints.map(p=>p.clone().multiplyScalar(e.scale)));
+      points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(referenceOrientation).multiplyScalar(target)));
+    }else if(['pair','inscription'].includes(r.torus))points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(referenceOrientation).multiplyScalar(e.scale*(3-1.85*macro))));
+    else if(r.torus==='spiral')points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(referenceOrientation).multiplyScalar(e.scale*1.8)));
+    else points.push(...torusFramePoints.map(p=>p.clone().applyQuaternion(referenceRotation).multiplyScalar(e.scale)));
   }
 
   if(tourStep(getState())?.scene.axisGuide&&!tourStep(getState())?.scene.torus)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));
-  if(tourStep(getState())?.scene.cubeWitness)points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(cubeWitnessView(tourProgress(getState())))));
+  if(tourStep(getState())?.scene.cubeWitness)points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(referenceOrientation).multiplyScalar(cubeWitnessView(tourProgress(getState())))));
   for(const level of levels){
     for(const object of Object.values(level.objs)) {
       if(!object.group.visible)continue;

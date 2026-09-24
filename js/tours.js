@@ -4,7 +4,9 @@ import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
 import { tourFaceOpacity,recursionMoment,tourObjectAlpha,tetraWitnessAppearance,torusSourceMix,torusOpeningHandoff } from './tour-effects.js';
-import { expansionAt,cubeWitnessInk,torusMacroFocus,spiralGuideRadius } from './torus-math.js';
+import { expansionAt,cubeWitnessInk,torusMacroFocus,spiralGuideRadius,torusReferenceYaw } from './torus-math.js';
+import { applyTourReference } from './tour-reference.js';
+import { bindTourPlayback,setControlText } from './tour-playback.js';
 import { withOrthographicDepth } from './projection.js';
 import { createTorusScene } from './torus-scene.js';
 import { merkabaAnchors,cubeHalfHeight,createTorusWitness } from './torus-witness.js';
@@ -47,12 +49,12 @@ const minutes=id=>`${Math.ceil(tourDuration(id)/60)} мин`;
 function clearEffects() {
   if(!effectActive)return;
   for(const level of levels) {
-    level.group.scale.setScalar(1);
+    level.group.scale.setScalar(1);level.group.quaternion.identity();
     level.mc.nodes.forEach(n=>{n.visible=level.mc.nVis;n.material.opacity=1;});
     level.mc.lines.geometry.setDrawRange(0,Infinity);
     for(const object of Object.values(level.objs)) {object.edges.geometry.setDrawRange(0,Infinity);object.fMat.opacity=object.op;}
   }
-  for(const owner of derivedObjects){owner.object.fMat.opacity=owner.object.op;owner.object.group.scale.setScalar(1);}
+  for(const owner of derivedObjects){owner.object.fMat.opacity=owner.object.op;owner.object.group.scale.setScalar(1);owner.object.group.quaternion.identity();}
   refreshLevelAppearance();effectActive=false;
 }
 export function resetTourCamera() {
@@ -69,6 +71,7 @@ export function updateTourStage(dt) {
   if(recipe?.effect==='recursion')for(const level of levels){level.group.scale.setScalar(recursionMoment(tourProgress(state),level.idx,state.recursion.scale).scale);level.group.updateMatrixWorld(true);}
   const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion),scale=recipe?.networkHandoff?torusOpeningHandoff(tourProgress(state)).scale:expansion.scale;
   if(expansion.active||recipe?.worldScale||recipe?.networkHandoff){for(const level of levels){level.group.scale.setScalar(scale);level.group.updateMatrixWorld(true);}for(const owner of derivedObjects){owner.object.group.scale.setScalar(scale);owner.object.group.updateMatrixWorld(true);}}
+  applyTourReference(levels,derivedObjects,torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up),!!recipe?.axisGuide);
   const bounds=player?.getBoundingClientRect();
   const layout=stageViewport(innerWidth,innerHeight,bounds?.height||220,bounds?.width||440);
   const layoutKey=`${layout.panelRight}:${layout.centerY}:${layout.compact}`;
@@ -99,7 +102,7 @@ export function applyTourEffects() {
   dimensionScene.update(!!intro,sequence.build);
   fruitScene.update(recipe?.networkHandoff?'network':recipe?.fruit,recipe?.networkHandoff?1:intro?Math.max(0,(sequence.build-.75)/.25):progress,camera.position.clone().sub(controls.target).normalize(),recipe?.networkHandoff?torusOpeningHandoff(progress).network:intro?dimensionFrame(sequence.build).network:1,recipe?.networkHandoff?1:intro?sequence.expansion:0);
   const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion);
-  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':recipe?.spiralPreview?'mechanism':null),tourProgress(state),expansion.active?expansion.turns*10:state.tour.elapsed,{axis:!!recipe?.axisGuide,intersectionWitness:!!recipe?.intersectionWitness,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null,anchors:recipe?.axisGuide?merkabaAnchors(levels[0]):null,cubeHalfHeight:recipe?.axisGuide?cubeHalfHeight(levels[0]):null,direction:state.tour.motion?.direction||1,intersectionSource:derivedObjects.find(o=>o.kind==='intersection'&&o.level===0)?.object});
+  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':recipe?.spiralPreview?'mechanism':null),tourProgress(state),expansion.active?expansion.turns*10:state.tour.elapsed,{referenceYaw:torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up),axis:!!recipe?.axisGuide,intersectionWitness:!!recipe?.intersectionWitness,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null,anchors:recipe?.axisGuide?merkabaAnchors(levels[0]):null,cubeHalfHeight:recipe?.axisGuide?cubeHalfHeight(levels[0]):null,direction:state.tour.motion?.direction||1,intersectionSource:derivedObjects.find(o=>o.kind==='intersection'&&o.level===0)?.object});
   torusWitness.update(recipe?.goldenCoupling||recipe?.goldenWitnessCarry?levels[0]?.objs.dodecahedron:null,progress,camera,{carry:!!recipe?.goldenWitnessCarry});
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
@@ -175,7 +178,8 @@ export function initTours() {
   const reading=button(player,'О торе: тело, космос, физика',()=>actions.readTopic(tourStep(getState())?.scene.reading||TOURS[getState().tour.id]?.reading));reading.className='tour-reading-shortcut';reading.hidden=true;
   const title=el('h2'),text=el('p',null,'tour-narration'),controlsRow=el('div',null,'tour-controls');
   const previous=button(controlsRow,'←',()=>actions.tourStep(getState().tour.index-1));previous.setAttribute('aria-label','Предыдущая глава');
-  const play=button(controlsRow,'Пауза',()=>actions.tourControl({playing:!getState().tour.playing}));play.className='tour-play';
+  const play=el('button','Пауза','tour-play');play.type='button';controlsRow.append(play);
+  bindTourPlayback(play,()=>getState().tour.playing,playing=>actions.tourControl({playing}));
   const restart=button(controlsRow,'↻ Начать заново',()=>actions.restartTour());restart.className='tour-restart';restart.setAttribute('aria-label','Начать заново');restart.hidden=true;
   const next=button(controlsRow,'Дальше →',()=>actions.tourStep(getState().tour.index+1));next.setAttribute('aria-label','Следующая глава');
   returnCamera=button(controlsRow,'↶ Ракурс',resetTourCamera);returnCamera.className='tour-return';returnCamera.title='Вернуть ракурс тура';returnCamera.setAttribute('aria-label',returnCamera.title);
@@ -197,15 +201,15 @@ export function initTours() {
     welcome.hidden=!simple||active;player.hidden=!simple||!active;
     const quietFinale=state.tour.id==='torus'&&state.tour.index<TOURS.torus.steps.length-1;
     reading.hidden=quietFinale||!(tourStep(state)?.scene.reading||TOURS[state.tour.id]?.reading);phi.hidden=quietFinale;
-    reading.textContent=tourStep(state)?.scene.readingLabel||(tourStep(state)?.scene.reading==='vortex'?'Вихревое движение · формулы и физика':'О торе: тело, космос, физика');
+    setControlText(reading,tourStep(state)?.scene.readingLabel||(tourStep(state)?.scene.reading==='vortex'?'Вихревое движение · формулы и физика':'О торе: тело, космос, физика'));
     toursButton.setAttribute('aria-pressed',simple);advanced.setAttribute('aria-pressed',!simple);gentle.setAttribute('aria-pressed',state.display.gentleOrbit);
-    advanced.textContent=active?'Покинуть тур':'Лаборатория';advanced.title=active?'Покинуть тур и перейти в лабораторию':'Открыть лабораторию';
+    setControlText(advanced,active?'Покинуть тур':'Лаборатория');advanced.title=active?'Покинуть тур и перейти в лабораторию':'Открыть лабораторию';
     player.dataset.playback=state.tour.phase==='complete'&&!tourStep(state)?.scene.endless?'complete':state.tour.playing?'playing':'paused';
     const reversible=!!state.tour.motion;
     coupling.hidden=!reversible;reverse.disabled=state.tour.phase==='restarting'||state.tour.phase==='complete'&&!tourStep(state)?.scene.endless;
     const contracting=state.tour.motion?.direction===-1;
-    reverse.setAttribute('aria-pressed',String(contracting));reverse.textContent=contracting?'↷ Вернуть расширение':'↶ Обратный ход';
-    if(reversible){const ratio=tourStep(state).scene.expansionRatio;law.textContent=`90° → ${contracting?'÷':'×'}${ratio===3?'3':'φ'} · ${contracting?'сжатие':'расширение'}`;law.dataset.golden=String(ratio!==3);}
+    reverse.setAttribute('aria-pressed',String(contracting));setControlText(reverse,contracting?'↷ Вернуть расширение':'↶ Обратный ход');
+    if(reversible){const ratio=tourStep(state).scene.expansionRatio;setControlText(law,`${tourStep(state).scene.referenceFrame?'180° между телами':'90°'} → ${contracting?'÷':'×'}${ratio===3?'3':'φ'} · ${contracting?'сжатие':'расширение'}`);law.dataset.golden=String(ratio!==3);}
     if(!active){if(previousState?.tour.id){clearEffects();cancelCameraAnimation();cancelTourShot();}currentKey='';return;}
     const tour=TOURS[state.tour.id],step=tourStep(state),key=`${state.tour.id}:${state.tour.index}`;
     const chapterChanged=key!==currentKey || ['tour/start','tour/step'].includes(action.type) || action.type.startsWith('history/');
@@ -233,7 +237,7 @@ export function initTours() {
       node.setAttribute('aria-current',index===state.tour.index?'step':'false');
     });
     restart.hidden=state.tour.index!==tour.steps.length-1;restart.disabled=state.tour.phase==='restarting';
-    play.hidden=state.tour.phase==='complete'&&!step.scene.endless;play.textContent=state.tour.playing?'Ⅱ Пауза и осмотр':'▶ Продолжить тур';
+    play.hidden=state.tour.phase==='complete'&&!step.scene.endless;setControlText(play,state.tour.playing?'Ⅱ Пауза и осмотр':'▶ Продолжить тур');
     wait.checked=!state.tour.auto;
     if(previousState?.tour.playing&&!state.tour.playing)cancelTourShot();
     if(previousState&&!previousState.tour.playing&&state.tour.playing&&!chapterChanged&&state.tour.phase!=='restarting')queueTourShot();

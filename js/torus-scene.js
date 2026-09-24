@@ -6,6 +6,7 @@ const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
 export function createTorusScene(scene) {
   const root=new THREE.Group();root.name='Torus finale';root.visible=false;
   root.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));scene.add(root);
+  const rootOrientation=root.quaternion.clone(),localAxis=new THREE.Vector3(0,0,1),worldAxis=new THREE.Vector3(...TORUS_AXIS),referenceRotation=new THREE.Quaternion(),referenceInverse=new THREE.Quaternion();
   function stroke(parent,points,color,opacity,width=1.5,segments=false) {
     const vertices=segments?points.map(p=>new THREE.Vector3(...p)):points.slice(1).flatMap((p,i)=>[new THREE.Vector3(...points[i]),new THREE.Vector3(...p)]);
     const line=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(vertices),new THREE.LineBasicMaterial({color,transparent:true,opacity,linewidth:width,depthWrite:false}));parent.add(line);return line;
@@ -103,7 +104,7 @@ export function createTorusScene(scene) {
   const futureCoreSurface=streamedPart(true),futureCoreEdges=streamedPart(false),streamPoint=new THREE.Vector3();
   function streamGeometry(source,target,matrix){
     const attribute=source.attributes.position,index=source.index,count=Math.min(512,index?.count??attribute.count),out=target.geometry.attributes.position;
-    for(let i=0;i<count;i++){streamPoint.fromBufferAttribute(attribute,index?index.getX(i):i).applyMatrix4(matrix).multiplyScalar(EXPANSION_TARGET_SCALE);out.setXYZ(i,streamPoint.x,-streamPoint.z,streamPoint.y);}
+    for(let i=0;i<count;i++){streamPoint.fromBufferAttribute(attribute,index?index.getX(i):i).applyMatrix4(matrix).applyQuaternion(referenceInverse).multiplyScalar(EXPANSION_TARGET_SCALE);out.setXYZ(i,streamPoint.x,-streamPoint.z,streamPoint.y);}
     out.needsUpdate=true;target.geometry.setDrawRange(0,count);
   }
   const shells=TORI.map((shape,index)=>{
@@ -134,9 +135,13 @@ export function createTorusScene(scene) {
     vertexShader:`varying vec3 tint;void main(){tint=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=8.;}`,
     fragmentShader:`uniform float alpha;varying vec3 tint;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(tint,alpha*exp(-5.*d*d));}`});
   const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.frustumCulled=false;root.add(dots);
-  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false}={}) {
+  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0}={}) {
     const mechanism=kind==='mechanism',cage=kind==='cage',growing=kind==='growth',paired=kind==='pair'||kind==='inscription',spiral=kind==='spiral',orbit=kind==='traces'||cage||growing||mechanism||paired||spiral,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
-    const actual=anchors||ORBIT_SEEDS.map(seed=>orbitPoint(seed,rotation).map(x=>x*scale)),frame=torusFrameFromAnchors(actual,cubeHalfHeight);
+    root.quaternion.copy(rootOrientation).multiply(referenceRotation.setFromAxisAngle(localAxis,referenceYaw));
+    referenceInverse.setFromAxisAngle(worldAxis,-referenceYaw);
+    const c=Math.cos(referenceYaw),s=Math.sin(referenceYaw);
+    const localAnchors=anchors?.map(([x,y,z])=>[c*x+s*y,-s*x+c*y,z]);
+    const actual=localAnchors||ORBIT_SEEDS.map(seed=>orbitPoint(seed,rotation).map(x=>x*scale)),frame=torusFrameFromAnchors(actual,cubeHalfHeight);
     const carry=cage?1-ease(p/.12):0,traceIn=kind==='traces'?traceEntrance(p):1;
     const handoff=cage?ease((p-.82)/.18):1,sourceFocus=growth?ease(p/.12):whole?1:0;
     const proofInk=intersectionWitness?1-ease((p-.25)/.05):0;
