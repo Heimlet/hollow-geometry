@@ -656,4 +656,29 @@ an accidental immediate resume. Resume, keyboard and assistive clicks keep nativ
 button behaviour. Text nodes in playback controls only change with their labels,
 not on every animation snapshot. `tests/tour-playback.mjs` checks interruption at
 every chapter boundary, duplicate-event suppression, cancellation and keyboard
-activation. These bring the regression collection to 29 suites.
+activation.
+
+### Torus height and the featured finale
+
+`torus-measure.js` projects drafting dimensions from the two actual illuminated
+Merkaba vertices, using the current camera and world transforms. Extension lines
+are horizontal in world space; their shared vertical dimension equals the current
+cube and torus height. The column slides horizontally if a macro shot would crop
+it. The label avoids the dodecahedron annotations and camera control; at a polar
+view the ruler fades and the number remains with a viewing-direction hint.
+
+Height is shown as `H₀ × φⁿ`, with an ordinary growth multiplier underneath.
+`H₀ = 2A` is the height before continuous expansion. The exponent is computed
+from the measured height and the same logarithmic unit offset used by expansion,
+so chapter transitions and numerical rebasing do not reset it. Reverse decreases
+it; pause freezes it. `display.torusHeight` toggles the complete annotation without
+changing playback or the scene, and survives chapter changes.
+
+The golden axis uses one fixed two-vertex buffer extending as far as the paired
+spiral window. It stays outside framing bounds, continuing beyond both edges of
+the view without adding geometry over time. The finale has a separate wide card
+after the regular tour grid, with a native SVG of its actual geometric motifs.
+
+`tests/torus-measure.mjs` verifies source contacts, true dimensions, camera
+projection, on-screen placement, golden notation and rebasing continuity, plus
+the independent display toggle. There are 30 regression suites.

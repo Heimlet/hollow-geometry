@@ -544,3 +544,34 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .knowledge-body .knowledge-illustration p{font-size:12px;color:#a2b6c8;line-height:1.6;margin:8px 0}
 
 .tour-premise{margin:4px 0 23px;color:#c8c6da;font-size:clamp(15px,2.2vw,20px);font-weight:400;line-height:1.5;letter-spacing:.01em;max-width:32em}
+
+/* A separate, wide finale after the nine introductory journeys. */
+.tour-finale{margin-top:28px}
+.tour-finale-card{display:grid;grid-template-columns:minmax(260px,.95fr) minmax(0,1fr);align-items:center;gap:28px;width:100%;min-height:300px;padding:28px 40px 28px 22px;border-color:#edc78066;background:radial-gradient(ellipse at 22% 50%,#5aa5c51c,transparent 60%),linear-gradient(120deg,#101c30f5,#151726f5)}
+.tour-finale-card:hover{transform:translateY(-2px);border-color:#edc780b3;background:radial-gradient(ellipse at 22% 50%,#5aa5c527,transparent 60%),linear-gradient(120deg,#132039f5,#1b1b2df5)}
+.tour-finale-copy{display:flex;flex-direction:column;align-items:flex-start;gap:15px;position:relative}
+.tour-finale-copy>.tour-eyebrow{color:#d4b980;font-size:9px;letter-spacing:2px}
+.tour-finale-copy>strong{font-size:clamp(24px,3vw,36px);line-height:1.15;letter-spacing:-.8px;color:#f1e9d6}
+.tour-finale-copy>.tour-description{font-size:15px;line-height:1.6;color:#b4c8de}
+.tour-finale-copy>.tour-meta{margin:0;padding:0;color:#94a9c4}
+.tour-finale-cta{display:inline-flex;align-items:center;margin-top:5px;padding:11px 18px;border:1px solid #edc78080;border-radius:9px;background:#edc78019;color:#f1d8a4;font-size:12px}
+.tour-finale-art.geometry-figure{position:relative;margin:0;padding:0;background:none;border:0;pointer-events:none}
+.tour-finale-art .geometry-pane svg{max-height:280px;filter:drop-shadow(0 0 18px #8ac7df22)}
+.tour-finale-art .geometry-pane>span{display:none}
+.tour-finale-card>.tour-viewed{right:20px;top:20px}
+@media(max-width:700px){.tour-finale{margin-top:20px}.tour-finale-card{grid-template-columns:1fr;gap:6px;padding:16px 24px 27px;min-height:0}.tour-finale-art .geometry-pane svg{max-height:200px}.tour-finale-copy{gap:12px}.tour-finale-copy>strong{font-size:28px}.tour-finale-copy>.tour-description{font-size:13px}.tour-finale-cta{margin-top:4px}}
+
+.tour-measure-row{margin-top:8px}.tour-measure-row[hidden]{display:none}
+.tour-player .tour-measure-toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;font-size:11px;background:transparent;color:#9eafc6;border-color:#a7bfd529}
+.tour-player .tour-measure-toggle[aria-pressed=true]{color:#edc780;border-color:#edc78070;background:#edc7800d}
+.tour-measure-toggle svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round}
+.torus-height-measure{position:fixed;inset:0;z-index:13;pointer-events:none;user-select:none;-webkit-user-select:none;color:#edcb8b}
+.torus-height-measure[hidden]{display:none}.torus-height-measure>svg{position:absolute;width:100%;height:100%;inset:0;overflow:hidden}
+.torus-height-measure path{fill:none;stroke:currentColor;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
+.torus-height-measure .height-leader{opacity:.72}.torus-height-measure .cyan{color:#a4dfed}.torus-height-measure .pink{color:#f4badf}
+.torus-height-measure circle{fill:currentColor;stroke:#0b1524;stroke-width:1}
+.torus-height-label{position:absolute;display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:136px;padding:7px 9px;border-left:1px solid #edcb8b80;background:#08101dde;border-radius:0 6px 6px 0;font-size:10px;line-height:1.3;font-variant-numeric:tabular-nums}
+.torus-height-label strong{font-size:19px;font-weight:550;line-height:1.2;overflow-wrap:anywhere}
+.torus-height-label small{color:#8fa8c3;font-size:9px}.torus-height-label small[hidden]{display:none}
+@media(max-width:700px){.torus-height-label{padding:5px 7px;font-size:9px}.torus-height-label strong{font-size:16px}.tour-player .tour-measure-toggle{font-size:10px}}
+.torus-height-label strong sup{font-size:.65em;margin-left:1px;font-weight:500}

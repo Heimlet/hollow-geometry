@@ -79,6 +79,9 @@ const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;bas
 let source=await readFile(new URL('../js/torus-scene.js',import.meta.url),'utf8');
 source=source.replace("'three'",JSON.stringify(three)).replace("'./torus-math.js'",JSON.stringify(new URL('../js/torus-math.js',import.meta.url).href));
 const {createTorusScene}=await import(url(source)),THREE=await import(three),scene=new THREE.Scene(),study=createTorusScene(scene),root=scene.children[0];
+const pole=root.getObjectByName('Shared vertical axis'),axisBuffer=pole.geometry.attributes.position;
+assert.equal(axisBuffer.count,2,'The continuing axis uses one fixed line segment');
+assert.equal(axisBuffer.getZ(0),-axisBuffer.getZ(1));assert.ok(axisBuffer.getZ(1)>TORUS.height*300,'Both axis ends are far beyond the growing bodies and visible frame');
 // The opening reveals successive dimensions in fixed coordinates, before the network.
 const dimensionsSource=(await readFile(new URL('../js/dimension-scene.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three)).replace("'./constants.js'",JSON.stringify(new URL('../js/constants.js',import.meta.url).href));
 const {createDimensionScene,dimensionFrame,dimensionSequence}=await import(url(dimensionsSource));

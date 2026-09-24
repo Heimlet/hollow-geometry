@@ -59,5 +59,5 @@ export function createTorusWitness(scene){
       for(const other of placed)if(x<other.x+other.width+6&&x+width+6>other.x&&y<other.y+height+6&&y+height+6>other.y)y=other.y-height-8;
       placed.push({x,y,width});label.style.left=`${x}px`;label.style.top=`${Math.max(8,y)}px`;label.style.opacity=ink;
     });
-  },dispose(){clear();group.removeFromParent();labels.forEach(label=>label.remove());}};
+  },bounds(){return labels.filter(label=>!label.hidden).map(label=>label.getBoundingClientRect());},dispose(){clear();group.removeFromParent();labels.forEach(label=>label.remove());}};
 }

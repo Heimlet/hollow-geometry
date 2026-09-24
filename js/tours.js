@@ -7,6 +7,8 @@ import { tourFaceOpacity,recursionMoment,tourObjectAlpha,tetraWitnessAppearance,
 import { expansionAt,cubeWitnessInk,torusMacroFocus,spiralGuideRadius,torusReferenceYaw } from './torus-math.js';
 import { applyTourReference } from './tour-reference.js';
 import { bindTourPlayback,setControlText } from './tour-playback.js';
+import { createTorusHeightMeasure,hasTorusHeight } from './torus-measure.js';
+import { geometryFigure } from './geometry-figures.js';
 import { withOrthographicDepth } from './projection.js';
 import { createTorusScene } from './torus-scene.js';
 import { merkabaAnchors,cubeHalfHeight,createTorusWitness } from './torus-witness.js';
@@ -24,13 +26,14 @@ import { initTourReading,linkTourText } from './tour-reading.js';
 import { mountTorusPreface } from './tour-preface.js';
 import { queueTourShot,cancelTourShot,tourCameraBusy,updateTourCamera,tourCameraStatus } from './tour-camera.js';
 import { stageViewport } from './tour-camera-math.js';
-let player, effectActive=false, status, animationState, cameraState,returnCamera;
+let player, effectActive=false, status, animationState, cameraState,returnCamera,resetCameraButton;
 let playerLayout='';
 const transition=createTourTransition(scene);
 const nodeStudy=createMetatronStudy(scene);
 const fruitScene=createFruitScene(scene);
 const torusScene=createTorusScene(scene);
 const torusWitness=createTorusWitness(scene);
+const torusMeasure=createTorusHeightMeasure();
 const dimensionScene=createDimensionScene(scene);
 let transitionKey=null,lastGolden=null,fadeInk=false;
 export function applyTourTransition(dt) {
@@ -102,8 +105,11 @@ export function applyTourEffects() {
   dimensionScene.update(!!intro,sequence.build);
   fruitScene.update(recipe?.networkHandoff?'network':recipe?.fruit,recipe?.networkHandoff?1:intro?Math.max(0,(sequence.build-.75)/.25):progress,camera.position.clone().sub(controls.target).normalize(),recipe?.networkHandoff?torusOpeningHandoff(progress).network:intro?dimensionFrame(sequence.build).network:1,recipe?.networkHandoff?1:intro?sequence.expansion:0);
   const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion);
-  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':recipe?.spiralPreview?'mechanism':null),tourProgress(state),expansion.active?expansion.turns*10:state.tour.elapsed,{referenceYaw:torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up),axis:!!recipe?.axisGuide,intersectionWitness:!!recipe?.intersectionWitness,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null,anchors:recipe?.axisGuide?merkabaAnchors(levels[0]):null,cubeHalfHeight:recipe?.axisGuide?cubeHalfHeight(levels[0]):null,direction:state.tour.motion?.direction||1,intersectionSource:derivedObjects.find(o=>o.kind==='intersection'&&o.level===0)?.object});
+  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':recipe?.spiralPreview?'mechanism':null),tourProgress(state),expansion.active?expansion.turns*10:state.tour.elapsed,{showHeightGuide:false,referenceYaw:torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up),axis:!!recipe?.axisGuide,intersectionWitness:!!recipe?.intersectionWitness,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null,anchors:recipe?.axisGuide?merkabaAnchors(levels[0]):null,cubeHalfHeight:recipe?.axisGuide?cubeHalfHeight(levels[0]):null,direction:state.tour.motion?.direction||1,intersectionSource:derivedObjects.find(o=>o.kind==='intersection'&&o.level===0)?.object});
   torusWitness.update(recipe?.goldenCoupling||recipe?.goldenWitnessCarry?levels[0]?.objs.dodecahedron:null,progress,camera,{carry:!!recipe?.goldenWitnessCarry});
+  const measureBounds=player?.getBoundingClientRect();
+  torusMeasure.update({enabled:hasTorusHeight(recipe)&&state.display.torusHeight,anchors:hasTorusHeight(recipe)?merkabaAnchors(levels[0]):null,camera,units:expansion.units,obstacles:[...torusWitness.bounds(),resetCameraButton?.getBoundingClientRect()].filter(Boolean),
+    viewport:stageViewport(innerWidth,innerHeight,measureBounds?.height||220,measureBounds?.width||440),opacity:recipe?.torus==='birth'?smooth(progress/.15):1});
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
   for(const level of levels) {
@@ -149,6 +155,7 @@ export function initTours() {
   gentle.title='Мягкое вращение камеры';gentle.setAttribute('aria-label',gentle.title);
   document.body.append(mode);
   const reset=button(document.body,'⟲',()=>window.resetCamera());reset.className='fbtn tour-reset';
+  resetCameraButton=reset;
   reset.title='Вернуть ракурс тура';reset.setAttribute('aria-label',reset.title);
   const welcome=el('main',null,'tour-menu');welcome.setAttribute('aria-label','Выбор путешествия');
   const musicRow=el('div',null,'tour-menu-tools'),playlist=el('a',null,'tour-playlist');
@@ -158,19 +165,25 @@ export function initTours() {
   playlist.setAttribute('aria-label','Плейлист в Яндекс Музыке · откроется в новой вкладке');
   const musicIcon=el('img',null,'playlist-icon');musicIcon.src='assets/yandex-music.svg';musicIcon.alt='';musicIcon.width=22;musicIcon.height=22;
   playlist.append(musicIcon);musicRow.append(playlist);
-  const grid=el('div',null,'tour-grid'),history=createTourHistory(),cards=new Map();
+  const grid=el('div',null,'tour-grid'),finale=el('section',null,'tour-finale'),history=createTourHistory(),cards=new Map();
+  finale.setAttribute('aria-label','Финальное путешествие');
   function markViewed(id){const card=cards.get(id),viewed=history.has(id);card.dataset.viewed=String(viewed);card.querySelector('.tour-viewed').hidden=!viewed;card.setAttribute('aria-label',`Смотреть: ${TOURS[id].name}${viewed?' · Просмотрено':''}`);}
   for(const [id,tour]of Object.entries(TOURS)) {
-    const card=button(grid,'',()=>actions.startTour(id));card.className='tour-card';card.dataset.tour=id;card.style.setProperty('--tour-color',tour.color);
+    const featured=id==='torus',card=button(featured?finale:grid,'',()=>actions.startTour(id));card.className=featured?'tour-card tour-finale-card':'tour-card';card.dataset.tour=id;card.style.setProperty('--tour-color',tour.color);
     card.setAttribute('aria-label',`Смотреть: ${tour.name}`);
     const icon=el('span',null,'tour-icon');icon.append(tourIcon(id,tour.icon));icon.setAttribute('aria-hidden','true');
     const meta=el('span',`${tour.reading==='torus'?'Финал · ':''}${minutes(id)} · ${tour.steps.length} глав`,'tour-meta');
     const viewed=el('span',null,'tour-viewed');viewed.append(tourIcon('viewed'));viewed.title='Просмотрено';viewed.setAttribute('aria-hidden','true');
-    card.append(icon,el('strong',tour.name),el('span',tour.description,'tour-description'),meta,viewed,el('span','↗','tour-card-play'));
+    if(featured){
+      const art=geometryFigure('torus-cover');art.classList.add('tour-finale-art');art.setAttribute('aria-hidden','true');
+      const copy=el('span',null,'tour-finale-copy'),cta=el('span','Смотреть тур →','tour-finale-cta');
+      copy.append(el('span','Финальное путешествие','tour-eyebrow'),el('strong',tour.name),el('span',tour.description,'tour-description'),meta,cta);
+      card.append(art,copy,viewed);
+    }else card.append(icon,el('strong',tour.name),el('span',tour.description,'tour-description'),meta,viewed,el('span','↗','tour-card-play'));
     cards.set(id,card);markViewed(id);
   }
   const premise=el('p','Геометрия не развивается — она раскрывается.','tour-premise');
-  welcome.append(musicRow,premise,grid);mountTorusPreface(welcome);document.body.append(welcome);
+  welcome.append(musicRow,premise,grid,finale);mountTorusPreface(welcome);document.body.append(welcome);
   player=el('section',null,'tour-player');player.hidden=true;player.setAttribute('aria-label','Управление путешествием');
   const progress=el('nav',null,'tour-progress');progress.setAttribute('aria-label','Прогресс по главам');
   const head=el('div',null,'tour-player-head'),chapter=el('span',null,'tour-eyebrow');
@@ -185,6 +198,10 @@ export function initTours() {
   returnCamera=button(controlsRow,'↶ Ракурс',resetTourCamera);returnCamera.className='tour-return';returnCamera.title='Вернуть ракурс тура';returnCamera.setAttribute('aria-label',returnCamera.title);
   const coupling=el('div',null,'tour-coupling'),law=el('span');
   const reverse=button(coupling,'↶ Обратный ход',()=>actions.reverseTour());reverse.className='tour-reverse';reverse.title='Поменять направления вращения и роста, сохранив текущее положение';coupling.prepend(law);
+  const measureRow=el('div',null,'tour-measure-row'),measureToggle=button(measureRow,'',()=>actions.display({torusHeight:!getState().display.torusHeight}));
+  measureToggle.className='tour-measure-toggle';measureToggle.append(tourIcon('ruler'),el('span','Высота тора'));
+  measureToggle.title='Высота H₀ × φⁿ: размерные линии и золотые шаги от начала расширения';
+  measureToggle.setAttribute('aria-label','Размерная разметка высоты тора');
   const inspect=button(player,'Покинуть тур → лаборатория',()=>actions.interface('advanced'));inspect.className='tour-exit';
   const options=el('details',null,'tour-options');options.append(el('summary','Главы и просмотр'));
   const waitLabel=el('label',null,'lab-check'),wait=el('input');wait.type='checkbox';wait.setAttribute('aria-label','Останавливаться между главами');
@@ -192,7 +209,7 @@ export function initTours() {
   const chapters=el('div',null,'tour-chapters');options.append(chapters);
   status=el('p',null,'tour-status');
   const states=el('div',null,'tour-states');animationState=el('span');cameraState=el('span');states.append(animationState,cameraState);
-  player.append(progress,head,title,text,reading,coupling,controlsRow,states,status,options,inspect);document.body.append(player);
+  player.append(progress,head,title,text,reading,coupling,measureRow,controlsRow,states,status,options,inspect);document.body.append(player);
   let currentKey='',currentTour='';
   function render(state,previousState,action={}) {
     if(state.tour.phase==='complete'&&history.complete(state.tour.id))markViewed(state.tour.id);
@@ -205,6 +222,7 @@ export function initTours() {
     toursButton.setAttribute('aria-pressed',simple);advanced.setAttribute('aria-pressed',!simple);gentle.setAttribute('aria-pressed',state.display.gentleOrbit);
     setControlText(advanced,active?'Покинуть тур':'Лаборатория');advanced.title=active?'Покинуть тур и перейти в лабораторию':'Открыть лабораторию';
     player.dataset.playback=state.tour.phase==='complete'&&!tourStep(state)?.scene.endless?'complete':state.tour.playing?'playing':'paused';
+    measureRow.hidden=!hasTorusHeight(tourStep(state)?.scene);measureToggle.setAttribute('aria-pressed',String(state.display.torusHeight));
     const reversible=!!state.tour.motion;
     coupling.hidden=!reversible;reverse.disabled=state.tour.phase==='restarting'||state.tour.phase==='complete'&&!tourStep(state)?.scene.endless;
     const contracting=state.tour.motion?.direction===-1;

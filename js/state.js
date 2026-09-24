@@ -27,7 +27,7 @@ export function initialState() {
   lab: initialLab(), viewContext: 'platonic', ui:{mode:'simple',topic:null,topicTrail:[]}, tour:initialTour(),
   study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, turns: 3, size: 1, attached: false },
   goldenScene: { id: 'none', progress: 0, running: false },
-  display: { autoRotate: false, speed: .15, stars: true, starCount: 2400, gentleOrbit:true, guide: false, golden: false } });
+  display: { autoRotate: false, speed: .15, stars: true, starCount: 2400, gentleOrbit:true, torusHeight:true, guide: false, golden: false } });
 }
 function requireValid(condition, message) { if (!condition) throw new Error(message); }
 export function reduce(state, action) {
@@ -276,7 +276,7 @@ export function reduce(state, action) {
       requireValid(Object.entries(action.patch).every(([key, value]) => key === 'starCount'
         ? Number.isInteger(value) && value >= 200 && value <= 8000 : key === 'speed'
         ? Number.isFinite(value) && value >= 0 && value <= .5
-        : ['autoRotate', 'stars', 'guide', 'golden', 'gentleOrbit'].includes(key) && typeof value === 'boolean'), 'Invalid display settings');
+        : ['autoRotate', 'stars', 'guide', 'golden', 'gentleOrbit', 'torusHeight'].includes(key) && typeof value === 'boolean'), 'Invalid display settings');
       next = { ...state, display: { ...state.display, ...action.patch } }; break;
     }
     default: throw new Error(`Unknown action: ${action.type}`);

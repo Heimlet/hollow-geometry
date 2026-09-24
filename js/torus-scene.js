@@ -1,6 +1,6 @@
 /** Two illustrative shells share the exact vertical axis of the live Merkaba. */
 import * as THREE from 'three';
-import {TORI,TORUS_AXIS,TORUS_POLE,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,spiralGuide,spiralGuidePath,torusFrameFromAnchors,torusPoint,torusCurve,expansionReferences,cubeWitnessInk,traceEntrance,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS} from './torus-math.js';
+import {TORI,TORUS_AXIS,TORUS_AXIS_EXTENT,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,spiralGuide,spiralGuidePath,torusFrameFromAnchors,torusPoint,torusCurve,expansionReferences,cubeWitnessInk,traceEntrance,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS} from './torus-math.js';
 const tau=Math.PI*2,phi=(1+Math.sqrt(5))/2;
 const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
 export function createTorusScene(scene) {
@@ -11,7 +11,7 @@ export function createTorusScene(scene) {
     const vertices=segments?points.map(p=>new THREE.Vector3(...p)):points.slice(1).flatMap((p,i)=>[new THREE.Vector3(...points[i]),new THREE.Vector3(...p)]);
     const line=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(vertices),new THREE.LineBasicMaterial({color,transparent:true,opacity,linewidth:width,depthWrite:false}));parent.add(line);return line;
   }
-  const pole=stroke(root,[[0,0,-TORUS_POLE],[0,0,TORUS_POLE]],0xffd277,.84,2.3);pole.name='Shared vertical axis';
+  const pole=stroke(root,[[0,0,-TORUS_AXIS_EXTENT],[0,0,TORUS_AXIS_EXTENT]],0xffd277,.84,2.3);pole.name='Shared vertical axis';
   const traces=new THREE.Group();traces.name='Actual tetrahedron vertex orbits';root.add(traces);
   const orbitLines=ORBIT_SEEDS.map(seed=>{
     const line=stroke(traces,Array.from({length:193},(_,i)=>orbitPoint(seed,i/192*Math.PI)),seed.side>0?0xff9edb:0x94e6ff,.65,2);
@@ -135,7 +135,7 @@ export function createTorusScene(scene) {
     vertexShader:`varying vec3 tint;void main(){tint=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=8.;}`,
     fragmentShader:`uniform float alpha;varying vec3 tint;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(tint,alpha*exp(-5.*d*d));}`});
   const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.frustumCulled=false;root.add(dots);
-  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0}={}) {
+  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0,showHeightGuide=true}={}) {
     const mechanism=kind==='mechanism',cage=kind==='cage',growing=kind==='growth',paired=kind==='pair'||kind==='inscription',spiral=kind==='spiral',orbit=kind==='traces'||cage||growing||mechanism||paired||spiral,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
     root.quaternion.copy(rootOrientation).multiply(referenceRotation.setFromAxisAngle(localAxis,referenceYaw));
     referenceInverse.setFromAxisAngle(worldAxis,-referenceYaw);
@@ -164,7 +164,7 @@ export function createTorusScene(scene) {
     const witness=cage?cubeWitnessInk(p):0,preparation=mechanism?ease((p-(intersectionWitness?.34:.12))/.18):0;
     const turns=expansion?.turns||0,phase=turns-EXPANSION_TARGET_TURNS*Math.floor(turns/EXPANSION_TARGET_TURNS),contracting=direction<0,nextScale=scale*phi**((contracting?0:EXPANSION_TARGET_TURNS)-phase);
     const heightInk=birth?ease(p/.15)*(1-ease((p-.6)/.22)):0;
-    heightGuide.visible=heightInk>0;heightGuide.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);heightGuide.children.forEach(line=>line.material.opacity=heightInk*.6);
+    heightGuide.visible=showHeightGuide&&heightInk>0;heightGuide.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);heightGuide.children.forEach(line=>line.material.opacity=heightInk*.6);
     const arrival=expansion?(1-ease((phase-1.88)/.12))*(turns<.12?1:ease(phase/.12)):0,futureInk=cage?Math.max(witness,handoff):birth?heightInk*.28:growing||kind==='traces'?arrival*traceIn:0;
     futureCube.visible=futureInk>0;futureCube.scale.setScalar(cage?scale*EXPANSION_TARGET_SCALE:birth?scale:nextScale);
     const edgesReveal=cage?ease((p-.42)/.13):1,coreReveal=cage?ease((p-.51)/.1):1;

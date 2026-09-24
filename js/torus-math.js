@@ -33,6 +33,9 @@ export function spiralGuide(seed,turns,ratio=SPIRAL_RATIO){return orbitPoint(see
 // a pixel; its outward end is hundreds of body sizes beyond the camera frame.
 // Similarity maps this window onto the SAME infinite curve as the body grows.
 export const SPIRAL_WINDOW={from:-20,to:12,segments:2048};
+// The visible axis has no nearby endpoints; its fixed segment spans the same
+// outward range as both infinite guide windows. Keep it out of camera fitting.
+export const TORUS_AXIS_EXTENT=A*SPIRAL_RATIO**SPIRAL_WINDOW.to;
 export const spiralGuideRadius=(scale=1)=>Math.sqrt(3)*A*SPIRAL_RATIO**SPIRAL_WINDOW.to*scale;
 export const spiralGuidePath=(seed,ratio=SPIRAL_RATIO,segments=SPIRAL_WINDOW.segments)=>Array.from({length:segments+1},(_,i)=>spiralGuide(seed,SPIRAL_WINDOW.from+(SPIRAL_WINDOW.to-SPIRAL_WINDOW.from)*i/segments,ratio));
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};

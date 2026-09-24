@@ -35,7 +35,13 @@ function drawFlower(pen,flat){
 }
 export function geometryFigure(kind){
   const figure=el('figure',null,`geometry-figure geometry-${kind}`),row=el('div',null,'geometry-views');figure.append(row);
-  if(kind==='dimensions'){
+  if(kind==='torus-cover'){
+    const pen=pane(row,'Меркаба, золотые спирали и тор',[3,1.5,6],24);
+    for(let i=0;i<16;i++)pen.path(torusCurve(0,1,64).map(([x,y,z])=>[x*Math.cos(i*Math.PI/8)/A,z/A,-x*Math.sin(i*Math.PI/8)/A]),blue,.22);
+    for(const v of [0,Math.PI/2,Math.PI,3*Math.PI/2])pen.path(torusCurve(1,0,128,v).map(([x,y,z])=>[x/A,z/A,-y/A]),v===Math.PI/2?gold:blue,.5);
+    for(const index of [0,7])pen.path(Array.from({length:257},(_,i)=>spiralGuide(ORBIT_SEEDS[index],-3+5*i/256).map((x,k,a)=>k===0?x/A:k===1?a[2]/A:-a[1]/A)),index===7?gold:blue,.8);
+    drawStar(pen);
+  }else if(kind==='dimensions'){
     pane(row,'0D · точка').circle([0,0,0],.065);
     pane(row,'1D · отрезок').path([[-1,0,0],[1,0,0]]);
     pane(row,'2D · квадрат').path([[-1,-1,0],[1,-1,0],[1,1,0],[-1,1,0]],gold,1,true);
