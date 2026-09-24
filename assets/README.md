@@ -6,3 +6,6 @@
 https://yastatic.net/s3/doc-binary/src/mediaservices/yandex_music_icon_main.svg
 
 Source and usage guide: https://yandex.ru/support/music/ru/performers-and-copyright-holders/visual
+
+`perspective-meme.png` is a user-supplied image, displayed unchanged as a small
+visual aside on the tour selection page. It is not part of any tour scene.

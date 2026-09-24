@@ -188,7 +188,14 @@ export function initTours() {
     cards.set(id,card);markViewed(id);
   }
   const premise=el('p','Геометрия не развивается — она раскрывается.','tour-premise');
-  welcome.append(musicRow,premise,grid,finale);mountTorusPreface(welcome);
+  // A quiet visual aside belongs to the menu, never to the film or its controls.
+  const perspective=el('figure',null,'home-perspective'),perspectiveImage=el('img');
+  perspectiveImage.src='assets/perspective-meme.png';
+  perspectiveImage.alt='Бернард: «Для меня это ни на что не похоже».';
+  perspectiveImage.width=400;perspectiveImage.height=224;
+  perspectiveImage.loading='lazy';perspectiveImage.decoding='async';perspectiveImage.draggable=false;
+  perspective.append(perspectiveImage);
+  welcome.append(musicRow,premise,grid,finale,perspective);mountTorusPreface(welcome);
   const footer=el('footer',null,'tour-clock'),clock=el('time');
   const clockFormat=new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
   clock.title='Местные дата и время браузера';

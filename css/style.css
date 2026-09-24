@@ -486,6 +486,13 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .knowledge-tour-confirm button:last-child{background:#e7c487;color:#252330;font-weight:700}
 
 /* A quiet reading coda after the films, with explicit links into their chapters. */
+/* Homepage-only visual pause before the geometry introduction. */
+.home-perspective{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px) minmax(0,1fr);align-items:center;gap:28px;max-width:760px;margin:44px auto 0}
+.home-perspective::before,.home-perspective::after{content:'';height:1px;background:linear-gradient(90deg,transparent,#b3c5e329)}
+.home-perspective::after{transform:scaleX(-1)}
+.home-perspective img{display:block;width:100%;height:auto;aspect-ratio:25/14;border:1px solid #b3c5e32b;border-radius:12px;background:#090e19;box-shadow:0 14px 42px #0003;user-select:none;-webkit-user-select:none}
+.home-perspective+.tour-preface{margin-top:40px}
+@media(max-width:600px){.home-perspective{grid-template-columns:minmax(0,1fr);width:min(100%,360px);gap:0;margin-top:32px}.home-perspective::before,.home-perspective::after{display:none}.home-perspective+.tour-preface{margin-top:30px}}
 .tour-preface{max-width:760px;margin:60px auto 24px;padding:40px 30px 8px;border-top:1px solid #edc78030;color:#aebed3}
 .preface-mark{color:#a2dce0;margin-bottom:18px}.preface-mark svg{width:54px;height:54px;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
 .tour-preface>.tour-eyebrow{color:#bca77e;letter-spacing:1.8px;font-size:10px;margin-bottom:14px}
