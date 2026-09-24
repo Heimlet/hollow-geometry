@@ -232,18 +232,19 @@ const referenceSpeed=(referenceRecipe.rotationTo-referenceAngle)/referenceRecipe
 for(const [i,chapter]of TOURS.torus.steps.entries())if(i>=referenceStart)
   chapter.scene.referenceFrame={start:referenceAngle,anchor:referenceAngle+referenceSpeed*referenceSeconds/2,speed:referenceSpeed,seconds:referenceSeconds,enter:i===referenceStart};
 // Planned viewpoints carry their exact endpoint into the next chapter.
-// A near-polar view reveals the logarithmic spirals without an OrbitControls pole flip.
-const overview=[3,1.1,6],overhead=[0,1,.025];
+// Reach the actual vertical axis. A shared approach meridian keeps screen roll
+// continuous while entering and leaving the exactly polar viewpoint.
+const overview=[3,1.1,6],overhead=[0,1,0],nearOverhead=[0,1,.18];
 const finaleViews={
   growth:[[.5,[3.15,1.1,6]],[1,[3.3,1.1,6]]],
   pair:[[.23,[4,1,3]],[.5,[1,5,3]],[.75,[0,.7,6]],[1,[6,1,-2]]],
   inscription:[[.35,overview],[.78,overview],[1,[0,1,6]]],
-  spiral:[[.24,overhead],[.68,overhead],[1,[3,5,3]]],
+  spiral:[[.15,nearOverhead],[.24,overhead],[.68,overhead],[.77,nearOverhead],[1,[3,5,3]]],
   traces:[[.3,[4,1,3]],[.65,[6,.5,0]],[1,[6,.5,0]]],
   birth:[[.45,[0,.8,6]],[1,[3,3,6]]],
-  weave:[[.45,[-4,3,4]],[1,overhead]],
-  golden:[[.2,overview],[.72,overview],[1,[3,3,6]]],
-  whole:[[.3,overhead],[.52,overhead],[1,[-4,2,-5]]],
+  weave:[[.45,[-4,3,4]],[.86,nearOverhead],[1,overhead]],
+  golden:[[.06,nearOverhead],[.2,overview],[.72,overview],[1,[3,3,6]]],
+  whole:[[.2,nearOverhead],[.3,overhead],[.52,overhead],[.62,nearOverhead],[1,[-4,2,-5]]],
   cosmos:[[.5,[4,4,-4]],[1,overview]],
 };
 let lastView=overview;

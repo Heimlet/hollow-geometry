@@ -224,3 +224,34 @@ for(const id of ['torus-pair','torus-orbits']){
  }
 }
 console.log('PASS: two pre-torus macro chapters visibly enlarge the rotating pair and supports');
+
+// Exact overhead shots must survive camera updates; a tiny tilt becomes a
+// full-screen line when the axis is hundreds of body sizes long.
+const {TORUS_AXIS_EXTENT}=await import(await load('torus-math'));
+for(const [kind,p] of [['spiral',.4],['weave',1],['golden',0],['whole',.4]]){
+ const index=TOURS.torus.steps.findIndex(s=>s.scene.torus===kind),chapter=TOURS.torus.steps[index];
+ actions.startTour('torus',index);actions.seekTour(chapter.seconds*p);rig.queueTourShot();
+ for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
+ const direction=scene.camera.position.clone().sub(scene.controls.target).normalize();
+ assert.ok(direction.distanceTo(new Vector3(0,1,0))<1e-12,'Overhead camera is actually on the vertical axis');
+ const projected=[-1,1].map(sign=>new Vector3(0,sign*TORUS_AXIS_EXTENT,0).project(scene.camera));
+ assert.ok(Math.hypot(projected[0].x-projected[1].x,projected[0].y-projected[1].y)<1e-9,'Both ends of the long axis project to one screen point');
+ const before=scene.camera.quaternion.clone();actions.tourControl({playing:false});rig.cancelTourShot();rig.updateTourCamera(.025,330,440);
+ assert.ok(scene.camera.quaternion.angleTo(before)<1e-7,'Pausing does not twist the polar view');
+}
+// Use the actual OrbitControls implementation to reproduce its epsilon clamp.
+const orbitSource=(await readFile(new URL('../vendor/three/addons/controls/OrbitControls.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three));
+const {OrbitControls}=await import(url(orbitSource)),{exactPolarView}=await import(await load('tour-camera-math'));
+const dom={style:{},addEventListener(){},removeEventListener(){},getRootNode(){return this;}};
+const orbit=new OrbitControls(scene.camera,dom);orbit.target.copy(scene.controls.target);
+const orbitSettingsSource=await readFile(new URL('../js/scene.js',import.meta.url),'utf8');
+const syncOrbit=new Function('controls','getState','orbitDragging',orbitSettingsSource.match(/function syncOrbit\(\) \{[\s\S]*?\n\}/)[0]+';syncOrbit();');
+for(const id of ['torus',null]){
+ syncOrbit(orbit,()=>({display:{gentleOrbit:true},tour:{id}}),false);
+ assert.equal(orbit.minPolarAngle,id?0:.06,'Only laboratory gestures retain the gentle polar guard');
+}
+syncOrbit(orbit,()=>({display:{gentleOrbit:true},tour:{id:'torus'}}),false);
+scene.camera.position.copy(orbit.target).add(new Vector3(0,30,0));orbit.update();exactPolarView(scene.camera,orbit.target,new Vector3(0,1,0));scene.camera.updateMatrixWorld(true);
+assert.ok(scene.camera.position.clone().sub(orbit.target).normalize().distanceTo(new Vector3(0,1,0))<1e-12,'Exact axial aim removes the actual OrbitControls epsilon');
+const exactOrientation=scene.camera.quaternion.clone();orbit.update();assert.ok(scene.camera.position.clone().sub(orbit.target).normalize().distanceTo(new Vector3(0,1,0))<2e-6,'Idle OrbitControls on pause cannot restore the old visible tilt');assert.ok(scene.camera.quaternion.angleTo(exactOrientation)<2e-6,'Actual OrbitControls preserves screen roll when the polar shot pauses');orbit.dispose();
+console.log('PASS: exact polar shots, long-axis point projection, stable pause and actual OrbitControls polar handling');

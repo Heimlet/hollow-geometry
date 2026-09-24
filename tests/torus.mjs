@@ -82,6 +82,15 @@ const {createTorusScene}=await import(url(source)),THREE=await import(three),sce
 const pole=root.getObjectByName('Shared vertical axis'),axisBuffer=pole.geometry.attributes.position;
 assert.equal(axisBuffer.count,2,'The continuing axis uses one fixed line segment');
 assert.equal(axisBuffer.getZ(0),-axisBuffer.getZ(1));assert.ok(axisBuffer.getZ(1)>TORUS.height*300,'Both axis ends are far beyond the growing bodies and visible frame');
+const axisCamera=new THREE.OrthographicCamera(-10,10,7,-7,.01,10000),axisDot=root.getObjectByName('Vertical axis seen end-on');
+for(const scale of [1,8.99])for(const dir of [[0,1,0],[0,-1,0],[0,1,.000001],[3,1,6]]){
+ study.update('whole',.4,0,{axis:true,scale,referenceYaw:1.2});
+ axisCamera.position.set(...dir).normalize().multiplyScalar(30);axisCamera.up.set(...(dir[0]===0&&dir[2]===0?[0,0,-dir[1]]:[0,1,0]));axisCamera.lookAt(0,0,0);axisCamera.updateMatrixWorld(true);
+ study.updateAxisView(axisCamera,1280,800);
+ const endOn=dir[0]===0;assert.equal(axisDot.visible,endOn,'Looking along the actual world axis shows a point');assert.equal(pole.visible,!endOn,'Degenerate line never reaches the pixel-width shader');
+ const worldEnds=[0,1].map(i=>new THREE.Vector3().fromBufferAttribute(axisBuffer,i).applyMatrix4(pole.matrixWorld));
+ assert.ok(worldEnds.every(p=>Math.hypot(p.x,p.z)<1e-9),'Camera changes never tilt or move the world axis');
+}
 // The opening reveals successive dimensions in fixed coordinates, before the network.
 const dimensionsSource=(await readFile(new URL('../js/dimension-scene.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three)).replace("'./constants.js'",JSON.stringify(new URL('../js/constants.js',import.meta.url).href));
 const {createDimensionScene,dimensionFrame,dimensionSequence}=await import(url(dimensionsSource));
@@ -206,7 +215,7 @@ study.update('cosmos',.8,late.time,{scale:late.scale,expansion:late});const late
 study.update('growth',0,0,{expansion:expansionAt(expanded,0)});
 study.update('cosmos',.8,late.time,{scale:late.scale,expansion:late});assert.deepEqual(snapshot(),lateSnapshot,'Seeking restores the same pooled expansion frame');
 
-const dots=root.children.find(o=>o.isPoints);study.update('weave',.5,7);const first=Array.from(dots.geometry.attributes.position.array);study.update('weave',.5,7);assert.deepEqual(Array.from(dots.geometry.attributes.position.array),first,'Pause freezes particles');study.update('weave',.51,7.1);assert.notDeepEqual(Array.from(dots.geometry.attributes.position.array),first);
+const dots=root.getObjectByName('Moving torus particles');study.update('weave',.5,7);const first=Array.from(dots.geometry.attributes.position.array);study.update('weave',.5,7);assert.deepEqual(Array.from(dots.geometry.attributes.position.array),first,'Pause freezes particles');study.update('weave',.51,7.1);assert.notDeepEqual(Array.from(dots.geometry.attributes.position.array),first);
 study.update(null,0,0,{axis:true});assert.equal(root.visible,true);assert.ok(root.children.filter(o=>o.isGroup).every(o=>!o.visible));
 study.update(null,0);assert.equal(root.visible,false);study.dispose();assert.equal(scene.children.length,0);
 console.log('PASS: exact torus trajectories, closed trefoil, non-closing phi sample, short finale order, sourced reading, deterministic pause/seek, world alignment and cleanup');

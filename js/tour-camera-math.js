@@ -2,6 +2,14 @@
 import * as THREE from 'three';
 import { MAX_FOV } from './projection.js';
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+/** lookAt cannot use a collinear up vector. Keep the orbit's world-up unchanged,
+ * but construct the exact axial view with its limiting screen-up direction. */
+export function exactPolarView(camera,target,direction){
+  if(Math.hypot(direction.x,direction.z)>1e-10)return;
+  const distance=camera.position.distanceTo(target),up=camera.up.clone();
+  camera.position.copy(target);camera.position.y+=Math.sign(direction.y)*distance;
+  camera.up.set(0,0,-Math.sign(direction.y));camera.lookAt(target);camera.up.copy(up);
+}
 export function curveAt(keys,p) {
   if(p<=keys[0][0])return keys[0][1];
   for(let i=1;i<keys.length;i++)if(p<=keys[i][0]){const [a,b]=[keys[i-1],keys[i]];return THREE.MathUtils.lerp(a[1],b[1],ease((p-a[0])/(b[0]-a[0])));}

@@ -687,6 +687,16 @@ spiral window. It stays outside framing bounds, continuing beyond both edges of
 the view without adding geometry over time. The finale has a separate wide card
 after the regular tour grid, with a native SVG of its actual geometric motifs.
 
+Top shots now reach the exact world-Y axis. They enter and leave along one
+meridian to preserve screen roll. `exactPolarView` removes the OrbitControls
+epsilon and the `lookAt` collinear-up ambiguity without changing the manual orbit
+axis. The gentle polar guard applies only outside tours, so pause cannot push the
+camera off its scripted axis. The pole stays fixed in world space; if its projected
+endpoints coincide within one stroke width, `updateAxisView` renders one golden
+point instead of passing a zero-length projection to the thick-line shader.
+The torus and camera runtime suites cover top/bottom views, pause, actual
+OrbitControls behaviour, and restoration of the line after tilting away.
+
 `tests/torus-measure.mjs` verifies source contacts, true dimensions, camera
 projection, on-screen placement, golden notation and rebasing continuity, plus
 the independent display toggle. There are 30 regression suites.

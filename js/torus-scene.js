@@ -12,6 +12,8 @@ export function createTorusScene(scene) {
     const line=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(vertices),new THREE.LineBasicMaterial({color,transparent:true,opacity,linewidth:width,depthWrite:false}));parent.add(line);return line;
   }
   const pole=stroke(root,[[0,0,-TORUS_AXIS_EXTENT],[0,0,TORUS_AXIS_EXTENT]],0xffd277,.84,2.3);pole.name='Shared vertical axis';
+  const polePoint=new THREE.Points(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3()]),new THREE.PointsMaterial({color:0xffd277,size:4,sizeAttenuation:false,transparent:true,opacity:.84,depthWrite:false,depthTest:false}));
+  polePoint.name='Vertical axis seen end-on';polePoint.renderOrder=20;polePoint.visible=false;root.add(polePoint);
   const traces=new THREE.Group();traces.name='Actual tetrahedron vertex orbits';root.add(traces);
   const orbitLines=ORBIT_SEEDS.map(seed=>{
     const line=stroke(traces,Array.from({length:193},(_,i)=>orbitPoint(seed,i/192*Math.PI)),seed.side>0?0xff9edb:0x94e6ff,.65,2);
@@ -134,7 +136,7 @@ export function createTorusScene(scene) {
   const dotsMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,vertexColors:true,uniforms:{alpha:{value:1}},
     vertexShader:`varying vec3 tint;void main(){tint=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=8.;}`,
     fragmentShader:`uniform float alpha;varying vec3 tint;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(tint,alpha*exp(-5.*d*d));}`});
-  const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.frustumCulled=false;root.add(dots);
+  const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.name='Moving torus particles';dots.frustumCulled=false;root.add(dots);
   function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0,showHeightGuide=true}={}) {
     const mechanism=kind==='mechanism',cage=kind==='cage',growing=kind==='growth',paired=kind==='pair'||kind==='inscription',spiral=kind==='spiral',orbit=kind==='traces'||cage||growing||mechanism||paired||spiral,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
     root.quaternion.copy(rootOrientation).multiply(referenceRotation.setFromAxisAngle(localAxis,referenceYaw));
@@ -158,7 +160,7 @@ export function createTorusScene(scene) {
     squareProofs.forEach(({group,plane,dot},i)=>{const ink=teachingInk*ease((p-.035-i*.025)/.07)*(1-.75*ease((p-.45)/.2));group.children.forEach(part=>part.material.opacity=part===dot?ink:part===plane?ink*.035:ink*.24);});
     medians.visible=kind==='inscription';medians.children.forEach(line=>line.material.opacity=teachingInk*ease((p-.43)/.13)*.75);
     innerCube.children.forEach(line=>line.material.opacity=teachingInk*.42*smallBuild*(kind==='inscription'?1:alignment));
-    centroids.forEach(marker=>marker.material.opacity=kind==='inscription'?teachingInk*smallBuild*(.7+.3*alignment):0);pole.visible=axis||!!kind;pole.scale.setScalar(scale);
+    centroids.forEach(marker=>marker.material.opacity=kind==='inscription'?teachingInk*smallBuild*(.7+.3*alignment):0);pole.visible=axis||!!kind;polePoint.visible=false;pole.scale.setScalar(scale);
     reference.visible=cage&&handoff<1;reference.scale.setScalar(scale);
     reference.children.forEach(line=>line.material.opacity=(1-carry)*(1-handoff)*(.1+.75*ease((Math.abs(Math.cos(rotation*2))-.9)/.1)));
     const witness=cage?cubeWitnessInk(p):0,preparation=mechanism?ease((p-(intersectionWitness?.34:.12))/.18):0;
@@ -254,5 +256,15 @@ export function createTorusScene(scene) {
     const positions=dotsGeometry.attributes.position;
     for(let i=0;i<24;i++){const t=elapsed*.085+(i%12)/12*tau,index=i<12?0:1,s=shells[index];positions.setXYZ(i,...torusPoint(s.side*2*t,3*t+index*Math.PI,s.shape));}positions.needsUpdate=true;
   }
-  return {update,dispose(){const geometries=new Set(),materials=new Set();root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());scene.remove(root);}};
+  function updateAxisView(camera,width,height){
+    polePoint.visible=false;if(!root.visible)return;
+    root.updateMatrixWorld(true);
+    const a=new THREE.Vector3().fromBufferAttribute(pole.geometry.attributes.position,0).applyMatrix4(pole.matrixWorld).project(camera);
+    const b=new THREE.Vector3().fromBufferAttribute(pole.geometry.attributes.position,1).applyMatrix4(pole.matrixWorld).project(camera);
+    const endOn=Math.hypot((a.x-b.x)*width/2,(a.y-b.y)*height/2)<2.3;
+    // A pixel-width line shader has no direction when both endpoints coincide.
+    // Render that same world-axis projection as one point, not a screen streak.
+    pole.visible=!endOn;polePoint.visible=endOn;
+  }
+  return {update,updateAxisView,dispose(){const geometries=new Set(),materials=new Set();root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());scene.remove(root);}};
 }
