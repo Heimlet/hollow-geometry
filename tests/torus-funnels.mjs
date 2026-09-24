@@ -3,14 +3,14 @@ import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {A,PHI} from '../js/constants.js';
 import {ORBIT_SEEDS,orbitPoint,spiralGuide,torusFrameFromAnchors} from '../js/torus-math.js';
-import {goldenFunnelRadius,goldenFunnelCurvature,goldenFunnelBounds,funnelReveal} from '../js/torus-funnel-math.js';
+import {goldenFunnelRadius,goldenFunnelCurvature,goldenFunnelBounds,funnelReveal,FUNNEL_EXTENT} from '../js/torus-funnel-math.js';
 import {TOURS} from '../js/tour-data.js';
 const near=(a,b,message)=>assert.ok(Math.abs(a-b)<1e-8,message);
 assert.equal(TOURS.torus.steps.length,14);assert.equal(TOURS.torus.steps[12].id,'torus-whole');
 for(const a of [.2,A,17]){
   near(goldenFunnelRadius(0,a),a,'Waist is fixed by real edge midpoints');
   near(goldenFunnelRadius(a,a),Math.SQRT2*a,'Current supports touch the funnel and torus');
-  near(goldenFunnelRadius(PHI*a,a),PHI*Math.SQRT2*a,'Next golden supports lie on the lip');
+  near(goldenFunnelRadius(PHI*a,a),PHI*Math.SQRT2*a,'Next golden supports lie on the next contact ring');
   near(1/goldenFunnelCurvature(0,a),PHI*a,'Meridional curvature radius is phi times the waist radius');
   const h=a*1e-4,second=(goldenFunnelRadius(h,a)-2*a+goldenFunnelRadius(-h,a))/(h*h);
   assert.ok(Math.abs(second-1/(PHI*a))<1e-6,'Independent finite difference confirms the curvature');
@@ -27,6 +27,11 @@ for(const side of [-1,1]){
 for(const seed of ORBIT_SEEDS)for(const turn of [0,1]){
   const point=spiralGuide(seed,turn);near(Math.hypot(point[0],point[1]),goldenFunnelRadius(point[2]));
 }
+for(const t of [.3,.8,1.2,2,4,10]){
+ const gap=goldenFunnelRadius(A*t)**2-2*(A*t)**2;
+ near(gap,A*A/PHI**2*(t*t-1)*(t*t-PHI*PHI),'Only the two marked levels meet the spiral');
+}
+assert.ok(FUNNEL_EXTENT>40,'Continuation reaches many body heights beyond the contact rings');
 const between=spiralGuide(ORBIT_SEEDS[7],.5);
 assert.ok(Math.abs(Math.hypot(between[0],between[1])-goldenFunnelRadius(between[2]))>.01);
 assert.equal(funnelReveal('whole',0),0);assert.equal(funnelReveal('whole',1),funnelReveal('cosmos',0));

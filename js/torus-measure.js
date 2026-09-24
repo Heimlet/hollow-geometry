@@ -42,6 +42,7 @@ export function createTorusHeightMeasure(parent=document.body){
   const overlay=document.createElement('div');overlay.className='torus-height-measure';overlay.hidden=true;overlay.setAttribute('aria-hidden','true');
   const svg=make('svg'),lower=make('path',{class:'height-leader cyan'}),upper=make('path',{class:'height-leader pink'}),dimension=make('path',{class:'height-dimension'}),dots=[make('circle',{r:3,class:'cyan'}),make('circle',{r:3,class:'pink'})];
   svg.append(lower,upper,dimension,...dots);
+  const rulerText=make('text',{class:'height-ruler-text','text-anchor':'middle',dy:-6});rulerText.textContent='Высота тора';svg.append(rulerText);
   const label=document.createElement('div');label.className='torus-height-label';
   const title=document.createElement('span');title.textContent='Высота тора';
   const value=document.createElement('strong'),exponent=document.createElement('sup'),caption=document.createElement('small'),origin=document.createElement('small');
@@ -59,6 +60,10 @@ export function createTorusHeightMeasure(parent=document.body){
     if(caption.textContent!==factor)caption.textContent=factor;
     const [a,b]=ends,dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy),visible=length>=24;
     svg.style.opacity=String(Math.min(1,Math.max(0,(length-12)/24)));edgeOn.hidden=visible;
+    const readable=length>=72;let textAngle=Math.atan2(dy,dx)*180/Math.PI;
+    if(textAngle>90)textAngle-=180;if(textAngle< -90)textAngle+=180;
+    rulerText.setAttribute('transform',`translate(${(a[0]+b[0])/2} ${(a[1]+b[1])/2}) rotate(${textAngle})`);
+    rulerText.style.display=readable?'':'none';overlay.setAttribute('data-ruler-text',String(readable));
     [lower,upper].forEach((line,i)=>line.setAttribute('d',path([starts[i],ends[i]])));
     dots.forEach((dot,i)=>{dot.setAttribute('cx',starts[i][0]);dot.setAttribute('cy',starts[i][1]);});
     const ux=length?dx/length:0,uy=length?dy/length:1,arrow=6,tick=5;

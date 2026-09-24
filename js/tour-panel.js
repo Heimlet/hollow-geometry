@@ -26,7 +26,7 @@ export function mountTourPanel(player,{head,content,extras,secondary=[]}) {
     // A previously scrolled mobile player must not leave its fixed controls offscreen.
     player.scrollTop=0;
   }
-  function setFolded(value){folded=value;sync();}
+  function setFolded(value){const changed=folded!==value;folded=value;sync();if(changed)player.dispatchEvent(new CustomEvent('tour-panel-toggle',{bubbles:true,detail:{collapsed:mobile.matches&&folded}}));}
   handle.addEventListener('click',event=>{
     if(swiped&&event.detail!==0){swiped=false;return;}
     swiped=false;setFolded(!folded);

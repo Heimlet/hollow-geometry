@@ -17,9 +17,18 @@ import { cancelCameraAnimation } from './presets.js';
 import { shotAt,stageViewport,fitTourFrame,exactPolarView } from './tour-camera-math.js';
 let pending=false,flight=null,base=null,baseKey=null,active=false,viewport=null,finishedKey=null,holdTimeline=true,entrance=false,restartPose=null;
 let expansionUnits=null,frameOffset=null;
+let manualView=false,manualGesture=false,idleElapsed=0;
+function clearManualView(){manualView=false;manualGesture=false;idleElapsed=0;}
+export function beginTourCameraInteraction(){
+  const state=getState();
+  if(!tourStep(state)?.scene.camera?.idleReturnSeconds||state.ui.topic||state.tour.phase==='restarting')return;
+  cancelTourShot();manualView=true;manualGesture=true;idleElapsed=0;
+}
+export function endTourCameraInteraction(){manualGesture=false;idleElapsed=0;}
+
 const torusOrientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));
 const torusFramePoints=torusBounds().map(p=>new THREE.Vector3(...p).applyQuaternion(torusOrientation));
-export function queueTourShot(options={}){cancelCameraAnimation();settleControls();pending=true;flight=null;baseKey=null;holdTimeline=options.holdTimeline!==false;entrance=!!options.entrance;}
+export function queueTourShot(options={}){clearManualView();cancelCameraAnimation();settleControls();pending=true;flight=null;baseKey=null;holdTimeline=options.holdTimeline!==false;entrance=!!options.entrance;}
 export function cancelTourShot(){pending=false;flight=null;entrance=false;}
 export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
@@ -74,17 +83,25 @@ export function tourCameraStatus() {
   const state=getState();if(!state.tour.id)return {locked:false,moving:false};
   if(state.ui.topic)return {locked:true,moving:false,reading:true};
   if(state.tour.phase==='restarting')return {locked:state.tour.playing,moving:state.tour.playing,restarting:true};
-  if(pending||flight)return {locked:true,moving:true,flight:true};
   const recipe=tourStep(state).scene;
+  if(recipe.camera?.idleReturnSeconds)return {locked:false,moving:state.tour.playing&&!manualView,
+    interactive:true,returning:!!flight||pending,idleReturnSeconds:recipe.camera.idleReturnSeconds};
+  if(pending||flight)return {locked:true,moving:true,flight:true};
   return {locked:state.tour.playing&&(shotAt(recipe,base?.direction||new THREE.Vector3(1,1,1),tourProgress(state)).locked||!!recipe.endless&&state.tour.phase==='complete'),moving:state.tour.playing};
 }
 export function updateTourCamera(dt,panelHeight,panelWidth) {
   const state=getState(),recipe=tourStep(state)?.scene;
   if(!recipe) {
-    restartPose=null;expansionUnits=null;frameOffset=null;if(active){setCameraFrameOffset(0);controls.enabled=true;controls.enablePan=true;active=false;cancelTourShot();}
+    clearManualView();restartPose=null;expansionUnits=null;frameOffset=null;if(active){setCameraFrameOffset(0);controls.enabled=true;controls.enablePan=true;active=false;cancelTourShot();}
     return;
   }
   active=true;controls.enablePan=false;controls.autoRotate=false;
+  const interactive=!!recipe.camera?.idleReturnSeconds;
+  if(!interactive)clearManualView();
+  if(manualView&&state.tour.playing&&!state.ui.topic&&!manualGesture){
+    idleElapsed+=Math.max(0,dt);
+    if(idleElapsed+1e-8>=recipe.camera.idleReturnSeconds)queueTourShot({holdTimeline:false});
+  }
   const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion);
   // Coordinate rebasing is shared by objects, torus and camera. This keeps
   // indefinite growth/reverse numerically small without clamping real motion.
@@ -125,7 +142,10 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   if(p<1)finishedKey=null;
   const shot=shotAt(recipe,base.direction,p);
   if(recipe.endless&&state.tour.phase==='complete')shot.locked=true;
-  controls.enabled=!state.ui.topic&&!flight&&(!state.tour.playing||!shot.locked);
+  controls.enabled=!state.ui.topic&&(interactive||!flight&&(!state.tour.playing||!shot.locked));
+  // Free orbit and zoom hold their view while the mechanism keeps running.
+  // Shared coordinate rebasing above still preserves the apparent manual scale.
+  if(manualView&&!cut&&!flight)return;
   if(!cut&&(state.ui.topic||!finish&&!flight&&(!state.tour.playing||!shot.locked))) {
     // Responsive framing may change on resize, but never the viewer's free angle.
     if(resized){const points=scenePoints();if(points.length){const direction=camera.position.clone().sub(controls.target).normalize();setViewHeight(fitTourFrame(points,direction,viewport,projectionDepth,controls.target).height);controls.update();camera.updateMatrixWorld(true);}}

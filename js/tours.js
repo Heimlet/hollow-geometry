@@ -25,7 +25,7 @@ import { el, button } from './lab-controls.js';
 import { tourIcon } from './tour-icons.js';
 import { initTourReading,linkTourText } from './tour-reading.js';
 import { mountTorusPreface } from './tour-preface.js';
-import { queueTourShot,cancelTourShot,tourCameraBusy,updateTourCamera,tourCameraStatus } from './tour-camera.js';
+import { queueTourShot,cancelTourShot,tourCameraBusy,updateTourCamera,tourCameraStatus,beginTourCameraInteraction,endTourCameraInteraction } from './tour-camera.js';
 import { stageViewport } from './tour-camera-math.js';
 let player, effectActive=false, status, animationState, cameraState,returnCamera,resetCameraButton;
 let playerLayout='';
@@ -89,12 +89,12 @@ export function updateTourStage(dt) {
   const s=tourCameraStatus(),p=tourProgress(getState());
   const symbol=recipe.camera?.symbol,cue=s.locked&&!s.flight&&symbol&&p>=symbol.from&&p<=symbol.to?symbol.label:null;
   const motion=getState().tour.playing?(s.restarting?'↻ Возвращение к началу':'▶ Анимация идёт'):getState().tour.phase==='complete'&&!recipe.endless?'✓ Тур завершён':'Ⅱ ТУР НА ПАУЗЕ';
-  const control=s.reading?'🔒 Открыта справка':s.locked?'🔒 Камера по сценарию':'↔ Можно вращать';
+  const control=s.reading?'🔒 Открыта справка':s.locked?'🔒 Камера по сценарию':s.interactive?'↔ Вращение и зум':'↔ Можно вращать';
   if(animationState.textContent!==motion)animationState.textContent=motion;
   if(cameraState.textContent!==control)cameraState.textContent=control;
   cameraState.dataset.locked=String(s.locked);
   returnCamera.disabled=!!(s.locked||s.flight||s.restarting);
-  const message=cue|| (s.reading?'Сцена остановлена на время чтения.':s.restarting?'Фигура становится точкой. Отсюда начнётся новый круг.':s.flight?'Переход к следующему ракурсу.':s.locked?'Ручное вращение заблокировано. «Пауза и осмотр» освобождает камеру.':getState().tour.playing?'Тур продолжается. Вращайте свободно; ↶ вернёт ракурс этой главы.':getState().tour.phase==='complete'?'Путешествие завершено. Вращайте сцену; ↶ вернёт финальный ракурс.':'Вращайте фигуру. ↶ вернёт ракурс, «Продолжить тур» — движение.');
+  const message=cue|| (s.reading?'Сцена остановлена на время чтения.':s.restarting?'Фигура становится точкой. Отсюда начнётся новый круг.':s.returning?'Камера плавно возвращается. Её снова можно перехватить.':s.interactive&&getState().tour.playing?'Вращайте и приближайте. После 10 с бездействия камера вернётся к сценарию.':s.flight?'Переход к следующему ракурсу.':s.locked?'Ручное вращение заблокировано. «Пауза и осмотр» освобождает камеру.':getState().tour.playing?'Тур продолжается. Вращайте свободно; ↶ вернёт ракурс этой главы.':getState().tour.phase==='complete'?'Путешествие завершено. Вращайте сцену; ↶ вернёт финальный ракурс.':'Вращайте фигуру. ↶ вернёт ракурс, «Продолжить тур» — движение.');
   const projection=projectionDepth>0?` · Перспектива ${Math.round(projectionDepth*100)}%`:' · Точная ортография';
   if(status.textContent!==message+projection)status.textContent=message+projection;
 }
@@ -148,6 +148,8 @@ export function applyTourEffects() {
   }
 }
 export function initTours() {
+  controls.addEventListener('start',beginTourCameraInteraction);
+  controls.addEventListener('end',endTourCameraInteraction);
   const mode=el('nav',null,'experience-mode');mode.setAttribute('aria-label','Режим интерфейса');
   mode.append(el('span','Hollow Geometry','experience-brand'));
   const toursButton=button(mode,'',()=>actions.interface('simple'));

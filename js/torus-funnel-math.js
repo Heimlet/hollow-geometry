@@ -9,6 +9,9 @@
  */
 import { A,PHI } from './constants.js';
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+// A fixed logarithmic display window, outside the camera's contact-ring bounds.
+export const FUNNEL_EXTENT=PHI**8;
+export const funnelExtensionReveal=(kind,p)=>kind==='whole'?ease((p-.48)/.45):kind==='cosmos'?1:0;
 export const funnelReveal=(kind,p)=>kind==='whole'?ease(p/.58):kind==='cosmos'?1:0;
 export function goldenFunnelRadius(z,a=A){const t=z/a;return a*Math.sqrt(1+t*t/PHI+t**4/PHI**2);}
 export function goldenFunnelPoint(angle,t,a=A){const r=goldenFunnelRadius(t*a,a);return [r*Math.cos(angle),r*Math.sin(angle),t*a];}

@@ -576,6 +576,8 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 .torus-height-measure path{fill:none;stroke:currentColor;stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
 .torus-height-measure .height-leader{opacity:.72}.torus-height-measure .cyan{color:#a4dfed}.torus-height-measure .pink{color:#f4badf}
 .torus-height-measure circle{fill:currentColor;stroke:#0b1524;stroke-width:1}
+.torus-height-measure .height-ruler-text{fill:currentColor;font-size:10px;font-family:inherit;stroke:#08101d;stroke-width:3;paint-order:stroke fill;stroke-linejoin:round}
+.torus-height-measure[data-ruler-text=true] .torus-height-label>span{display:none}
 .torus-height-label{position:absolute;display:flex;flex-direction:column;align-items:flex-start;gap:3px;max-width:136px;padding:7px 9px;border-left:1px solid #edcb8b80;background:#08101dde;border-radius:0 6px 6px 0;font-size:10px;line-height:1.3;font-variant-numeric:tabular-nums}
 .torus-height-label strong{font-size:19px;font-weight:550;line-height:1.2;overflow-wrap:anywhere}
 .torus-height-label small{color:#8fa8c3;font-size:9px}.torus-height-label small[hidden]{display:none}

@@ -2,8 +2,11 @@
 import * as THREE from 'three';
 import { PHI } from './constants.js';
 import { spiralGuide,ORBIT_SEEDS } from './torus-math.js';
-import { goldenFunnelPoint,funnelReveal } from './torus-funnel-math.js';
-const tau=2*Math.PI,rows=48,columns=96;
+import { goldenFunnelPoint,funnelReveal,funnelExtensionReveal,FUNNEL_EXTENT } from './torus-funnel-math.js';
+const tau=2*Math.PI,coreRows=48,outerRows=32,rows=coreRows+outerRows,columns=96;
+// Dense at the supports, logarithmic outside: a finite static buffer extends far
+// beyond the frame without fitting the camera to its remote open ends.
+const heights=Array.from({length:rows+1},(_,i)=>i<=coreRows?i/coreRows*PHI:PHI*(FUNNEL_EXTENT/PHI)**((i-coreRows)/outerRows));
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export function createTorusFunnels(parent){
   const group=new THREE.Group();group.name='Paired golden funnels';group.visible=false;parent.add(group);
@@ -12,28 +15,28 @@ export function createTorusFunnels(parent){
     const line=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color,linewidth:width,transparent:true,opacity:0,depthWrite:false}));group.add(line);return line;
   }
   const halves=[1,-1].map(sign=>{
-    const positions=[],uv=[],indices=[];
+    const positions=[],uv=[],weights=[],indices=[];
     for(let i=0;i<=rows;i++)for(let j=0;j<=columns;j++){
-      positions.push(...goldenFunnelPoint(j/columns*tau,sign*i/rows*PHI));uv.push(j/columns,i/rows);
+      positions.push(...goldenFunnelPoint(j/columns*tau,sign*heights[i]));uv.push(j/columns,i/rows);weights.push(1/(1+.4*Math.max(0,heights[i]-PHI)**2));
       if(i<rows&&j<columns){const a=i*(columns+1)+j,b=a+columns+1;indices.push(a,b,a+1,b,b+1,a+1);}
     }
     const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
-    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setAttribute('opacityWeight',new THREE.Float32BufferAttribute(weights,1));geometry.setIndex(indices);geometry.computeVertexNormals();
     const material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,
       uniforms:{alpha:{value:0},reveal:{value:0},tint:{value:new THREE.Color(sign>0?0xb3a2ff:0x8bcfe8)}},
-      vertexShader:`varying vec3 n;varying vec3 eye;varying vec2 coord;
-        void main(){vec4 p=modelViewMatrix*vec4(position,1.);n=normalize(normalMatrix*normal);eye=-p.xyz;coord=uv;gl_Position=projectionMatrix*p;}`,
-      fragmentShader:`uniform float alpha;uniform float reveal;uniform vec3 tint;varying vec3 n;varying vec3 eye;varying vec2 coord;
+      vertexShader:`attribute float opacityWeight;varying float fade;varying vec3 n;varying vec3 eye;varying vec2 coord;
+        void main(){vec4 p=modelViewMatrix*vec4(position,1.);n=normalize(normalMatrix*normal);eye=-p.xyz;coord=uv;fade=opacityWeight;gl_Position=projectionMatrix*p;}`,
+      fragmentShader:`varying float fade;uniform float alpha;uniform float reveal;uniform vec3 tint;varying vec3 n;varying vec3 eye;varying vec2 coord;
         void main(){float edge=1.-smoothstep(reveal-.045,reveal,coord.y);float rim=pow(1.-abs(dot(normalize(n),normalize(eye))),2.);
-        gl_FragColor=vec4(tint,alpha*(.12+.88*rim)*edge);}`});
+        gl_FragColor=vec4(tint,alpha*(.12+.88*rim)*edge*fade);}`});
     const surface=new THREE.Mesh(geometry,material);surface.name=sign>0?'Upper phi funnel':'Lower phi funnel';group.add(surface);
     const meridianPoints=[];
-    for(let i=0;i<rows;i++)for(let j=0;j<12;j++)for(const k of [i,i+1])meridianPoints.push(goldenFunnelPoint(j/12*tau,sign*k/rows*PHI));
+    for(let i=0;i<rows;i++)for(let j=0;j<12;j++)for(const k of [i,i+1])meridianPoints.push(goldenFunnelPoint(j/12*tau,sign*heights[k]));
     const meridians=stroke(meridianPoints,sign>0?0xb3a2ff:0x8bcfe8);
     const rings=[.25,.5,.75,1,1.25,PHI].map(t=>{
       const contact=t===1||t===PHI;
       const points=Array.from({length:96},(_,j)=>[goldenFunnelPoint(j/96*tau,sign*t),goldenFunnelPoint((j+1)/96*tau,sign*t)]).flat();
-      const line=stroke(points,contact?0xffd277:sign>0?0xb3a2ff:0x8bcfe8,contact?2.1:1.2);
+      const line=stroke(points,contact?0xffd277:sign>0?0xb3a2ff:0x8bcfe8,contact?2.6:1.2);
       line.name=`${sign>0?'Upper':'Lower'} ${t===PHI?'next golden contact':t===1?'current contact':'funnel section'}`;
       return {t,line,contact};
     });
@@ -50,7 +53,7 @@ export function createTorusFunnels(parent){
     const mid=new THREE.Mesh(new THREE.SphereGeometry(.075,10,8),new THREE.MeshBasicMaterial({color:0xffe0a3,transparent:true,opacity:0,depthWrite:false}));
     mid.name='Real edge midpoint on the waist';group.add(mid);
     const points=[0,1].map(turn=>{
-      const marker=new THREE.Mesh(new THREE.SphereGeometry(.065,10,8),new THREE.MeshBasicMaterial({color:index===7?0xffdfa3:0xa4efff,transparent:true,opacity:0,depthWrite:false}));
+      const marker=new THREE.Mesh(new THREE.SphereGeometry(.09,12,8),new THREE.MeshBasicMaterial({color:index===7?0xffdfa3:0xa4efff,transparent:true,opacity:0,depthWrite:false}));
       marker.name=turn?'Next phi contact':'Current funnel contact';group.add(marker);return marker;
     });
     return {index,curve,points,edge,mid,midpoint};
@@ -58,12 +61,12 @@ export function createTorusFunnels(parent){
   return {group,update(kind,p,frame,anchors){
     const reveal=funnelReveal(kind,p);group.visible=reveal>0;if(!group.visible)return;
     group.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);
-    const ink=ease(reveal/.12);
+    const ink=ease(reveal/.12),drawRows=coreRows*reveal+outerRows*funnelExtensionReveal(kind,p),surfaceReveal=drawRows/rows;
     waist.material.opacity=.62*ink;
     halves.forEach(({surface,meridians,rings})=>{
-      surface.material.uniforms.reveal.value=reveal===1?1.05:reveal;surface.material.uniforms.alpha.value=.24*ink;
-      meridians.geometry.setDrawRange(0,2*12*Math.floor(rows*reveal));meridians.material.opacity=.11*ink;
-      rings.forEach(({t,line,contact})=>{line.material.opacity=(contact?.66:.18)*ease((reveal*PHI-t+.1)/.1);});
+      surface.material.uniforms.reveal.value=surfaceReveal===1?1.05:surfaceReveal;surface.material.uniforms.alpha.value=.24*ink;
+      meridians.geometry.setDrawRange(0,2*12*Math.floor(drawRows));meridians.material.opacity=.11*ink;
+      rings.forEach(({t,line,contact})=>{line.material.opacity=(contact?.82:.18)*ease((reveal*PHI-t+.1)/.1);});
     });
     supports.forEach(({index,curve,points,edge,mid,midpoint})=>{
       const base=ORBIT_SEEDS[index],actual=anchors[index],angle=Math.atan2(actual[1],actual[0])-Math.atan2(base.point[1],base.point[0]);

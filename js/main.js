@@ -1,4 +1,5 @@
 import { updateKnowledgePreview } from './knowledge-preview.js';
+import { initAnalytics } from './analytics.js';
 import { initOnboarding } from './onboarding.js';
 import { createScreenLines } from './screen-lines.js';
 import { openTourReading } from './tour-reading.js';
@@ -24,6 +25,7 @@ import { updateStarfield, renderStarfield } from './starfield.js';
 import { updateGoldenScenes } from './golden-scenes.js';
 
 // ── Build UI ──
+initAnalytics(controls);
 initUI();
 
 // ── Toggle all objects on/off ──

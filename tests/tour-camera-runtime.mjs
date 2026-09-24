@@ -165,7 +165,7 @@ actions.stopTour();rig.updateTourCamera(.025,330,440);
 console.log('PASS: pre-torus camera shows the small core growing into the larger destination');
 
 // Ending the narration must not release the camera from an indefinitely growing
-// scene: it keeps following scale, and Pause remains the way to inspect freely.
+// scene: it follows scale until a manual gesture takes over without pausing.
 actions.startTour('torus',finalIndex);actions.tickTour(TOURS.torus.steps[finalIndex].seconds);rig.queueTourShot();
 for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
 let minSize=Infinity,maxSize=0;
@@ -173,7 +173,7 @@ for(let i=0;i<2400;i++){
  actions.tickTour(.05);rig.updateTourCamera(.05,330,440);
  const s=getState(),e=expansionAt(tourStep(s).scene,1,s.tour.motion),size=e.scale/scene.getViewHeight();
  minSize=Math.min(minSize,size);maxSize=Math.max(maxSize,size);
- assert.equal(s.tour.phase,'complete');assert.equal(s.tour.playing,true);assert.equal(rig.tourCameraStatus().locked,true);
+ assert.equal(s.tour.phase,'complete');assert.equal(s.tour.playing,true);assert.equal(rig.tourCameraStatus().locked,false);assert.equal(scene.controls.enabled,true);
 }
 assert.ok(maxSize/minSize<2.3,'Two minutes of endless growth cannot overflow a frozen final camera');
 actions.tourControl({playing:false});rig.updateTourCamera(.025,330,440);assert.equal(scene.controls.enabled,true);
@@ -273,3 +273,40 @@ for(const [width,height,panelHeight,panelWidth]of [[1280,800,330,440],[390,844,3
  }
 }
 console.log('PASS: upper and lower golden funnel rims remain visible on desktop and phone, including the 13 → 14 boundary');
+
+// Manual orbit and zoom on the final chapter use real idle time, never film time.
+globalThis.innerWidth=1280;globalThis.innerHeight=800;
+actions.startTour('torus',finalIndex);rig.queueTourShot({holdTimeline:false});
+for(let i=0;i<65;i++)frame();
+assert.equal(scene.controls.enabled,true);
+rig.beginTourCameraInteraction();
+scene.camera.position.copy(scene.controls.target).add(new Vector3(-18,2,4));scene.setViewHeight(scene.getViewHeight()*.73);scene.controls.update();
+const manualDirection=scene.camera.position.clone().sub(scene.controls.target).normalize(),manualStart=getState().tour.elapsed;
+for(let i=0;i<440;i++)frame();
+assert.ok(getState().tour.elapsed>manualStart,'Holding an orbit never stops the film');
+assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(manualDirection)<1e-10,'No idle return while the pointer is still held for 11 seconds');
+rig.endTourCameraInteraction();
+for(let i=0;i<395;i++)frame();
+assert.equal(rig.tourCameraStatus().returning,false);
+assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(manualDirection)<1e-10,'View is held across nominal chapter completion');
+const beforeIdleScale=scene.getViewHeight(),beforeIdle=getState().tour.motion.turnOffset;
+for(let i=0;i<6;i++)frame();
+assert.equal(rig.tourCameraStatus().returning,true);assert.equal(rig.tourCameraBusy(),false);
+assert.equal(scene.controls.enabled,true);assert.ok(getState().tour.motion.turnOffset>beforeIdle);
+assert.ok(Math.abs(scene.getViewHeight()/beforeIdleScale-1)<.02,'The return starts from manual zoom without a jump');
+rig.beginTourCameraInteraction();assert.equal(rig.tourCameraStatus().returning,false,'A new gesture interrupts the return');
+rig.endTourCameraInteraction();actions.tourControl({playing:false});
+const pausedDirection=scene.camera.position.clone().normalize();
+for(let i=0;i<500;i++)frame();
+assert.equal(rig.tourCameraStatus().returning,false);assert.ok(scene.camera.position.clone().normalize().distanceTo(pausedDirection)<1e-10,'Pause keeps the chosen view');
+actions.tourControl({playing:true});
+// Sparse frames still count ten real seconds, not ten seconds capped at 20 fps.
+for(let i=0;i<10;i++)rig.updateTourCamera(1,330,440);
+assert.equal(rig.tourCameraStatus().returning,true);
+for(let i=0;i<60;i++)frame();
+assert.equal(rig.tourCameraStatus().returning,false);
+const expectedShot=shotAt(tourStep(getState()).scene,new Vector3(3,2,4).normalize(),1);
+assert.ok(scene.camera.position.clone().normalize().distanceTo(expectedShot.direction)<1e-8,'Idle return rejoins the current scripted shot');
+rig.beginTourCameraInteraction();rig.endTourCameraInteraction();actions.startTour('platonic');rig.queueTourShot();for(let i=0;i<65;i++)frame();
+assert.equal(rig.tourCameraStatus().locked,true,'Manual permission does not leak into other chapters');
+console.log('PASS: final orbit/zoom without pause, held-pointer protection, ten-second idle return, live timeline, interruptible smooth flight and clean chapter exit');

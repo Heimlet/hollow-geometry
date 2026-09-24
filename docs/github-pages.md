@@ -38,3 +38,9 @@ python3 -m http.server 8001 --bind 127.0.0.1 --directory /tmp/hollow-pages-previ
 Папка назначения должна быть новой — скрипт не удаляет существующие файлы. Для повторной проверки укажите другое имя. Это только локальная подготовка, не отправка на GitHub.
 
 Официальная документация: [GitHub Pages с собственным workflow](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+## Аналитика
+
+Переменная репозитория `METRICA_COUNTER_ID` подключает Яндекс Метрику при публикации.
+Без неё сайт работает с выключенной аналитикой. Подробности событий, времени
+и отчётов — в [analytics.md](analytics.md).

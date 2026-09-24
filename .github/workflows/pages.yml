@@ -28,6 +28,7 @@ jobs:
       - name: Prepare static site and social card metadata
         env:
           SITE_URL: ${{ steps.pages.outputs.base_url }}
+          METRICA_COUNTER_ID: ${{ vars.METRICA_COUNTER_ID }}
         run: python3 scripts/prepare-pages.py --url "$SITE_URL"
       - uses: actions/upload-pages-artifact@v4
         with:
