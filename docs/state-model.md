@@ -446,25 +446,29 @@ the previous mismatch as a negative control.
 
 ## Continuous finale and the cube witness
 
-The finale has 13 chapters. Chapter six holds the canonical pair for about six
+The finale has 16 chapters. Chapter six holds the canonical pair for about six
 seconds: the current pair stays inside its small cube, while a gold cube at
-three times its size reveals the next scale. An intermediate octahedron connects
-the current corners (its face centres) to that future cube.
+φ² times its size reveals the next scale. Eight two-quarter-turn spiral paths
+start at actual corners, reach their endpoints, then reveal the future cube edges
+and its octahedral core. Chapter five previews the enlarged live intersection.
 `cubeWitnessPhase` eases the angular velocity to zero and back; entry/exit speed
 still matches the neighbouring chapters.
 
 Chapters seven through thirteen share `expansionFrom` / `expansionDuration`.
-`expansionAt` is the single scale frame for source bodies, hull/intersection,
-torus shells, vertex markers and the camera. The clock does not restart on chapter
-changes, reading, pause, or backward/forward seeking. The visible figure doubles over most of a twelve-second cycle; the camera then
+`expansionAt` is the shared angle/log-scale frame for source bodies, hull/intersection,
+guides and camera. Torus dimensions are measured from those actual world-space
+source vertices by `merkabaAnchors` / `torusFrameFromAnchors`. The clock does not
+restart on automatic chapter changes, reading or pause; explicit seeking restores
+the deterministic script. The visible figure doubles over most of a scale cycle; the camera then
 retreats to make room for the next expansion. Its retreat remains monotonic in
 unnormalised world coordinates. Torus shells and their scale echoes remain hidden
 during cube growth and vertex tracing: the meridian sweep first draws them in
-chapter nine, after which they follow the same ongoing expansion.
+`torus-birth`, after which they follow the same ongoing expansion.
 
-Expansion is stored logarithmically. Once the source reaches nine render units,
-a common change of units bounds coordinates without changing any screen-space
-relationships. Five pooled cube/torus reference contours flow through the visible
+Expansion is stored logarithmically, including negative travel. At every factor
+of nine, objects and camera change units together; render scale stays in [1,9)
+without clamping motion or changing any screen-space
+relationships. Eight pooled cube/torus reference contours flow through the visible
 scales; their endpoints fade before recycling. No geometry or materials are
 allocated by a growth frame. The continuous part uses one transition identity,
 so rotating originals never crossfade into frozen copies at chapter boundaries.
@@ -473,6 +477,36 @@ All temporary scales and teaching layers are restored on leaving the sequence.
 `tests/torus.mjs` checks the held canonical pose, exact contacts, shared growth
 clock, pool continuity, long-run resource identity, seeking and cleanup.
 The camera runtime suite also checks the final orthographic clipping planes.
+
+### Reversible spiral coupling
+
+The growth law is explicit: mirrored guides link signed counterrotation to uniform
+scale. Every expanding chapter uses a factor of φ per quarter-turn. The held
+cube witness previews two quarters (φ²), preserving a clear scale difference.
+The dodecahedron chapter measures the same φ without changing the motion law. A regular source dodecahedron and its actual pentagonal edge/diagonal
+show where φ occurs; this is a chosen kinematic constraint, not growth caused by
+rigid tetrahedron rotation or an electromagnetic simulation.
+
+`tour/reverse` changes only `tour.motion.direction`; transient ticks accumulate
+angle/log-scale offsets. Automatic next chapters carry them, while explicit seek,
+chapter selection and replay reset them. History can undo the user's reversal;
+animation ticks never pollute history. `expansionZoom` follows actual log-scale
+in either direction, and camera rebasing handles forward and reverse crossings.
+
+`torus-witness.js` reads source mesh world matrices, including current scaling and
+rotation. In the axis frame, measured radial distance ρ and height ±h determine
+the stretched meridian with explicit cube constraints: R = ρ/√2 = a is the
+current cube inradius, and H = hφ² is the next cube half-side. Its top and bottom
+planes are shown during the meridian sweep. Each anchor satisfies
+((ρ−R)/b)²+(h/H)²=1. The remaining radius b follows from this contact.
+Shell transforms use these measurements rather than the tour clock. Two bright anchors, signed tangent arrows and mirrored spatial logarithmic
+guides expose the connection. The close outer torus is a visual echo, 6% wider at the same cube-defined
+height, linked by two short radial supports. These choices do not specify a unique torus from eight points.
+
+`tests/torus-coupling.mjs` checks real source vertices against the analytic AND
+rendered torus, the measured dodecahedral ratio, signed φ growth, inverse travel,
+chapter continuity, pause/reading/seek and bounded render coordinates. Together
+with forward/reverse camera-boundary checks, there are 27 regression suites.
 
 
 ## Flower of Life: construction before depth
@@ -486,20 +520,20 @@ screen overlay is introduced. The return fades these lines and restores the same
 circle radii/opacity and framing as the opening. Only `circles-depth` then tilts
 the camera and reveals spheres. Stable chapter IDs preserve reading destinations.
 
-Growth phase also owns counterrotation: each factor of three adds exactly a
-quarter turn, so the eight original vertices occupy the next cube corners and
+The golden growth phase also owns counterrotation: each factor of φ adds a
+quarter turn, and the preview spans two quarters (φ²). The eight original vertices occupy the next cube corners and
 the live intersection becomes its next octahedron at the same instant. Colour
 matched preview curves lead each source vertex to that exact target. Their
-preallocated exponential quarter-turn curves only change matrices and draw count
+preallocated exponential half-turn curves only change matrices and draw count
 (start remains zero), so screen-line buffers can be reused. The dense green live
 intersection carries the visual emphasis; dim source tetrahedra and cube outlines
-explain it. Five pooled octahedron contours show upcoming and previous scales,
+explain it. Eight pooled octahedron contours show upcoming and previous scales,
 including the exact overlap at arrival, without accumulating scene objects.
 
 The first finale chapter briefly reveals a line, square and cube in a fixed
 point lattice (`dimension-scene.js`), then blends into the existing Metatron
 network. Its camera and opacity follow chapter time; seeking restores the same
-geometry. Detailed narration links and reading shortcuts wait until chapter 13.
+geometry. Detailed narration links and reading shortcuts wait until the final chapter.
 The existing construction keeps its timing, followed by an outward expansion:
 the same network grows threefold while a cyan reference retains the original
 world scale. Thirteen correspondence rays join matching centres. Camera framing
@@ -518,3 +552,14 @@ chapters retain their timeline during transitions. The final chapter offers Rest
 `tour/restart` retains the current scene for a 2.4-second retreat to 1/512 size,
 then atomically enters chapter zero. Restart time is transient, supports pause,
 and never accumulates geometry. Tests cover replay, framing and adaptive stars.
+
+The finale alternates intersection emphasis, a full revolution of the original
+pair inside a circumscribing octahedron, the retained exact 3:1 cube/octahedron
+construction, and a dedicated golden-spiral explanation. Factor 3 is a static
+inscription ratio; the motion law remains φ per quarter-turn. These are distinct.
+
+`torus-cosmos.endless` completes narration but retains playback. Ticks continue
+unwrapped angle/log-scale offsets at the incoming angular speed, with a fixed
+chapter time and fixed resource pool. Pause and reading freeze it; closing reading
+resumes the same final pose. Reverse works after completion; Restart still collapses
+the construction to the opening. All other tours retain their normal completion.

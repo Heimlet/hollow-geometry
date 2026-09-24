@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
-import {TORUS,TORUS_OUTER,TORI,TORUS_AXIS,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,expansionAt,expansionReferences,expansionViewZoom,CUBE_HOLD,cubeWitnessInk,torusPoint,torusCurve,torusBounds} from '../js/torus-math.js';
+import {TORUS,TORUS_OUTER,TORI,TORUS_AXIS,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,expansionAt,expansionReferences,expansionViewZoom,expansionZoom,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS,CUBE_HOLD,cubeWitnessInk,torusPoint,torusCurve,torusBounds} from '../js/torus-math.js';
 import {A,R_META} from '../js/constants.js';
 import {TOURS,tourDuration} from '../js/tour-data.js';
 import {KNOWLEDGE} from '../js/tour-knowledge.js';
@@ -38,15 +38,15 @@ let lastExpansion=null,lastChapter=null;
 for(const chapter of TOURS.torus.steps.slice(6)){
  const r=chapter.scene,start=expansionAt(r,0),end=expansionAt(r,1);
  assert.ok(start.active&&end.level>start.level,'Every chapter, including the last, continues growth');
- if(lastExpansion){assert.deepEqual(start,lastExpansion,'No growth reset at chapter boundaries');assert.deepEqual(r.camera.path[0].dir,lastChapter.scene.camera.path.at(-1).dir,'Camera has no chapter jump');assert.equal(r.camera.zoom[0][1],lastChapter.scene.camera.zoom.at(-1)[1]);}
+ if(lastExpansion){assert.deepEqual({...start,ratio:null},{...lastExpansion,ratio:null},'The selected growth law may change, but pose and scale never reset');assert.deepEqual(r.camera.path[0].dir,lastChapter.scene.camera.path.at(-1).dir,'Camera has no chapter jump');assert.equal(r.camera.zoom[0][1],lastChapter.scene.camera.zoom.at(-1)[1]);}
  assert.ok(end.scale<=9&&end.scale>=1,'Render coordinates stay bounded');lastExpansion=end;lastChapter=chapter;
 }
 for(const time of [0,1,20,100,1000,100000]){
  const frame=expansionAt({expansionFrom:time,expansionDuration:10},.5);assert.ok(Number.isFinite(frame.scale)&&frame.scale<=9);
- const refs=expansionReferences(frame.level,frame.scale);assert.equal(refs.length,5);assert.ok(refs.every(x=>x.scale<=81&&x.alpha>=0&&x.alpha<=1));
+ const refs=expansionReferences(frame.turns,frame.scale);assert.equal(refs.length,8);assert.ok(refs.every(x=>x.scale<=81&&x.alpha>=0&&x.alpha<=1));
 }
 let previousRetreat=-Infinity;
-for(let time=0;time<=200;time+=.1){const f=expansionAt({expansionFrom:time,expansionDuration:0},0),zoom=expansionViewZoom(time),retreat=f.level*Math.log(3)-Math.log(zoom);assert.ok(retreat>previousRetreat,'The camera always retreats in the expanding world');assert.ok(zoom>=.52&&zoom<=1.04);previousRetreat=retreat;}
+for(let time=0;time<=200;time+=.1){const f=expansionAt({expansionFrom:time,expansionDuration:0},0),zoom=expansionZoom(f),retreat=f.level*Math.log(3)-Math.log(zoom);assert.ok(retreat>previousRetreat,'The camera always retreats in the expanding world');assert.ok(zoom>=.52&&zoom<=1.04);previousRetreat=retreat;}
 // The two pooled ends are invisible; all surviving contours agree at rebasing.
 for(const level of [1,2,20,1000]){
  const before=expansionReferences(level-1e-8,9).filter(x=>x.alpha>1e-5),after=expansionReferences(level+1e-8,9).filter(x=>x.alpha>1e-5);
@@ -55,11 +55,11 @@ for(const level of [1,2,20,1000]){
 
 assert.deepEqual(TORUS_AXIS,[0,1,0]);
 assert.ok((TORUS_OUTER.major+TORUS_OUTER.tube)/(TORUS.major+TORUS.tube)<1.1,'Two shells stay close');
-assert.ok(TORUS_OUTER.tube>TORUS.tube&&TORUS_OUTER.height>TORUS.height);
+assert.ok(TORUS_OUTER.tube>TORUS.tube&&TORUS_OUTER.height===TORUS.height);
 const knot=torusCurve(2,3);assert.ok(Math.hypot(...knot[0].map((v,i)=>v-knot.at(-1)[i]))<1e-10);
 for(let i=1;i<=18;i++)assert.ok(Math.hypot(...torusPoint(i*tau,i*tau*phi).map((v,k)=>v-torusPoint(0,0)[k]))>1e-3,'Phi winding has no return after a whole large turn');
 assert.equal(Object.keys(TOURS).at(-1),'torus');
-assert.ok(tourDuration('torus')>=90&&tourDuration('torus')<=240,'Finale stays short');
+assert.ok(tourDuration('torus')>=90&&tourDuration('torus')<=360,'Expanded finale remains a bounded reading sequence');
 assert.equal(TOURS.torus.steps[0].scene.fruit,'network');
 const rectangleIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-rectangles');
 const depthIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-rectangle-depth');
@@ -123,12 +123,12 @@ for(const p of [CUBE_HOLD.from,.4,.5,.6,CUBE_HOLD.to]){
  const held=reduce(witnessStart,{type:'tour/seek',elapsed:p*witnessStep.seconds});
  assert.equal(held.lab.rotation.up,270,'Cube reveal holds the exact canonical rotation for several seconds');
  study.update('cage',p,p*witnessStep.seconds,{rotation:held.lab.rotation.up*Math.PI/180});
- const inner=root.children.find(o=>o.name==='Future cube · next scale');assert.equal(inner.visible,true);assert.equal(inner.scale.x,3);
- // Current corners are the centroids of the larger octahedron faces.
- for(const seed of ORBIT_SEEDS)assert.ok(Math.abs(seed.point.reduce((sum,x)=>sum+Math.abs(x),0)-3*A)<1e-12);
+ const inner=root.children.find(o=>o.name==='Future cube · next scale');assert.equal(inner.visible,true);assert.equal(inner.scale.x,EXPANSION_TARGET_SCALE);
+ // The target is the same cube after two golden quarter-turns.
+ assert.ok(Math.abs(inner.scale.x-phi**2)<1e-12);
 }
 assert.ok((CUBE_HOLD.to-CUBE_HOLD.from)*witnessStep.seconds>=5,'The viewer gets a real reading hold');
-assert.equal(cubeWitnessInk(.8),0,'The scale explanation leaves before eight-vertex motion resumes');
+assert.equal(cubeWitnessInk(.9),0,'The scale explanation leaves before eight-vertex motion resumes');
 
 for(const id of ['torus-intersection','torus-hull']) {
   const index=TOURS.torus.steps.findIndex(s=>s.id===id),step=TOURS.torus.steps[index];
@@ -152,7 +152,7 @@ for(const step of TOURS.torus.steps.filter(s=>s.scene.continuousMotion)){
  if(previousMotion)assert.equal(step.scene.rotationFrom,previousMotion.rotationTo,'No rotation phase jump between chapters');
  const conf=step.scene,index=TOURS.torus.steps.indexOf(step),first=reduce(initialState(),{type:'tour/start',id:'torus',index});
  const mid=reduce(first,{type:'tour/seek',elapsed:step.seconds/2});
- assert.equal(mid.lab.rotation.up,conf.expansionFrom===undefined?(conf.rotationFrom+conf.rotationTo)/2:conf.expansionAngle+90*expansionAt(conf,.5).level,'Rotation follows the growth phase');
+ assert.equal(mid.lab.rotation.up,conf.expansionFrom===undefined?(conf.rotationFrom+conf.rotationTo)/2:conf.expansionAngle+90*expansionAt(conf,.5).turns,'Rotation follows the growth phase');
  const eps=1e-5,startNext=reduce(first,{type:'tour/seek',elapsed:eps});
  const last=reduce(first,{type:'tour/seek',elapsed:step.seconds}),beforeLast=reduce(first,{type:'tour/seek',elapsed:step.seconds-eps});
  assert.ok(Math.abs((startNext.lab.rotation.up-first.lab.rotation.up)/eps-(conf.expansionFrom>0?9:8))<.001,'Entry speed is shared by adjacent moving chapters');
@@ -161,7 +161,7 @@ for(const step of TOURS.torus.steps.filter(s=>s.scene.continuousMotion)){
  previousMotion=conf;
 }
 const count=root.children.length;assert.equal(root.children.filter(o=>o.name.includes('torus ·')).length,2,'Both torus shells are rendered');
-for(const kind of ['growth','traces']){
+for(const kind of ['mechanism','growth','traces','pair','inscription','spiral']){
  const e=expansionAt(expanded,.6);study.update(kind,.6,e.time,{scale:e.scale,expansion:e});
  assert.ok(root.children.filter(o=>o.name.includes('torus ·')||o.name.startsWith('Torus scale echo')).every(o=>!o.visible),'No premature torus: only rotation and its vertex traces');
 }
@@ -169,17 +169,17 @@ assert.ok(Math.abs(expansionViewZoom(9.6)/expansionViewZoom(0)-2)<1e-12,'Growth 
 // At every next scale the moving originals really occupy the next cube corners.
 for(const integer of [1,2,3,10]){
  const time=(integer+1/90)*10,e=expansionAt({expansionFrom:time,expansionDuration:0},0);
- assert.ok(Math.abs(e.level-integer)<1e-12);
- for(const seed of ORBIT_SEEDS){const point=orbitPoint(seed,(expanded.expansionAngle+90*e.level)*Math.PI/180);assert.ok(point.every(v=>Math.abs(Math.abs(v)-A)<1e-11),'Every original vertex reaches a canonical cube corner at the next scale');}
+ assert.ok(Math.abs(e.turns-integer)<1e-12);
+ for(const seed of ORBIT_SEEDS){const point=orbitPoint(seed,(expanded.expansionAngle+90*e.turns)*Math.PI/180);assert.ok(point.every(v=>Math.abs(Math.abs(v)-A)<1e-11),'Every original vertex reaches a canonical cube corner at the next scale');}
 }
 for(const seed of ORBIT_SEEDS){
  const path=expansionPath(seed);assert.deepEqual(path[0],seed.point);
- assert.ok(path.at(-1).every(v=>Math.abs(Math.abs(v)-3*A)<1e-12),'The preview joins an existing vertex to its future corner');
+ assert.ok(path.at(-1).every(v=>Math.abs(Math.abs(v)-EXPANSION_TARGET_SCALE*A)<1e-12),'The preview joins an existing vertex to its future corner');
 }
 const previewFrame=expansionAt(expanded,.3);
-study.update('growth',.3,previewFrame.time,{rotation:(expanded.expansionAngle+90*previewFrame.level)*Math.PI/180,scale:previewFrame.scale,expansion:previewFrame});root.updateMatrixWorld(true);
+study.update('growth',.3,previewFrame.time,{rotation:(expanded.expansionAngle+90*previewFrame.turns)*Math.PI/180,scale:previewFrame.scale,expansion:previewFrame});root.updateMatrixWorld(true);
 const previews=root.children.filter(o=>o.name==='Vertex to next cube');assert.equal(previews.length,8);
-const futureHalfSide=A*previewFrame.scale*3**(1-previewFrame.level%1);
+const futureHalfSide=A*previewFrame.scale*phi**(EXPANSION_TARGET_TURNS-previewFrame.turns%EXPANSION_TARGET_TURNS);
 for(const g of previews){assert.equal(g.visible,true);const marker=g.children.find(o=>o.isMesh),point=marker.getWorldPosition(new THREE.Vector3());assert.ok(point.toArray().every(v=>Math.abs(Math.abs(v)-futureHalfSide)<1e-10),'Colour-matched target markers coincide with the coming cube');assert.equal(g.children.find(o=>o.isLineSegments).geometry.drawRange.start,0,'Animation only changes draw count, keeping thick-line buffers reusable');}
 
 
@@ -188,7 +188,7 @@ for(const step of TOURS.torus.steps.filter(s=>s.scene.axisGuide)){
  for(const key of conf.camera.path)assert.ok(Math.abs(key.dir[1]/Math.hypot(...key.dir))<.3,'Camera sees horizontal rotation from the side');
  if(conf.torus){assert.equal(conf.intersection,true);assert.equal(conf.hull,true);}
 }
-for(const kind of ['cage','traces','growth','birth','weave','golden','whole','cosmos'])for(const p of [0,.1,.5,1]) {
+for(const kind of ['mechanism','cage','traces','growth','pair','inscription','spiral','birth','weave','golden','whole','cosmos'])for(const p of [0,.1,.5,1]) {
   study.update(kind,p,p*17);const expected=snapshot();study.update('golden',.7,9);study.update(kind,p,p*17);assert.deepEqual(snapshot(),expected,'Backward navigation restores every visible layer');assert.equal(root.children.length,count);
 }
 root.updateMatrixWorld(true);assert.ok(new THREE.Vector3(0,0,1).applyQuaternion(root.quaternion).distanceTo(new THREE.Vector3(...TORUS_AXIS))<1e-12);
@@ -205,7 +205,7 @@ const originalResources=resources();
 for(let time=0;time<2000;time+=7){
  const frame=expansionAt({expansionFrom:time,expansionDuration:1},.5);
  study.update('whole',.5,frame.time,{scale:frame.scale,expansion:frame});
- for(const shell of root.children.filter(o=>o.name.includes('torus ·')))assert.equal(shell.scale.x,frame.scale,'Both existing tori share the original bodies’ frame');
+ for(const shell of root.children.filter(o=>o.name.includes('torus ·')))assert.ok(Math.abs(shell.scale.x-frame.scale)<1e-10,'Both existing tori share the original bodies’ frame');
 }
 assert.deepEqual(resources(),originalResources,'Long expansion reuses geometry and materials');
 assert.equal(root.children.length,count,'Repeated growth never accumulates scene objects');

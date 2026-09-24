@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,cubeWitnessView } from './torus-math.js';
+import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,expansionZoom,cubeWitnessView,EXPANSION_TARGET_SCALE } from './torus-math.js';
 import { fruitVolume,FRUIT_PLANAR } from './fruit-life.js';
 import { dimensionFrame,dimensionSequence } from './dimension-scene.js';
 import { TOUR_ENTRY_SECONDS,tourEntryScale,tourRestartScale } from './tour-motion.js';
@@ -13,6 +13,7 @@ import { goldenSceneView } from './golden-scenes.js';
 import { cancelCameraAnimation } from './presets.js';
 import { shotAt,stageViewport,fitTourFrame } from './tour-camera-math.js';
 let pending=false,flight=null,base=null,baseKey=null,active=false,viewport=null,finishedKey=null,holdTimeline=true,entrance=false,restartPose=null;
+let expansionUnits=null;
 const torusOrientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));
 const torusFramePoints=torusBounds().map(p=>new THREE.Vector3(...p).applyQuaternion(torusOrientation));
 export function queueTourShot(options={}){cancelCameraAnimation();settleControls();pending=true;flight=null;baseKey=null;holdTimeline=options.holdTimeline!==false;entrance=!!options.entrance;}
@@ -22,14 +23,29 @@ function scenePoints() {
   if(tourStep(getState())?.scene.dimensions){const f=fruitVolume(),sequence=dimensionSequence(tourProgress(getState()),tourStep(getState()).scene.dimensionUntil),t=dimensionFrame(sequence.build).network,scale=(f.halfSide/(f.halfSide+2*f.radius)*(1-t)+t)*sequence.framingScale;return f.flowerBounds.map(p=>new THREE.Vector3(...p).multiplyScalar(scale));}
   if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (FRUIT_PLANAR.includes(kind)||['spheres','flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
   const points=[];
-  if(tourStep(getState())?.scene.torus){const r=tourStep(getState()).scene;points.push(...torusFramePoints.map(p=>p.clone().multiplyScalar(expansionAt(r,tourProgress(getState())).scale)));}
-  else if(tourStep(getState())?.scene.axisGuide)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));
+  if(tourStep(getState())?.scene.torus){
+    const r=tourStep(getState()).scene,e=expansionAt(r,tourProgress(getState()),getState().tour.motion);
+    if(['growth','traces'].includes(r.torus)){
+      // Until the torus exists, frame the cube being reached, not the future shell.
+      // Its world size stays fixed while the original core grows towards it.
+      const phase=e.turns-2*Math.floor(e.turns/2),reveal=e.turns<.2?1:smooth(phase/.2);
+      const target=e.scale*(1+(EXPANSION_TARGET_SCALE-1)*reveal)/((1+Math.sqrt(5))/2)**phase;
+      points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(target)));
+    }else if(['pair','inscription'].includes(r.torus))points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*3)));
+    else if(r.torus==='spiral')points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*1.8)));
+    else points.push(...torusFramePoints.map(p=>p.clone().multiplyScalar(e.scale)));
+  }
+  if(tourStep(getState())?.scene.torus==='birth'){const e=expansionAt(tourStep(getState()).scene,tourProgress(getState()),getState().tour.motion);points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*EXPANSION_TARGET_SCALE)));}
+  if(tourStep(getState())?.scene.axisGuide&&!tourStep(getState())?.scene.torus)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));
   if(tourStep(getState())?.scene.cubeWitness)points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(cubeWitnessView(tourProgress(getState())))));
   for(const level of levels){
     for(const object of Object.values(level.objs)) {
       if(!object.group.visible)continue;
       const attr=object.edges.geometry.attributes.position;
-      for(let i=0;i<attr.count;i++)points.push(new THREE.Vector3().fromBufferAttribute(attr,i).applyMatrix4(object.group.matrixWorld));
+      for(let i=0;i<attr.count;i++){
+        const point=new THREE.Vector3().fromBufferAttribute(attr,i).applyMatrix4(object.group.matrixWorld);points.push(point);
+        if(tourStep(getState())?.scene.spiralPreview)points.push(point.clone().multiplyScalar(1+(EXPANSION_TARGET_SCALE-1)*smooth((tourProgress(getState())-.1)/.2)));
+      }
     }
     if(level.mc.vis)for(const p of level.mc.pos)points.push(new THREE.Vector3(...p).applyMatrix4(level.mc.group.matrixWorld));
   }
@@ -43,15 +59,24 @@ export function tourCameraStatus() {
   if(state.tour.phase==='restarting')return {locked:state.tour.playing,moving:state.tour.playing,restarting:true};
   if(pending||flight)return {locked:true,moving:true,flight:true};
   const recipe=tourStep(state).scene;
-  return {locked:state.tour.playing&&shotAt(recipe,base?.direction||new THREE.Vector3(1,1,1),tourProgress(state)).locked,moving:state.tour.playing};
+  return {locked:state.tour.playing&&(shotAt(recipe,base?.direction||new THREE.Vector3(1,1,1),tourProgress(state)).locked||!!recipe.endless&&state.tour.phase==='complete'),moving:state.tour.playing};
 }
 export function updateTourCamera(dt,panelHeight,panelWidth) {
   const state=getState(),recipe=tourStep(state)?.scene;
   if(!recipe) {
-    restartPose=null;if(active){setCameraFrameOffset(0);controls.enabled=true;controls.enablePan=true;active=false;cancelTourShot();}
+    restartPose=null;expansionUnits=null;if(active){setCameraFrameOffset(0);controls.enabled=true;controls.enablePan=true;active=false;cancelTourShot();}
     return;
   }
   active=true;controls.enablePan=false;controls.autoRotate=false;
+  const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion);
+  // Coordinate rebasing is shared by objects, torus and camera. This keeps
+  // indefinite growth/reverse numerically small without clamping real motion.
+  if(expansion.active&&expansionUnits!==null&&expansion.units!==expansionUnits){
+    const factor=3**(2*(expansionUnits-expansion.units));setViewHeight(getViewHeight()*factor);
+    if(flight)flight.height*=factor;
+    if(restartPose)restartPose.height*=factor;
+  }
+  expansionUnits=expansion.active?expansion.units:null;
   const resized=viewport&&(viewport.width!==innerWidth||viewport.height!==innerHeight);
   viewport=stageViewport(innerWidth,innerHeight,panelHeight,panelWidth);
   setCameraFrameOffset(viewport.offsetY,viewport.offsetX);
@@ -77,6 +102,7 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   const p=tourProgress(state),finish=p===1&&finishedKey!==chapterKey&&recipe.camera?.mode!=='free'&&(recipe.camera?.releaseAt??1)>=1;
   if(p<1)finishedKey=null;
   const shot=shotAt(recipe,base.direction,p);
+  if(recipe.endless&&state.tour.phase==='complete')shot.locked=true;
   controls.enabled=!state.ui.topic&&!flight&&(!state.tour.playing||!shot.locked);
   if(!cut&&(state.ui.topic||!finish&&!flight&&(!state.tour.playing||!shot.locked))) {
     // Responsive framing may change on resize, but never the viewer's free angle.
@@ -93,7 +119,8 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   const goal=fitTourFrame(detailPoints,shot.direction,viewport,shot.depth,focus);
   // An explicit detail zoom can let the faded outer shell pass beyond the frame.
   // It never shifts the shared geometric centre.
-  goal.height/=shot.zoom;
+  goal.height/=recipe.expansionFrom!==undefined?(['growth','traces','pair','inscription','spiral'].includes(recipe.torus)?1:expansionZoom(expansionAt(recipe,p,state.tour.motion))):shot.zoom;
+  if(recipe.goldenCoupling)goal.height/=1+1.1*smooth(p/.16)*(1-smooth((p-.55)/.25));
   let direction=shot.direction,height=goal.height,target=goal.center,depth=shot.depth;
   if(flight) {
     flight.elapsed+=Math.min(dt,.05);const t=smooth(flight.elapsed/(flight.entrance?TOUR_ENTRY_SECONDS:recipe.golden?1.5:1.3));

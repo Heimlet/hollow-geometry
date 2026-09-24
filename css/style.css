@@ -532,6 +532,10 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 
 .tour-player .tour-reading-shortcut{display:block;margin-top:10px;padding:6px 0;color:#9edee6;background:none;border:0;font-size:11px;text-align:left;text-decoration:underline;text-underline-offset:4px}
 .tour-player .tour-reading-shortcut[hidden]{display:none}
+.tour-coupling{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;padding:8px 10px;border:1px solid #82d8e72e;border-radius:8px;background:#72d7ee08;font-size:11px;color:#a8cee2}
+.tour-coupling[hidden]{display:none}.tour-coupling [data-golden=true]{color:#edc780}.tour-coupling button{font-size:11px;padding:6px 8px;white-space:nowrap}.tour-coupling button[aria-pressed=true]{color:#ffd99a;border-color:#e4b76880;background:#d9ac641c}
+.torus-measure{position:fixed;z-index:12;pointer-events:none;padding:4px 7px;border-radius:6px;background:#0b1524e8;border:1px solid currentColor;font-size:13px;font-weight:600;user-select:none}.torus-measure.cyan{color:#80dfff}.torus-measure.gold{color:#ffd277}.torus-measure[hidden]{display:none}
+@media(max-width:700px){.tour-coupling{font-size:10px;padding:6px 8px;margin-top:8px}.tour-coupling button{font-size:10px;padding:6px}.torus-measure{font-size:11px}}
 .knowledge-citations{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 20px}.knowledge-citations a{font-size:11px;color:#8bb5c9;text-underline-offset:3px}
 
 .knowledge-body .knowledge-formula{white-space:pre-wrap;font:500 clamp(16px,4.5vw,20px)/1.8 Georgia,serif;color:#edcf93;background:#edc78009;border-left:2px solid #c9ad7166;padding:10px 14px;margin:12px 0}

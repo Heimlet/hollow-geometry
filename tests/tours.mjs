@@ -19,8 +19,9 @@ for(const [id,tour]of Object.entries(TOURS)) {
     assert.equal(reduce(mid,{type:'tour/tick',seconds:5}),mid,'Paused timeline must not move');
     state=reduce(start,{type:'tour/tick',seconds:tour.steps[i].seconds});chapters++;
   }
-  assert.equal(state.tour.phase,'complete');assert.equal(state.tour.playing,false);
-  state=reduce(state,{type:'tour/control',patch:{playing:true}});assert.equal(state.tour.index,0);
+  assert.equal(state.tour.phase,'complete');assert.equal(state.tour.playing,!!tour.steps.at(-1).scene.endless);
+  if(tour.steps.at(-1).scene.endless){state=reduce(state,{type:'tour/restart'});state=reduce(state,{type:'tour/tick',seconds:3});}
+  else state=reduce(state,{type:'tour/control',patch:{playing:true}});assert.equal(state.tour.index,0);
 }
 let state=reduce(initialState(),{type:'tour/start',id:'metatron'});
 state=reduce(state,{type:'tour/control',patch:{auto:false}});

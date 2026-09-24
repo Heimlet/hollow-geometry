@@ -1,3 +1,4 @@
+import { tourStep } from './tour-data.js';
 import {READING_DEMOS,resolveReadingDemo} from './reading-demos.js';
 import { mountKnowledgePreview,hideKnowledgePreview } from './knowledge-preview.js';
 import { KNOWLEDGE,topicFor } from './tour-knowledge.js';
@@ -88,7 +89,7 @@ export function initTourReading() {
     if(entry.related.length){const related=el('div',null,'knowledge-related');related.append(el('h3','Связанные идеи'));entry.related.forEach(id=>{const b=button(related,KNOWLEDGE[id].title,()=>actions.readTopic(id));b.dataset.topic=id;});body.append(related);}
     if(entry.sources.length){const sources=el('div',null,'knowledge-sources');sources.append(el('h3','Источники и дальше'));for(const [title,url]of entry.sources){const a=el('a',title);a.href=url;a.target='_blank';a.rel='noopener noreferrer';sources.append(a);}body.append(sources);}
     body.querySelectorAll('p').forEach(paragraph=>linkTourText(paragraph,key));
-    close.setAttribute('aria-label',state.tour.id&&state.tour.phase!=='complete'?'Закрыть справку и продолжить тур':'Закрыть справку');
+    close.setAttribute('aria-label',state.tour.id&&(state.tour.phase!=='complete'||tourStep(state)?.scene.endless)?'Закрыть справку и продолжить тур':'Закрыть справку');
     resume.textContent=state.tour.id?(state.tour.phase==='complete'?'Вернуться к финалу':'Продолжить тур'):'Вернуться';
     leave.textContent=state.tour.id?'Покинуть тур и перейти в лабораторию':'Открыть в лаборатории';
     leave.hidden=!entry.setting;

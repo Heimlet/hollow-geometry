@@ -23,8 +23,9 @@ const density=()=>{updateStarfield();return sky.scene.children.reduce((sum,p)=>s
 const births=()=>shaders.map(s=>s.uniforms.birthCount.value);
 actions.display({stars:true,starCount:2400});actions.startTour('torus',5);
 assert.equal(density(),2400,'The cube witness still uses the ordinary sky');
+const skyPeakIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-weave');
 let previous=[2160,240];
-for(let index=6;index<=9;index++) {
+for(let index=6;index<=skyPeakIndex;index++) {
   actions.tourStep(index);density();assert.deepEqual(births(),previous,'Chapter boundaries must preserve the star ramp');
   for(const p of [.25,.5,.75,1]) {
     actions.seekTour(TOURS.torus.steps[index].seconds*p);density();
@@ -32,18 +33,18 @@ for(let index=6;index<=9;index++) {
     assert.equal(getState().display.starCount,2400,'Tour effects must not change the saved setting');
   }
 }
-assert.equal(density(),12000,'The finale has 50% more stars at the end of chapter ten');
+assert.equal(density(),12000,'The finale has 50% more stars at the end of the weave chapter');
 sky.scene.children.forEach((points,i)=>assert.ok(births()[i]-(points.geometry.attributes.position.count-1)>=64,'Even the last star has finished fading in'));
-for(let index=10;index<TOURS.torus.steps.length;index++){actions.tourStep(index);assert.equal(density(),12000);}
+for(let index=skyPeakIndex+1;index<TOURS.torus.steps.length;index++){actions.tourStep(index);assert.equal(density(),12000);}
 actions.tourStep(7);actions.seekTour(4);density();const paused=births();
 actions.tickTour(5);density();assert.deepEqual(births(),paused,'Pause freezes the sky choreography');
 actions.seekTour(10);density();actions.seekTour(4);density();assert.deepEqual(births(),paused,'Backward seek exactly restores brightness');
 sky.scene.children.forEach((points,i)=>{assert.equal(points.geometry,resources[i].geometry);assert.equal(points.material,resources[i].material);assert.equal(points.geometry.attributes.position,resources[i].positions);});
 actions.stopTour();assert.equal(density(),2400,'Exit restores the chosen density');
 actions.startTour('golden');assert.equal(density(),2400,'Other tours retain the chosen density');
-actions.startTour('torus',12);actions.restartTour();actions.tickTour(1.2);
+actions.startTour('torus',TOURS.torus.steps.length-1);actions.restartTour();actions.tickTour(1.2);
 assert.ok(density()>2400&&density()<12000,'Restart returns extra stars to the ordinary sky gradually');
 actions.tickTour(1.3);assert.equal(getState().tour.index,0);assert.equal(density(),2400);
-actions.startTour('torus',9);actions.seekTour(TOURS.torus.steps[9].seconds);
+actions.startTour('torus',skyPeakIndex);actions.seekTour(TOURS.torus.steps[skyPeakIndex].seconds);
 actions.display({stars:false});scene.calls.length=0;renderStarfield();assert.deepEqual(scene.calls,['clear','depth']);
 console.log('PASS: spatial stars, exact orbit, stable FOV framing, smooth chapter 7–10 ramp, pause/seek/exit, fixed buffers and disabled rendering');

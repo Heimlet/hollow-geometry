@@ -10,6 +10,7 @@ import { OBJ_IDS } from './constants.js';
 import { getPreset } from './preset-data.js';
 import { GOLDEN_SCENES } from './golden-scene-data.js';
 import { initialTour, enterTourStep, frameTour, tickTour } from './tour-state.js';
+import { reverseExpansion,initialExpansionMotion } from './torus-math.js';
 import { TOURS } from './tour-data.js';
 export const ALL_IDS = [...OBJ_IDS, '_metatron_'];
 const opacity = { tetrahedron: .15, cube: .10, octahedron: .12, dodecahedron: .08,
@@ -45,7 +46,7 @@ export function reduce(state, action) {
     }
     case 'knowledge/close': {
       next={...state,ui:{...state.ui,topic:null,topicTrail:[]}};
-      if(action.resume&&state.tour.id&&state.tour.phase!=='complete')next=reduce(next,{type:'tour/control',patch:{playing:true}});
+      if(action.resume&&state.tour.id&&(state.tour.phase!=='complete'||TOURS[state.tour.id]?.steps[state.tour.index].scene.endless))next=reduce(next,{type:'tour/control',patch:{playing:true}});
       break;
     }
     case 'ui/mode': {
@@ -66,13 +67,19 @@ export function reduce(state, action) {
       requireValid(Object.entries(action.patch).every(([k,v])=>['playing','auto'].includes(k)&&typeof v==='boolean'),'Invalid tour controls');
       next={...state,tour:{...state.tour,...action.patch},ui:{...state.ui,...(action.patch.playing?{topic:null,topicTrail:[]}:{})}};
       if(!state.tour.id)next.tour.playing=false;
-      else if(action.patch.playing===true&&state.tour.phase!=='restarting'&&state.tour.elapsed>=TOURS[state.tour.id].steps[state.tour.index].seconds)
+      else if(action.patch.playing===true&&state.tour.phase!=='restarting'&&state.tour.elapsed>=TOURS[state.tour.id].steps[state.tour.index].seconds&&!TOURS[state.tour.id].steps[state.tour.index].scene.endless)
         next=enterTourStep(next,state.tour.id,(state.tour.index+1)%TOURS[state.tour.id].steps.length,next.tour.auto);
       break;
     }
     case 'tour/seek': {
       requireValid(state.tour.id&&Number.isFinite(action.elapsed),'Invalid tour time');
-      next=frameTour(state,action.elapsed);next={...next,tour:{...next.tour,playing:false,phase:'explore'}};break;
+      const reset=state.tour.motion?{...state,tour:{...state.tour,motion:initialExpansionMotion()}}:state;
+      next=frameTour(reset,action.elapsed);next={...next,tour:{...next.tour,playing:false,phase:'explore'}};break;
+    }
+    case 'tour/reverse': {
+      const step=TOURS[state.tour.id]?.steps[state.tour.index];
+      requireValid(step?.scene.expansionFrom!==undefined&&state.tour.phase!=='restarting'&&(state.tour.phase!=='complete'||step.scene.endless),'No reversible tour motion');
+      next={...state,tour:{...state.tour,motion:reverseExpansion(step.scene,state.tour.elapsed/step.seconds,state.tour.motion)}};break;
     }
     case 'tour/tick': {
       requireValid(Number.isFinite(action.seconds)&&action.seconds>=0,'Invalid tour tick');next=tickTour(state,action.seconds);break;
@@ -359,6 +366,7 @@ export const actions = {
   restartTour: () => dispatch({type:'tour/restart'}),
   tourStep: index => dispatch({type:'tour/step',index}),
   tourControl: patch => dispatch({type:'tour/control',patch}),
+  reverseTour: () => dispatch({type:'tour/reverse'}),
   seekTour: elapsed => dispatch({type:'tour/seek',elapsed}),
   tickTour: seconds => dispatch({type:'tour/tick',seconds,history:false}),
   stopTour: () => dispatch({type:'tour/stop'}),

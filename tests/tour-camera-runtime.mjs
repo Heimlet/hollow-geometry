@@ -131,3 +131,50 @@ for(const [width,height]of [[3440,1440],[5120,1440],[2560,720],[1280,800],[390,8
 }
 actions.stopTour();rig.updateTourCamera(.025,360,366);assert.equal(scene.camera.view.enabled,false,'Leaving the tour clears its framing');
 console.log('PASS: paused orbit survives ultrawide, desktop and phone resize with matching stage framing');
+
+// Rebase the same growing object AND the camera at a render-unit boundary.
+// Both directions must cross without a ninefold flash or camera jump.
+globalThis.innerWidth=1280;globalThis.innerHeight=800;
+const unitBoundary=10*(2*Math.log(3)/Math.log((1+Math.sqrt(5))/2)+1/90);
+const growthIndex=TOURS.torus.steps.findIndex(s=>s.scene.expansionFrom<=unitBoundary&&s.scene.expansionFrom+s.scene.expansionDuration>unitBoundary),growthStep=TOURS.torus.steps[growthIndex];
+actions.startTour('torus',growthIndex);actions.seekTour(unitBoundary-growthStep.scene.expansionFrom-.06);rig.queueTourShot();for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
+actions.tourControl({playing:true});let lastScreenRadius=null,seenUnits=new Set();
+for(let i=0;i<18;i++){
+ if(i===9)actions.reverseTour();frame();
+ const s=getState(),e=expansionAt(tourStep(s).scene,tourProgress(s),s.tour.motion),radius=e.scale/scene.getViewHeight();seenUnits.add(e.units);
+ if(lastScreenRadius!==null)assert.ok(Math.abs(radius/lastScreenRadius-1)<.035,'Render rebasing preserves screen size while moving in either direction');
+ lastScreenRadius=radius;
+ assert.ok(scene.controls.target.length()<1e-10,'Reversal preserves the common centre');
+}
+assert.equal(seenUnits.size,2,'The test really crosses the unit boundary');
+actions.stopTour();rig.updateTourCamera(.025,330,440);
+console.log('PASS: forward/reverse ninefold coordinate rebasing preserves screen size and shared centre');
+
+// Before the torus exists, preserve the destination cube in frame while the
+// original core visibly grows towards it; a future tall shell must not shrink it.
+const expansionIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-expansion');
+let apparentStart;
+for(const elapsed of [0,14]){
+ actions.startTour('torus',expansionIndex);actions.seekTour(elapsed);rig.queueTourShot();
+ for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
+ const s=getState(),e=expansionAt(tourStep(s).scene,tourProgress(s),s.tour.motion),apparent=e.scale/scene.getViewHeight();
+ if(elapsed===0)apparentStart=apparent;else assert.ok(apparent/apparentStart>1.7,'The core grows clearly on screen before reaching the next cube');
+}
+actions.stopTour();rig.updateTourCamera(.025,330,440);
+console.log('PASS: pre-torus camera shows the small core growing into the larger destination');
+
+// Ending the narration must not release the camera from an indefinitely growing
+// scene: it keeps following scale, and Pause remains the way to inspect freely.
+actions.startTour('torus',finalIndex);actions.tickTour(TOURS.torus.steps[finalIndex].seconds);rig.queueTourShot();
+for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
+let minSize=Infinity,maxSize=0;
+for(let i=0;i<2400;i++){
+ actions.tickTour(.05);rig.updateTourCamera(.05,330,440);
+ const s=getState(),e=expansionAt(tourStep(s).scene,1,s.tour.motion),size=e.scale/scene.getViewHeight();
+ minSize=Math.min(minSize,size);maxSize=Math.max(maxSize,size);
+ assert.equal(s.tour.phase,'complete');assert.equal(s.tour.playing,true);assert.equal(rig.tourCameraStatus().locked,true);
+}
+assert.ok(maxSize/minSize<2.3,'Two minutes of endless growth cannot overflow a frozen final camera');
+actions.tourControl({playing:false});rig.updateTourCamera(.025,330,440);assert.equal(scene.controls.enabled,true);
+actions.stopTour();rig.updateTourCamera(.025,330,440);
+console.log('PASS: endless final camera follows scale without overflow and releases on Pause');

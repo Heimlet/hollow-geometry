@@ -1,14 +1,35 @@
 /** Coaxial, vertically elongated tori. Local Z maps to the world's vertical Y. */
-import { A,R_META } from './constants.js';
-// Choose a tall meridian through the actual vertex orbits (radius R_META, y=±A).
-// Height and centre are compositional choices; the two contact circles are exact.
-const height=4.08,major=1.8;
-export const TORUS={major,tube:(R_META-major)/Math.sqrt(1-(A/height)**2),height};
-export const TORUS_OUTER=Object.fromEntries(Object.entries(TORUS).map(([key,value])=>[key,value*4.32/height]));
-export const TORUS_CONTACT=Math.asin(A/height);
+import { A,R_META,PHI } from './constants.js';
+export const SPIRAL_RATIO=PHI;
+export const EXPANSION_TARGET_TURNS=2;
+export const EXPANSION_TARGET_SCALE=PHI**EXPANSION_TARGET_TURNS;
+// Explicit cube construction, not a uniquely implied surface of rotating bodies:
+// R is the current cube's inradius; H is the half-side of the phi²-scale cube.
+// The remaining ellipse radius is fixed by its contact with all eight vertices.
+export function torusFromCube(halfSide){
+  const major=halfSide,height=halfSide*EXPANSION_TARGET_SCALE,rho=Math.SQRT2*halfSide;
+  return {major,tube:(rho-major)/Math.sqrt(1-(halfSide/height)**2),height};
+}
+export const TORUS=torusFromCube(A);
+// The second shell is a visual radial echo, not a second geometric deduction.
+// Both shells have the SAME cube-defined top and bottom planes.
+export const TORUS_OUTER={major:TORUS.major*1.06,tube:TORUS.tube*1.06,height:TORUS.height};
+export const TORUS_CONTACT=Math.asin(1/EXPANSION_TARGET_SCALE);
+/** Read actual source vertices. They have equal orbit radii and absolute heights
+ * under the supported counterrotation + uniform scaling, including reverse.
+ */
+export function torusFrameFromAnchors(anchors){
+  const radialScale=anchors.reduce((sum,p)=>sum+Math.hypot(p[0],p[1]),0)/anchors.length/R_META;
+  const axialScale=anchors.reduce((sum,p)=>sum+Math.abs(p[2]),0)/anchors.length/A;
+  return {radialScale,axialScale,shape:{major:TORUS.major*radialScale,tube:TORUS.tube*radialScale,height:TORUS.height*axialScale}};
+}
 export const ORBIT_SEEDS=Array.from({length:8},(_,i)=>{const p=[i&1?A:-A,i&2?A:-A,i&4?A:-A];return {point:[p[0],-p[2],p[1]],side:Math.sign(p[0]*p[1]*p[2])};});
 export function orbitPoint(seed,angle){const [x,y,z]=seed.point,a=angle*seed.side;return [x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a),z];}
-export const expansionPath=(seed,segments=192)=>Array.from({length:segments+1},(_,i)=>orbitPoint(seed,i/segments*Math.PI/2).map(x=>x*3**(i/segments)));
+export const expansionPath=(seed,segments=192)=>Array.from({length:segments+1},(_,i)=>spiralGuide(seed,EXPANSION_TARGET_TURNS*i/segments));
+// Mirrored spatial logarithmic spirals. Scaling Z as well keeps every anchor
+// on the same similar torus, rather than sliding it off the contact meridian.
+export function spiralGuide(seed,turns,ratio=SPIRAL_RATIO){return orbitPoint(seed,turns*Math.PI/2).map(x=>x*ratio**turns);}
+export const spiralGuidePath=(seed,ratio=SPIRAL_RATIO,segments=512)=>Array.from({length:segments+1},(_,i)=>spiralGuide(seed,-5+7*i/segments,ratio));
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export function expansionLevel(time){
   const t=Math.min(2,time);
@@ -17,28 +38,54 @@ export function expansionLevel(time){
 // One clock from chapter seven to the end. Logarithmic units keep indefinitely
 // repeated growth numerically small; every visible layer shares this frame.
 // The pooled reference shells retain their exact relative sizes when units change.
-export function expansionAt(recipe={},p=0){
+export function expansionAt(recipe={},p=0,motion={}){
   if(recipe.expansionFrom===undefined)return {active:false,time:0,level:0,scale:recipe.worldScale||1};
-  const time=recipe.expansionFrom+Math.max(0,Math.min(1,p))*recipe.expansionDuration;
-  const level=expansionLevel(time);
-  return {active:true,time,level,scale:3**Math.min(level,2)};
+  const time=recipe.expansionFrom+Math.max(0,Math.min(1,p))*recipe.expansionDuration,ratio=recipe.expansionRatio||SPIRAL_RATIO;
+  const nominalTurns=expansionLevel(time),turns=nominalTurns+(motion.turnOffset||0);
+  const logScale=(recipe.expansionLogFrom??expansionLevel(recipe.expansionFrom)*Math.log(ratio))
+    +(nominalTurns-expansionLevel(recipe.expansionFrom))*Math.log(ratio)+(motion.logOffset||0);
+  const level=logScale/Math.log(3),units=Math.floor(level/2),scale=3**(level-2*units);
+  return {active:true,time,turns,logScale,ratio,level,units,scale};
+}
+export const initialExpansionMotion=()=>({direction:1,turnOffset:0,logOffset:0});
+// Reversing changes velocity only. It never changes the current pose, scale,
+// or camera magnification, even after render units have been rebased.
+export function reverseExpansion(recipe,p,motion=initialExpansionMotion()){
+  return {...motion,direction:-motion.direction};
+}
+export function advanceExpansion(recipe,from,to,motion){
+  if(!motion||recipe.expansionFrom===undefined)return motion;
+  const a=expansionAt(recipe,from),b=expansionAt(recipe,to),sign=motion.direction-1;
+  return {...motion,turnOffset:motion.turnOffset+sign*(b.turns-a.turns),logOffset:motion.logOffset+sign*(b.logScale-a.logScale)};
 }
 export function expansionReferences(level,scale){
   const phase=level-Math.floor(level);
-  return [-2,-1,0,1,2].map(offset=>{
-    const relative=3**(offset-phase);
-    return {scale:scale*relative,alpha:ease((relative-.12)/.18)*(1-ease((relative-2)/1))};
+  return [-4,-3,-2,-1,0,1,2,3].map(offset=>{
+    const relative=SPIRAL_RATIO**(offset-phase);
+    return {scale:scale*relative,alpha:ease((relative-.18)/.18)*(1-ease((relative-1.8)/.8))};
   });
 }
 // Let the visible body double before the camera catches up for the next cycle.
 // Its world-space retreat remains monotonic even during the growing close-up.
 export function expansionViewZoom(time){
-  const phase=(time%12)/12;
+  const phase=(time/12)-Math.floor(time/12);
   return .52*2**(phase<.8?ease(phase/.8):1-ease((phase-.8)/.2));
+}
+export function expansionZoom(frame){
+  // Follow logarithmic scale, including reversed travel.
+  // The slower golden expansion must not be cancelled by a faster camera beat.
+  const turns=frame.level;
+  let time=turns<0?turns*90/8:10*(turns+1/90);
+  if(turns>=0&&turns<expansionLevel(2)){
+    let low=0,high=2;
+    for(let i=0;i<40;i++){const middle=(low+high)/2;if(expansionLevel(middle)<turns)low=middle;else high=middle;}
+    time=(low+high)/2;
+  }
+  return expansionViewZoom(time);
 }
 // A deliberate still moment at the exact canonical cube, with zero angular
 // velocity on either side of the hold and the usual 8°/s at chapter boundaries.
-export const CUBE_HOLD={from:.36,to:.62};
+export const CUBE_HOLD={from:.36,to:.74};
 export function cubeWitnessPhase(p,slope){
   const {from,to}=CUBE_HOLD;
   const hermite=(t,a,b,va,vb)=>a+(b-a)*ease(t)+va*(t**3-2*t*t+t)+vb*(t**3-t*t);
@@ -46,11 +93,11 @@ export function cubeWitnessPhase(p,slope){
   if(p<=to)return .5;
   return hermite((p-to)/(1-to),.5,1,0,slope*(1-to));
 }
-export const cubeWitnessInk=p=>ease((p-.23)/.13)*(1-ease((p-.62)/.1));
-export const cubeWitnessView=p=>1+2*ease((p-.12)/.2);
+export const cubeWitnessInk=p=>ease((p-.14)/.16)*(1-ease((p-.74)/.12));
+export const cubeWitnessView=p=>1+(EXPANSION_TARGET_SCALE-1)*ease((p-.12)/.2);
 export const TORI=[TORUS,TORUS_OUTER];
 export const TORUS_AXIS=[0,1,0];
-export const TORUS_POLE=4.75;
+export const TORUS_POLE=TORUS.height*1.1;
 export function torusPoint(u,v,shape=TORUS) {
   const radius=shape.major+shape.tube*Math.cos(v);
   return [radius*Math.cos(u),radius*Math.sin(u),shape.height*Math.sin(v)];

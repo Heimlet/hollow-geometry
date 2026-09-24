@@ -30,3 +30,11 @@ export function tourObjectAlpha(recipe,p,level,id) {
   const visible=appear?ease((p-appear[0])/(appear[1]-appear[0])):1;
   return visible*(dim?1-(1-(dim[2]??0))*ease((p-dim[0])/(dim[1]-dim[0])):1);
 }
+
+/** Carry the same pair through chapters 5 → 6 → 7. Only emphasis changes. */
+export function tetraWitnessAppearance(p,id='merkaba_up'){
+  const handoff=ease((p-.82)/.18),focus=ease(p/.16)*(1-handoff),start=id==='merkaba_up'?.38:.5;
+  return {edges:start*(1-handoff)+.2*handoff+(1-start)*focus,
+    faces:.07*focus,coreFaces:.18*(1-focus)*(1-handoff)+.34*handoff,
+    coreEdges:.85*(1-focus)*(1-handoff)+.16*focus+handoff,handoff};
+}

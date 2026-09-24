@@ -1,9 +1,13 @@
 import {TOURS} from './tour-data.js';
 /** Stable chapter IDs: editing/reordering the film cannot silently change a link. */
 export const READING_DEMOS=[
+  {topic:'coupling',section:'Две закрутки, один размер',label:'Увидеть зеркальные золотые спирали',tour:'torus',chapter:'torus-spiral-law'},
+  {topic:'coupling',section:'Высоту задаёт следующий куб',label:'Посмотреть, как куб задаёт высоту тора',tour:'torus',chapter:'torus-birth'},
+  {topic:'coupling',section:'От пятиугольника к золотому шагу',label:'Додекаэдр, золотые направляющие и обратный ход',tour:'torus',chapter:'torus-golden'},
+  {topic:'torus',section:'Как поворот связан с расширением',label:'Увидеть золотой шаг и развернуть движение',tour:'torus',chapter:'torus-golden'},
   {topic:'torus',section:'От двух тетраэдров к тору',label:'Проследить путь вершин и рождение поверхности',tour:'torus',chapter:'torus-orbits'},
   {topic:'torus',section:'От внутреннего куба к внешнему',label:'Увидеть переход между вложенными кубами',tour:'torus',chapter:'torus-expansion'},
-  {topic:'torus',section:'От внутреннего куба к внешнему',label:'Рассмотреть кубы и октаэдр в точном положении',tour:'torus',chapter:'torus-hull'},
+  {topic:'torus',section:'От внутреннего куба к внешнему',label:'Рассмотреть кубы и октаэдр в точном положении',tour:'torus',chapter:'torus-inscription'},
   {topic:'torus',section:'Вселенная без края',label:'Вернуться к финалу: пространство без края',tour:'torus',chapter:'torus-cosmos'},
   {topic:'torus',section:'Что скрывает плоский рисунок',label:'Увидеть квадрат и шестиугольник одного куба',tour:'projections',chapter:'cube-square'},
   {topic:'torus',section:'Что скрывает плоский рисунок',label:'Увидеть тела за Звездой Давида',tour:'merkaba',chapter:'star-reveal'},
@@ -23,7 +27,7 @@ export const READING_DEMOS=[
   {topic:'vortex',section:'Два тетраэдра — два движения',label:'Посмотреть встречное вращение внутри тора',tour:'torus',chapter:'torus-weave'},
   {topic:'torus',section:'Меркаба в центре',label:'Посмотреть, как вокруг звезды рождается тор',tour:'torus',chapter:'torus-birth'},
   {topic:'torus',section:'Формы рождаются из движения',label:'Вращать тетраэдры и увидеть новые тела',tour:'torus',chapter:'torus-intersection'},
-  {topic:'torus',section:'Два повтора — неповторяющийся путь',label:'Увидеть путь с отношением скоростей φ',tour:'torus',chapter:'torus-golden'},
+  {topic:'torus',section:'Два повтора — неповторяющийся путь',label:'Увидеть путь с отношением скоростей φ',tour:'torus',chapter:'torus-whole'},
 ];
 export function resolveReadingDemo(demo) {
   const tour=TOURS[demo.tour],index=tour?.steps.findIndex(step=>step.id===demo.chapter);
