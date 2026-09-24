@@ -105,7 +105,13 @@ export function cubeWitnessPhase(p,slope){
 export const traceEntrance=p=>ease(p/.18);
 export const torusMacroFocus=p=>ease((p-.06)/.16)*(1-ease((p-.72)/.18));
 export const cubeWitnessInk=p=>ease((p-.14)/.16)*(1-ease((p-.74)/.12));
-// The enlarged pair is already visible in the preceding chapter.
+/** A slow shared pulse marks the destination; it settles as the source arrives. */
+export function futureScalePulse(seconds,relativeScale=EXPANSION_TARGET_SCALE){
+  const gap=ease(Math.abs(Math.log(relativeScale))/Math.log(PHI));
+  const wave=.3+.7*(.5+.5*Math.cos(2*Math.PI*seconds/2.6));
+  return 1-(1-wave)*gap;
+}
+// Reserve room for the enlarged pair as it appears in the cube chapter.
 export const cubeWitnessView=()=>EXPANSION_TARGET_SCALE;
 export const TORI=[TORUS,TORUS_OUTER];
 export const TORUS_AXIS=[0,1,0];

@@ -2,12 +2,16 @@ import { GOLDEN_CYCLE_SCALE } from '../js/constants.js';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
-import {TORUS,TORUS_OUTER,TORI,TORUS_AXIS,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,expansionAt,expansionReferences,expansionViewZoom,expansionZoom,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS,CUBE_HOLD,cubeWitnessInk,intersectionWitnessPhase,torusPoint,torusCurve,torusBounds} from '../js/torus-math.js';
+import {TORUS,TORUS_OUTER,TORI,TORUS_AXIS,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,expansionAt,expansionReferences,expansionViewZoom,expansionZoom,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS,CUBE_HOLD,cubeWitnessInk,futureScalePulse,intersectionWitnessPhase,torusPoint,torusCurve,torusBounds} from '../js/torus-math.js';
 import {A,R_META} from '../js/constants.js';
 import {TOURS,tourDuration} from '../js/tour-data.js';
 import {KNOWLEDGE} from '../js/tour-knowledge.js';
 import {initialState,reduce} from '../js/state.js';
 const phi=(1+Math.sqrt(5))/2,tau=Math.PI*2;
+assert.equal(futureScalePulse(0),1);assert.ok(Math.abs(futureScalePulse(1.3)-.3)<1e-12);assert.equal(futureScalePulse(2.6),1);
+for(const time of [0,.4,1.3,2.6,10])assert.equal(futureScalePulse(time,1),1,'A reached scale no longer blinks');
+assert.ok(futureScalePulse(1.3,1.01)>.99,'Pulse settles smoothly as the source approaches');
+assert.equal(futureScalePulse(1.3,phi),futureScalePulse(1.3,1/phi),'Reverse travel uses the same arrival cue');
 for(const shape of TORI) {
   for(const points of [torusCurve(2,3,768,0,shape),torusCurve(-2,3,768,0,shape),torusCurve(18,18*phi,768,0,shape)])for(const [x,y,z] of points)
     assert.ok(Math.abs(((Math.hypot(x,y)-shape.major)/shape.tube)**2+(z/shape.height)**2-1)<1e-10,'Every trajectory follows its own stretched torus');
@@ -80,6 +84,36 @@ const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;bas
 const cache=new Map();
 async function load(name){if(cache.has(name))return cache.get(name);let s=await readFile(new URL('../js/'+name+'.js',import.meta.url),'utf8');s=s.replaceAll("'three'",JSON.stringify(three));for(const m of [...s.matchAll(/'\.\/([\w-]+)\.js'/g)])s=s.replaceAll(m[0],JSON.stringify(await load(m[1])));const value=url(s);cache.set(name,value);return value;}
 const {createTorusScene}=await import(await load('torus-scene')),THREE=await import(three),scene=new THREE.Scene(),study=createTorusScene(scene),root=scene.children[0];
+// The third chapter contains only the current pair's proof, axis and spirals.
+// Supply a real source: a missing source used to conceal the enlarged-core leak.
+{
+ const sourceGeometry=new THREE.OctahedronGeometry(A),sourceEdges=new THREE.EdgesGeometry(sourceGeometry);
+ const intersectionSource={mesh:new THREE.Mesh(sourceGeometry),edges:new THREE.LineSegments(sourceEdges)};
+ const allowed=new Set(['Shared vertical axis','Actual tetrahedron vertex orbits','Spiral coupling · phi','Octahedron from six edge crossings']);
+ const ink=o=>o.visible&&((o.material&&o.material.opacity>0)||o.children.some(ink));
+ for(let i=0;i<=40;i++){
+   study.update('cage',.25,0,{intersectionSource});
+   study.update('mechanism',i/40,0,{axis:true,intersectionWitness:true,intersectionSource});
+   for(const child of root.children)if(ink(child))assert.ok(allowed.has(child.name),`No enlarged layer in chapter 3: ${child.name}`);
+ }
+ study.update('cage',0,0,{intersectionSource});
+ for(const child of root.children)if(ink(child))assert.ok(allowed.has(child.name),`No new layer flashes at the chapter 4 boundary: ${child.name}`);
+ let previousCore=0,previousBody=0;
+ for(const p of [.01,.03,.06,.09,.12]){
+   study.update('cage',p,0,{intersectionSource});
+   const core=root.getObjectByName('Next live intersection preview').children[0].material.opacity;
+   const body=root.getObjectByName('Next tetrahedron preview').material.opacity;
+   assert.ok(core>previousCore&&body>previousBody,'Future core and bodies fade in together');previousCore=core;previousBody=body;
+ }
+ study.update('cage',.12,0,{intersectionSource});assert.equal(root.getObjectByName('Next live intersection preview').visible,true);
+ assert.ok(root.children.filter(o=>o.name==='Next tetrahedron preview').every(o=>o.visible));
+ for(const [p,names]of [[.25,['Next tetrahedron preview','Next live intersection preview']],[.6,['Future cube · next scale','Next tetrahedron preview','Octahedron linking the two cube scales']]]){
+   const opacity=name=>{const object=root.getObjectByName(name);return object.material?.opacity??object.children[0].material.opacity;};
+   study.update('cage',p,0,{intersectionSource,previewTime:0});const lit=names.map(opacity);
+   study.update('cage',p,0,{intersectionSource,previewTime:1.3});names.forEach((name,i)=>{assert.ok(lit[i]>0);assert.ok(Math.abs(opacity(name)-lit[i]*.3)<1e-12,'All destination figures share the same pulse');});
+ }
+ sourceGeometry.dispose();sourceEdges.dispose();intersectionSource.mesh.material.dispose();intersectionSource.edges.material.dispose();
+}
 const pole=root.getObjectByName('Shared vertical axis'),axisBuffer=pole.geometry.attributes.position;
 assert.equal(axisBuffer.count,2,'The continuing axis uses one fixed line segment');
 assert.equal(axisBuffer.getZ(0),-axisBuffer.getZ(1));assert.ok(axisBuffer.getZ(1)>TORUS.height*300,'Both axis ends are far beyond the growing bodies and visible frame');

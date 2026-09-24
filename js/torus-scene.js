@@ -1,7 +1,7 @@
 /** Two illustrative shells share the exact vertical axis of the live Merkaba. */
 import * as THREE from 'three';
 import { createGoldenScaleStep } from './torus-golden-step.js';
-import {TORI,TORUS_AXIS,TORUS_AXIS_EXTENT,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,spiralGuide,spiralGuidePath,torusFrameFromAnchors,torusPoint,torusCurve,expansionReferences,cubeWitnessInk,traceEntrance,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS} from './torus-math.js';
+import {TORI,TORUS_AXIS,TORUS_AXIS_EXTENT,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,spiralGuide,spiralGuidePath,torusFrameFromAnchors,torusPoint,torusCurve,expansionReferences,cubeWitnessInk,futureScalePulse,traceEntrance,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS} from './torus-math.js';
 const tau=Math.PI*2,phi=(1+Math.sqrt(5))/2;
 const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
 export function createTorusScene(scene) {
@@ -121,7 +121,7 @@ export function createTorusScene(scene) {
     vertexShader:`varying vec3 tint;void main(){tint=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=8.;}`,
     fragmentShader:`uniform float alpha;varying vec3 tint;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(tint,alpha*exp(-5.*d*d));}`});
   const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.name='Moving torus particles';dots.frustumCulled=false;root.add(dots);
-  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0,showHeightGuide=true}={}) {
+  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0,showHeightGuide=true,previewTime=elapsed}={}) {
     const mechanism=kind==='mechanism',cage=kind==='cage',growing=kind==='growth',paired=kind==='pair'||kind==='golden-step',spiral=kind==='spiral',orbit=kind==='traces'||cage||growing||mechanism||paired||spiral,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
     root.quaternion.copy(rootOrientation).multiply(referenceRotation.setFromAxisAngle(localAxis,referenceYaw));
     referenceInverse.setFromAxisAngle(worldAxis,-referenceYaw);
@@ -139,18 +139,19 @@ export function createTorusScene(scene) {
     pole.visible=axis||!!kind;polePoint.visible=false;pole.scale.setScalar(scale);
     reference.visible=cage&&handoff<1;reference.scale.setScalar(scale);
     reference.children.forEach(line=>line.material.opacity=(1-carry)*(1-handoff)*(.1+.75*ease((Math.abs(Math.cos(rotation*2))-.9)/.1)));
-    const witness=cage?cubeWitnessInk(p):0,preparation=mechanism?ease((p-(intersectionWitness?.34:.12))/.18):0;
+    const witness=cage?cubeWitnessInk(p):0;
     const turns=expansion?.turns||0,phase=turns-EXPANSION_TARGET_TURNS*Math.floor(turns/EXPANSION_TARGET_TURNS),contracting=direction<0,nextScale=scale*phi**((contracting?0:EXPANSION_TARGET_TURNS)-phase);
+    const pulse=cage||growing?futureScalePulse(previewTime,cage?EXPANSION_TARGET_SCALE:nextScale/scale):1;
     const heightInk=birth?ease(p/.15)*(1-ease((p-.6)/.22)):0;
     heightGuide.visible=showHeightGuide&&heightInk>0;heightGuide.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);heightGuide.children.forEach(line=>line.material.opacity=heightInk*.6);
     const arrival=expansion?(1-ease((phase-1.88)/.12))*(turns<.12?1:ease(phase/.12)):0,futureInk=cage?Math.max(witness,handoff):birth?heightInk*.28:growing||kind==='traces'?arrival*traceIn:0;
     futureCube.visible=futureInk>0;futureCube.scale.setScalar(cage?scale*EXPANSION_TARGET_SCALE:birth?scale:nextScale);
     const edgesReveal=cage?ease((p-.42)/.13):1,coreReveal=cage?ease((p-.51)/.1):1;
-    futureCube.children.forEach((line,i)=>line.material.opacity=futureInk*(cage?.3+.3*handoff:.6)*(cage?ease(edgesReveal*12-i):1));
-    futureVertices.forEach((head,i)=>{head.visible=futureInk>0&&!birth;head.material.opacity=futureInk*(cage?ease((p-.4)/.06):1);head.scale.setScalar(scale);head.position.set(...corners[i].map(x=>x*(cage?scale*EXPANSION_TARGET_SCALE:nextScale)));});
-    const preview=cage?Math.max(witness,handoff):mechanism?preparation*ease((p-.3)/.28)*(1-ease((p-.85)/.15)):growing||kind==='traces'?arrival*traceIn:0;
+    futureCube.children.forEach((line,i)=>line.material.opacity=pulse*futureInk*(cage?.3+.3*handoff:.6)*(cage?ease(edgesReveal*12-i):1));
+    futureVertices.forEach((head,i)=>{head.visible=futureInk>0&&!birth;head.material.opacity=pulse*futureInk*(cage?ease((p-.4)/.06):1);head.scale.setScalar(scale);head.position.set(...corners[i].map(x=>x*(cage?scale*EXPANSION_TARGET_SCALE:nextScale)));});
+    const preview=cage?Math.max(witness,handoff):growing||kind==='traces'?arrival*traceIn:0;
     bridge.visible=futureInk>0&&!birth;bridge.scale.setScalar(cage?scale:nextScale/EXPANSION_TARGET_SCALE);
-    bridge.children.forEach(part=>part.material.opacity=futureInk*coreReveal*(part.isMesh?.032:.46)*(cage?.18+.82*ease((p-.82)/.18):1));
+    bridge.children.forEach(part=>part.material.opacity=pulse*futureInk*coreReveal*(part.isMesh?.032:.46)*(cage?.55+.45*ease((p-.82)/.18):1));
     futurePaths.forEach(({group,line,outward,target,seed,endpoint})=>{
       group.visible=preview>0;group.scale.setScalar(scale/phi**phase);group.rotation.z=(rotation-phase*Math.PI/2)*seed.side;
       line.geometry.setDrawRange(0,384-2*Math.ceil(phase/EXPANSION_TARGET_TURNS*192));
@@ -163,7 +164,7 @@ export function createTorusScene(scene) {
     futureBodies.forEach(({line,pairs,side})=>{
       // The next pair first appears in the cube chapter, after the core proof.
       const bodyInk=cage?ease(p/.12):growing||kind==='traces'?arrival*.65*traceIn:0;
-      line.visible=bodyInk>0;line.material.opacity=bodyInk*(cage?.4+.1*(1-carry)-.24*handoff:.4);
+      line.visible=bodyInk>0;line.material.opacity=pulse*bodyInk*(cage?.4+.1*(1-carry)-.24*handoff:.4);
       if(!line.visible)return;
       const index=pairs[0][0],base=ORBIT_SEEDS[index].point,anchor=actual[index];
       const delta=(growing||kind==='traces'?((contracting?0:2)-phase):2)*Math.PI/2;
@@ -171,18 +172,21 @@ export function createTorusScene(scene) {
       line.rotation.z=Math.atan2(anchor[1],anchor[0])-Math.atan2(base[1],base[0])+side*delta;
       line.scale.set(frame.radialScale*size,frame.radialScale*size,frame.axialScale*size);
     });
-    const corePreview=mechanism?preparation:carry;
+    // The opening rotation studies only the current pair and its intersection.
+    // The enlarged core enters with the future bodies in the following chapter.
+    const corePreview=cage?ease(p/.12)*(1-ease((p-.4)/.15)):0;
     futureCore.visible=corePreview>0&&!!intersectionSource;
     if(futureCore.visible){streamGeometry(intersectionSource.mesh.geometry,futureCoreSurface,intersectionSource.mesh.matrixWorld);streamGeometry(intersectionSource.edges.geometry,futureCoreEdges,intersectionSource.edges.matrixWorld);}
-    futureCoreSurface.material.opacity=corePreview*.045;futureCoreEdges.material.opacity=corePreview*.55;
+    futureCoreSurface.material.opacity=pulse*corePreview*.045;futureCoreEdges.material.opacity=pulse*corePreview*.55;
     const echoes=expansionReferences(turns,scale),haloInk=!kind||orbit?0:birth?ease((p-.85)/.15):1;
     const proofFocus=growth?1-.8*ease(p/.14)*(1-ease((p-.6)/.2)):1;
     nextCages.forEach(({group,core,halo},i)=>{
       const echo=echoes[i];group.visible=(!!expansion||cage&&handoff>0)&&!paired&&!spiral;halo.visible=!!expansion&&haloInk>0;
       core.visible=(!!expansion||cage&&handoff>0)&&!paired&&!spiral&&sourceFocus<1;core.scale.setScalar(echo.scale/EXPANSION_TARGET_SCALE);group.scale.setScalar(echo.scale);halo.scale.setScalar(echo.scale);
-      const alpha=traceIn*handoff*echo.alpha*(.13+.27*Math.exp(-8*Math.log(echo.scale/scale)**2));
+      const pending=(cage||growing)&&(contracting?echo.scale<scale:echo.scale>scale),echoPulse=pending?futureScalePulse(previewTime,echo.scale/scale):1;
+      const alpha=echoPulse*traceIn*handoff*echo.alpha*(.13+.27*Math.exp(-8*Math.log(echo.scale/scale)**2));
       group.children.forEach(line=>line.material.opacity=alpha*(orbit?.18:.35)*proofFocus);
-      core.children.forEach(part=>part.material.opacity=traceIn*handoff*echo.alpha*(part.isMesh?.012:orbit?.12:.24)*proofFocus*(1-sourceFocus));
+      core.children.forEach(part=>part.material.opacity=echoPulse*traceIn*handoff*echo.alpha*(part.isMesh?.012:orbit?.12:.24)*proofFocus*(1-sourceFocus));
       halo.children.forEach(line=>line.material.opacity=echo.alpha*.17*haloInk*proofFocus);
     });
     guides.forEach(({ratio,group,lines})=>{
