@@ -111,7 +111,7 @@ export function applyTourEffects() {
   torusWitness.update(recipe?.goldenCoupling||recipe?.goldenWitnessCarry?levels[0]?.objs.dodecahedron:null,progress,camera,{carry:!!recipe?.goldenWitnessCarry});
   const measureBounds=player?.getBoundingClientRect();
   torusMeasure.update({enabled:hasTorusHeight(recipe)&&state.display.torusHeight,anchors:hasTorusHeight(recipe)?merkabaAnchors(levels[0]):null,camera,units:expansion.units,obstacles:[...torusWitness.bounds(),resetCameraButton?.getBoundingClientRect()].filter(Boolean),
-    viewport:stageViewport(innerWidth,innerHeight,measureBounds?.height||220,measureBounds?.width||440),opacity:recipe?.torus==='birth'?smooth(progress/.15):1});
+    viewport:stageViewport(innerWidth,innerHeight,measureBounds?.height||220,measureBounds?.width||440),panelTop:measureBounds?.top,opacity:recipe?.torus==='birth'?smooth(progress/.15):1});
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
   for(const level of levels) {

@@ -2,6 +2,7 @@ import { GOLDEN_CYCLE_SCALE } from './constants.js';
 import * as THREE from 'three';
 import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,expansionZoom,cubeWitnessView,traceEntrance,torusMacroFocus,torusReferenceYaw,EXPANSION_TARGET_SCALE } from './torus-math.js';
 import { fruitVolume,FRUIT_PLANAR } from './fruit-life.js';
+import { goldenFunnelBounds,funnelReveal } from './torus-funnel-math.js';
 import { dimensionFrame,dimensionSequence } from './dimension-scene.js';
 import { torusOpeningHandoff } from './tour-effects.js';
 import { TOUR_ENTRY_SECONDS,tourEntryScale,tourRestartScale } from './tour-motion.js';
@@ -49,6 +50,7 @@ function scenePoints() {
     }
     else if(r.torus==='spiral')points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(referenceOrientation).multiplyScalar(e.scale*1.8)));
     else points.push(...torusFramePoints.map(p=>p.clone().applyQuaternion(referenceRotation).multiplyScalar(e.scale)));
+    points.push(...goldenFunnelBounds(funnelReveal(r.torus,tourProgress(state))).map(p=>new THREE.Vector3(...p).applyQuaternion(referenceOrientation).multiplyScalar(e.scale)));
   }
 
   if(tourStep(getState())?.scene.axisGuide&&!tourStep(getState())?.scene.torus)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));

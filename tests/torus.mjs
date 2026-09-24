@@ -262,4 +262,5 @@ assert.deepEqual(torusOpeningHandoff(1),{network:0,scale:1,bounds:0});
 const held=reduce(initialState(),{type:'tour/start',id:'torus',index:intersectionIndex});
 assert.equal(reduce(held,{type:'tour/seek',elapsed:TOURS.torus.steps[intersectionIndex].seconds*.29}).lab.rotation.up,0,'The inner octahedron is explained while the original pair is canonical');
 assert.equal(TOURS.torus.steps.at(-1).title,'Расширение или сжатие');
-for(const id of ['torus-spiral-law','torus-whole'])assert.ok(TOURS.torus.steps.find(s=>s.id===id).scene.camera.path.some(key=>key.dir[1]/Math.hypot(...key.dir)>.99),'Spirals are revealed from above');
+assert.ok(TOURS.torus.steps.find(s=>s.id==='torus-spiral-law').scene.camera.path.some(key=>key.dir[1]/Math.hypot(...key.dir)>.99),'The spiral chapter retains the exact overhead view');
+assert.ok(TOURS.torus.steps.find(s=>s.id==='torus-whole').scene.camera.path.some(key=>key.at>.4&&key.at<.8&&Math.abs(key.dir[1]/Math.hypot(...key.dir))<.15),'The two new funnels are revealed from the side');

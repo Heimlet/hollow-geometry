@@ -1,6 +1,7 @@
 /** Two illustrative shells share the exact vertical axis of the live Merkaba. */
 import * as THREE from 'three';
 import { createGoldenScaleStep } from './torus-golden-step.js';
+import { createTorusFunnels } from './torus-funnels.js';
 import {TORI,TORUS_AXIS,TORUS_AXIS_EXTENT,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,spiralGuide,spiralGuidePath,torusFrameFromAnchors,torusPoint,torusCurve,expansionReferences,cubeWitnessInk,futureScalePulse,traceEntrance,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS} from './torus-math.js';
 const tau=Math.PI*2,phi=(1+Math.sqrt(5))/2;
 const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
@@ -8,6 +9,7 @@ export function createTorusScene(scene) {
   const root=new THREE.Group();root.name='Torus finale';root.visible=false;
   root.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));scene.add(root);
   const rootOrientation=root.quaternion.clone(),localAxis=new THREE.Vector3(0,0,1),worldAxis=new THREE.Vector3(...TORUS_AXIS),referenceRotation=new THREE.Quaternion(),referenceInverse=new THREE.Quaternion();
+  const funnels=createTorusFunnels(root);
   function stroke(parent,points,color,opacity,width=1.5,segments=false) {
     const vertices=segments?points.map(p=>new THREE.Vector3(...p)):points.slice(1).flatMap((p,i)=>[new THREE.Vector3(...points[i]),new THREE.Vector3(...p)]);
     const line=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(vertices),new THREE.LineBasicMaterial({color,transparent:true,opacity,linewidth:width,depthWrite:false}));parent.add(line);return line;
@@ -128,6 +130,7 @@ export function createTorusScene(scene) {
     const c=Math.cos(referenceYaw),s=Math.sin(referenceYaw);
     const localAnchors=anchors?.map(([x,y,z])=>[c*x+s*y,-s*x+c*y,z]);
     const actual=localAnchors||ORBIT_SEEDS.map(seed=>orbitPoint(seed,rotation).map(x=>x*scale)),frame=torusFrameFromAnchors(actual,cubeHalfHeight);
+    funnels.update(kind,p,frame,actual);
     const carry=cage?1-ease(p/.12):0,traceIn=kind==='traces'?traceEntrance(p):1;
     const handoff=cage?ease((p-.82)/.18):1,sourceFocus=growth?ease(p/.12):whole?1:0;
     const proofInk=intersectionWitness?1-ease((p-.25)/.05):0;

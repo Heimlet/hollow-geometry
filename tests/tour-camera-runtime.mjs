@@ -229,7 +229,7 @@ console.log('PASS: two pre-torus macro chapters visibly enlarge the rotating pai
 // Exact overhead shots must survive camera updates; a tiny tilt becomes a
 // full-screen line when the axis is hundreds of body sizes long.
 const {TORUS_AXIS_EXTENT}=await import(await load('torus-math'));
-for(const [kind,p] of [['spiral',.4],['weave',1],['golden',0],['whole',.4]]){
+for(const [kind,p] of [['spiral',.4],['weave',1],['golden',0]]){
  const index=TOURS.torus.steps.findIndex(s=>s.scene.torus===kind),chapter=TOURS.torus.steps[index];
  actions.startTour('torus',index);actions.seekTour(chapter.seconds*p);rig.queueTourShot();
  for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
@@ -256,3 +256,20 @@ scene.camera.position.copy(orbit.target).add(new Vector3(0,30,0));orbit.update()
 assert.ok(scene.camera.position.clone().sub(orbit.target).normalize().distanceTo(new Vector3(0,1,0))<1e-12,'Exact axial aim removes the actual OrbitControls epsilon');
 const exactOrientation=scene.camera.quaternion.clone();orbit.update();assert.ok(scene.camera.position.clone().sub(orbit.target).normalize().distanceTo(new Vector3(0,1,0))<2e-6,'Idle OrbitControls on pause cannot restore the old visible tilt');assert.ok(scene.camera.quaternion.angleTo(exactOrientation)<2e-6,'Actual OrbitControls preserves screen roll when the polar shot pauses');orbit.dispose();
 console.log('PASS: exact polar shots, long-axis point projection, stable pause and actual OrbitControls polar handling');
+
+const {goldenFunnelBounds,funnelReveal}=await import(await load('torus-funnel-math'));
+const {stageViewport:funnelViewport}=await import(await load('tour-camera-math'));
+for(const [width,height,panelHeight,panelWidth]of [[1280,800,330,440],[390,844,360,366]]){
+ globalThis.innerWidth=width;globalThis.innerHeight=height;
+ for(const [index,p]of [[12,.58],[12,1],[13,0],[13,.5]]){
+  const chapter=TOURS.torus.steps[index];actions.startTour('torus',index);actions.seekTour(chapter.seconds*p);rig.queueTourShot();
+  for(let i=0;i<65;i++)rig.updateTourCamera(.025,panelHeight,panelWidth);
+  const current=expansionAt(chapter.scene,p),view=funnelViewport(width,height,panelHeight,panelWidth);
+  for(const [x,y,z]of goldenFunnelBounds(funnelReveal(chapter.scene.torus,p))){
+   const projected=new Vector3(x,z,-y).multiplyScalar(current.scale).project(scene.camera);
+   const px=(projected.x+1)*width/2,py=(1-projected.y)*height/2;
+   assert.ok(Math.abs(px-view.centerX)<=view.usableWidth/2+1&&Math.abs(py-view.centerY)<=view.usableHeight/2+1,'Both golden rims fit the unobstructed desktop/phone scene');
+  }
+ }
+}
+console.log('PASS: upper and lower golden funnel rims remain visible on desktop and phone, including the 13 → 14 boundary');

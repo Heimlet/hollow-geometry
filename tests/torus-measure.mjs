@@ -45,6 +45,15 @@ const obstacle={left:previousLeft,right:previousLeft+136,top:previousTop,bottom:
 measure.update({enabled:true,anchors,camera,viewport,obstacles:[obstacle]});
 const shiftedTop=parseFloat(label.style.top);
 assert.ok(shiftedTop+84<=obstacle.top-5||shiftedTop>=obstacle.bottom+5,'Height caption avoids existing geometric annotations');
+for(const [width,height,panelTop,stageBottom]of [[390,844,624,594],[390,844,410,380],[320,568,350,320],[844,390,104,166]]){
+ const phone={width,height,usableWidth:width-48,usableHeight:stageBottom-76,centerX:width/2,centerY:(stageBottom+76)/2};
+ measure.update({enabled:true,anchors,camera,viewport:phone,panelTop});
+ assert.equal(overlay.attributes['data-compact'],'true');
+ const top=parseFloat(label.style.top);assert.ok(top>=76&&top+24<panelTop,'Compact caption clears the header and player even in landscape');
+ if(height>600||width<700)assert.ok(top>=stageBottom,'Phone height text is outside the geometry stage, with either folded or expanded text');
+ near(parseFloat(label.style.left),width/2,'Compact caption stays centred above the player');
+}
+measure.update({enabled:true,anchors,camera,viewport});assert.equal(overlay.attributes['data-compact'],'false','Returning to desktop restores the drafting caption');
 for(const units of [-10,0,10,100000])for(const scale of [1.001,4,8.99]){
  near(heightGrowthLog(2*A*scale,units),Math.log(scale)+units*2*Math.log(GOLDEN_CYCLE_SCALE),'Counter restores physical units');
  near(heightGrowthLog(2*A*scale,units),heightGrowthLog(2*A*scale/GOLDEN_CYCLE_SCALE**2,units+1),'Numerical rebasing cannot reset the counter');

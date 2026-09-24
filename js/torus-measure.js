@@ -50,7 +50,7 @@ export function createTorusHeightMeasure(parent=document.body){
   label.append(title,value,caption,origin,edgeOn);overlay.append(svg,label);parent.append(overlay);
   const project=(p,camera,w,h)=>{const v=p.clone().project(camera);return [(v.x+1)*w/2,(1-v.y)*h/2];};
   const path=points=>points.map(([x,y],i)=>(i?'L':'M')+x.toFixed(2)+','+y.toFixed(2)).join(' ');
-  return {update({enabled,anchors,camera,units=0,viewport,opacity=1,obstacles=[]}){
+  return {update({enabled,anchors,camera,units=0,viewport,opacity=1,obstacles=[],panelTop}){
     overlay.hidden=!enabled||!anchors||opacity<=0;if(overlay.hidden)return;
     const {width,height}=viewport,data=placeHeightDimension(torusHeightDimension(anchors,camera),camera,viewport),ends=data.ends.map(p=>project(p,camera,width,height)),starts=data.supports.map(p=>project(p,camera,width,height));
     svg.setAttribute('viewBox',`0 0 ${width} ${height}`);overlay.style.opacity=opacity;
@@ -65,6 +65,15 @@ export function createTorusHeightMeasure(parent=document.body){
     const arrowAt=(p,sign)=>path([[p[0]+ux*arrow*sign-uy*3,p[1]+uy*arrow*sign+ux*3],p,[p[0]+ux*arrow*sign+uy*3,p[1]+uy*arrow*sign-ux*3]]);
     dimension.setAttribute('d',[path(ends),...ends.map(p=>path([[p[0]-uy*tick,p[1]+ux*tick],[p[0]+uy*tick,p[1]-ux*tick]])),arrowAt(a,1),arrowAt(b,-1)].join(' '));
     const left=viewport.centerX-viewport.usableWidth/2,right=viewport.centerX+viewport.usableWidth/2,top=viewport.centerY-viewport.usableHeight/2,bottom=viewport.centerY+viewport.usableHeight/2;
+    const compact=width<=700||(width<=1000&&height<=600);
+    overlay.setAttribute('data-compact',String(compact));
+    if(compact){
+      // The phone's stage reserves a gap above its player. Keep the number there
+      // while the actual dimension lines continue to follow the source vertices.
+      label.style.left=`${width/2}px`;
+      label.style.top=`${Math.max(76,(panelTop??bottom+30)-28)}px`;
+      return;
+    }
     // The same projected bracket follows free orbit. At a polar view its true
     // height is foreshortened to zero; retain the number without a false ruler.
     const labelWidth=136,labelHeight=visible?84:100;
