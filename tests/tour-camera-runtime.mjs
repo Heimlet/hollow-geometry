@@ -69,3 +69,27 @@ for(const [x,y,z] of torusBounds()){
  assert.ok(projected.z>=-1&&projected.z<=1,'Expanded torus remains between the orthographic clipping planes');
 }
 console.log('PASS: ninefold enlarged finale remains fully visible after perspective flattens');
+
+// The tour opener approaches from afar; ordinary transitions do not replay it.
+actions.startTour('platonic');rig.queueTourShot({entrance:true});rig.updateTourCamera(0,330,440);
+const farHeight=scene.getViewHeight();let height=farHeight;
+for(let i=0;i<50;i++){rig.updateTourCamera(.025,330,440);assert.ok(scene.getViewHeight()<=height+1e-8);height=scene.getViewHeight();}
+assert.ok(Math.abs(farHeight/height-64)<1e-8,'The opening begins at 1/64 of its normal screen size');
+rig.queueTourShot({holdTimeline:false});rig.updateTourCamera(0,330,440);assert.ok(Math.abs(scene.getViewHeight()-height)<1e-8,'Return keeps the current scale instead of jumping far away');
+actions.startTour('fruit');rig.queueTourShot({entrance:true});rig.updateTourCamera(0,330,440);
+assert.equal(scene.projectionDepth,0);assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-10,'Entry zoom preserves the Flower’s exact 2D axis');
+
+actions.startTour('torus',finalIndex);actions.seekTour(TOURS.torus.steps[finalIndex].seconds);rig.queueTourShot();for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
+const restartHeight=scene.getViewHeight(),restartTarget=scene.controls.target.clone();
+actions.restartTour();rig.updateTourCamera(0,330,440);assert.equal(scene.getViewHeight(),restartHeight);assert.equal(scene.controls.enabled,false);
+height=restartHeight;
+for(let i=0;i<40;i++){frame();assert.ok(scene.getViewHeight()>height);height=scene.getViewHeight();assert.equal(getState().tour.index,finalIndex);}
+actions.tourControl({playing:false});const held=getState().tour.restartElapsed;for(let i=0;i<10;i++)frame();
+assert.equal(getState().tour.restartElapsed,held);assert.ok(Math.abs(scene.getViewHeight()-height)<1e-8,'Pause freezes the retreat');
+actions.tourControl({playing:true});for(let i=0;i<54;i++)frame();
+assert.ok(scene.getViewHeight()/restartHeight>500,'The real construction shrinks to a point before restart');
+assert.ok(scene.controls.target.distanceTo(restartTarget)<1e-10,'Retreat preserves the object centre');
+assert.equal(getState().tour.index,finalIndex);
+for(let i=0;i<3;i++)frame();assert.equal(getState().tour.index,0);assert.equal(getState().tour.phase,'watch');
+assert.equal(getState().tour.restartElapsed,undefined);assert.equal(getState().tour.playing,true);
+console.log('PASS: fast distant entry, exact flat axes, ordinary return scale, paused point collapse and automatic replay');

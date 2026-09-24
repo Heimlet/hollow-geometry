@@ -4,6 +4,7 @@ import { initialLab } from './lab-state.js';
 import { GOLDEN_SCENES } from './golden-scene-data.js';
 import { wrapAngle } from './merkaba-motion.js';
 import { cubeWitnessPhase,expansionAt } from './torus-math.js';
+import { TOUR_RESTART_SECONDS } from './tour-motion.js';
 export const initialTour=()=>({id:null,index:0,elapsed:0,playing:false,auto:true,phase:'idle'});
 export const smooth=value=>{const t=Math.max(0,Math.min(1,value));return t*t*(3-2*t);};
 export const tourProgress=state=>state.tour.id?Math.min(1,state.tour.elapsed/tourStep(state).seconds):0;
@@ -56,6 +57,12 @@ export function frameTour(state,elapsed) {
 }
 export function tickTour(state,seconds) {
   const tour=state.tour,step=tourStep(state);if(!step||!tour.playing)return state;
+  if(tour.phase==='restarting'){
+    const restartElapsed=Math.min(TOUR_RESTART_SECONDS,tour.restartElapsed+seconds);
+    if(restartElapsed>=TOUR_RESTART_SECONDS)return enterTourStep(state,tour.id,0,tour.auto);
+    const next=frameTour(state,tour.elapsed+seconds);
+    return {...next,tour:{...next.tour,restartElapsed}};
+  }
   const elapsed=Math.min(step.seconds,tour.elapsed+seconds);
   let next=frameTour(state,elapsed);
   if(elapsed===step.seconds) {

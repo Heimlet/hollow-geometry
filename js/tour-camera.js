@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,cubeWitnessView } from './torus-math.js';
 import { fruitVolume,FRUIT_PLANAR } from './fruit-life.js';
 import { dimensionFrame } from './dimension-scene.js';
+import { TOUR_ENTRY_SECONDS,tourEntryScale,tourRestartScale } from './tour-motion.js';
 import { camera,controls,projectionDepth,getViewHeight,setViewHeight,setDepth,setCameraFrameOffset,settleControls } from './scene.js';
 import { levels } from './levels.js';
 import { derivedObjects,traditionalFields } from './lab.js';
@@ -11,11 +12,11 @@ import { tourProgress,smooth } from './tour-state.js';
 import { goldenSceneView } from './golden-scenes.js';
 import { cancelCameraAnimation } from './presets.js';
 import { shotAt,stageViewport,fitTourFrame } from './tour-camera-math.js';
-let pending=false,flight=null,base=null,baseKey=null,active=false,viewport=null,finishedKey=null,holdTimeline=true;
+let pending=false,flight=null,base=null,baseKey=null,active=false,viewport=null,finishedKey=null,holdTimeline=true,entrance=false,restartPose=null;
 const torusOrientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));
 const torusFramePoints=torusBounds().map(p=>new THREE.Vector3(...p).applyQuaternion(torusOrientation));
-export function queueTourShot(options={}){cancelCameraAnimation();settleControls();pending=true;flight=null;baseKey=null;holdTimeline=options.holdTimeline!==false;}
-export function cancelTourShot(){pending=false;flight=null;}
+export function queueTourShot(options={}){cancelCameraAnimation();settleControls();pending=true;flight=null;baseKey=null;holdTimeline=options.holdTimeline!==false;entrance=!!options.entrance;}
+export function cancelTourShot(){pending=false;flight=null;entrance=false;}
 export function tourCameraBusy(){return holdTimeline&&(pending||!!flight);}
 function scenePoints() {
   if(tourStep(getState())?.scene.dimensions){const f=fruitVolume(),t=dimensionFrame(tourProgress(getState())).network,scale=f.halfSide/(f.halfSide+2*f.radius)*(1-t)+t;return f.flowerBounds.map(p=>new THREE.Vector3(...p).multiplyScalar(scale));}
@@ -39,6 +40,7 @@ function scenePoints() {
 export function tourCameraStatus() {
   const state=getState();if(!state.tour.id)return {locked:false,moving:false};
   if(state.ui.topic)return {locked:true,moving:false,reading:true};
+  if(state.tour.phase==='restarting')return {locked:state.tour.playing,moving:state.tour.playing,restarting:true};
   if(pending||flight)return {locked:true,moving:true,flight:true};
   const recipe=tourStep(state).scene;
   return {locked:state.tour.playing&&shotAt(recipe,base?.direction||new THREE.Vector3(1,1,1),tourProgress(state)).locked,moving:state.tour.playing};
@@ -46,21 +48,31 @@ export function tourCameraStatus() {
 export function updateTourCamera(dt,panelHeight,panelWidth) {
   const state=getState(),recipe=tourStep(state)?.scene;
   if(!recipe) {
-    if(active){setCameraFrameOffset(0);controls.enabled=true;controls.enablePan=true;active=false;cancelTourShot();}
+    restartPose=null;if(active){setCameraFrameOffset(0);controls.enabled=true;controls.enablePan=true;active=false;cancelTourShot();}
     return;
   }
   active=true;controls.enablePan=false;controls.autoRotate=false;
   const resized=viewport&&(viewport.width!==innerWidth||viewport.height!==innerHeight);
   viewport=stageViewport(innerWidth,innerHeight,panelHeight,panelWidth);
   setCameraFrameOffset(viewport.offsetY,viewport.offsetX);
+  if(state.tour.phase==='restarting'){
+    cancelTourShot();
+    const scale=tourRestartScale(state.tour.restartElapsed),direction=camera.position.clone().sub(controls.target).normalize();
+    if(!restartPose||!state.tour.playing)restartPose={direction,height:getViewHeight()/scale,target:controls.target.clone(),distance:camera.position.distanceTo(controls.target)};
+    controls.enabled=!state.tour.playing&&!state.ui.topic;
+    if(state.ui.topic)return;
+    controls.target.copy(restartPose.target);camera.position.copy(restartPose.target).addScaledVector(restartPose.direction,restartPose.distance);
+    setViewHeight(restartPose.height*scale);controls.update();camera.updateMatrixWorld(true);return;
+  }
+  restartPose=null;
   const chapterKey=`${state.tour.id}:${state.tour.index}`,unframed=baseKey!==chapterKey;
   // Pausing before the first animation frame can cancel a queued flight, but
   // must still initialize and frame the chapter once before releasing orbit.
-  const cut=pending&&recipe.camera?.cut||unframed&&!pending;
+  const cut=pending&&recipe.camera?.cut&&!entrance||unframed&&!pending;
   if(pending||unframed) {
     base=recipe.golden?goldenSceneView(recipe.golden,recipe.detail):{direction:new THREE.Vector3(3,2,4).normalize(),target:new THREE.Vector3()};
     if(recipe.dir)base.direction=new THREE.Vector3(...recipe.dir).normalize();
-    flight=cut?null:{elapsed:0,direction:camera.position.clone().sub(controls.target).normalize(),target:controls.target.clone(),height:getViewHeight(),depth:projectionDepth};pending=false;baseKey=chapterKey;
+    flight=cut?null:{elapsed:0,entrance,direction:camera.position.clone().sub(controls.target).normalize(),target:controls.target.clone(),height:getViewHeight(),depth:projectionDepth};pending=false;entrance=false;baseKey=chapterKey;
   }
   const p=tourProgress(state),finish=p===1&&finishedKey!==chapterKey&&recipe.camera?.mode!=='free'&&(recipe.camera?.releaseAt??1)>=1;
   if(p<1)finishedKey=null;
@@ -84,9 +96,12 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   goal.height/=shot.zoom;
   let direction=shot.direction,height=goal.height,target=goal.center,depth=shot.depth;
   if(flight) {
-    flight.elapsed+=Math.min(dt,.05);const t=smooth(flight.elapsed/(recipe.golden?1.5:1.3));
-    direction=flight.direction.clone().applyQuaternion(new THREE.Quaternion().setFromUnitVectors(flight.direction,shot.direction).slerp(new THREE.Quaternion(),1-t));
-    height=THREE.MathUtils.lerp(flight.height,goal.height,t);target=flight.target.clone().lerp(goal.center,t);depth=THREE.MathUtils.lerp(flight.depth,shot.depth,t);
+    flight.elapsed+=Math.min(dt,.05);const t=smooth(flight.elapsed/(flight.entrance?TOUR_ENTRY_SECONDS:recipe.golden?1.5:1.3));
+    if(flight.entrance)height=goal.height*tourEntryScale(flight.elapsed);
+    else {
+      direction=flight.direction.clone().applyQuaternion(new THREE.Quaternion().setFromUnitVectors(flight.direction,shot.direction).slerp(new THREE.Quaternion(),1-t));
+      height=THREE.MathUtils.lerp(flight.height,goal.height,t);target=flight.target.clone().lerp(goal.center,t);depth=THREE.MathUtils.lerp(flight.depth,shot.depth,t);
+    }
     if(t>=1)flight=null;
   } else {
     // Follow the actual growing bounds, rather than zooming out to an endpoint

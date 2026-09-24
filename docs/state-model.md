@@ -278,10 +278,14 @@ Ctrl Y, кнопки верхней панели и S/G/H/R. В текстовы
 выбрасывает наблюдателя из звёздной сферы. По умолчанию 2400 звёзд, диапазон 200–8000; количество
 хранится в `display.starCount`, переключатель — в `display.stars`.
 В финальном туре с начала расширения (глава 7) до конца главы 10 небо плавно
-набирает 8000 звёзд и сохраняет эту плотность до финала. Время берётся из тура:
+набирает до 12000 звёзд и сохраняет эту плотность до финала. Время берётся из тура:
 пауза, переходы и перемотка воспроизводимы. Новые звёзды проявляются прозрачностью
 в уже выделенных буферах; сохранённое количество и выключатель не меняются.
 После выхода из тура используется выбранная пользователем плотность.
+`star-budget.js` отслеживает устойчивую частоту кадров: ниже 35 FPS постепенно
+убирает только дополнительные звёзды, выше 52 FPS медленно возвращает их.
+Пауза, скрытая вкладка и длинные разрывы между кадрами не считаются просадкой.
+При перезапуске дополнительные звёзды плавно уходят вместе с конструкцией.
 
 Дополнительная проверка: `node tests/history.mjs`. Расширенный `golden.mjs` проверяет
 ортогональность, покрытие 12 вершин и шесть точных уровней на каждой грани при трёх
@@ -501,3 +505,11 @@ geometry. Detailed narration links and reading shortcuts wait until chapter 13.
 adds an SVG eye and slightly dims the home card; scene undo/redo cannot erase it.
 Blocked storage falls back to the current session. `tests/tour-history.mjs` covers
 reload, invalid data and unavailable storage.
+
+Only the opening chapter approaches from a 64-times wider view in 1.15 seconds,
+retaining its exact projection axis. Later chapters retain their previous camera
+transitions; resume and Camera Return keep the existing scale. Continuous rotation
+chapters retain their timeline during transitions. The final chapter offers Restart:
+`tour/restart` retains the current scene for a 2.4-second retreat to 1/512 size,
+then atomically enters chapter zero. Restart time is transient, supports pause,
+and never accumulates geometry. Tests cover replay, framing and adaptive stars.

@@ -53,6 +53,11 @@ export function reduce(state, action) {
       next={...state,ui:{mode:action.mode},tour:{...state.tour,id:null,playing:false,phase:'idle'}};break;
     }
     case 'tour/start': next=enterTourStep(state,action.id,action.index??0,state.tour.auto);break;
+    case 'tour/restart': {
+      requireValid(state.tour.id&&state.tour.index===TOURS[state.tour.id].steps.length-1,'Restart belongs to the final chapter');
+      if(state.tour.phase==='restarting')break;
+      next={...state,ui:{...state.ui,topic:null,topicTrail:[]},tour:{...state.tour,playing:true,phase:'restarting',restartElapsed:0}};break;
+    }
     case 'tour/step': {
       requireValid(state.tour.id&&Number.isInteger(action.index),'No active tour');
       next=enterTourStep(state,state.tour.id,action.index,state.tour.auto);break;
@@ -61,7 +66,7 @@ export function reduce(state, action) {
       requireValid(Object.entries(action.patch).every(([k,v])=>['playing','auto'].includes(k)&&typeof v==='boolean'),'Invalid tour controls');
       next={...state,tour:{...state.tour,...action.patch},ui:{...state.ui,...(action.patch.playing?{topic:null,topicTrail:[]}:{})}};
       if(!state.tour.id)next.tour.playing=false;
-      else if(action.patch.playing===true&&state.tour.elapsed>=TOURS[state.tour.id].steps[state.tour.index].seconds)
+      else if(action.patch.playing===true&&state.tour.phase!=='restarting'&&state.tour.elapsed>=TOURS[state.tour.id].steps[state.tour.index].seconds)
         next=enterTourStep(next,state.tour.id,(state.tour.index+1)%TOURS[state.tour.id].steps.length,next.tour.auto);
       break;
     }
@@ -351,6 +356,7 @@ export const actions = {
   closeTopic: (resume=true) => dispatch({type:'knowledge/close',resume,history:false}),
   interface: mode => dispatch({type:'ui/mode',mode,history:false}),
   startTour: (id,index=0) => dispatch({type:'tour/start',id,index}),
+  restartTour: () => dispatch({type:'tour/restart'}),
   tourStep: index => dispatch({type:'tour/step',index}),
   tourControl: patch => dispatch({type:'tour/control',patch}),
   seekTour: elapsed => dispatch({type:'tour/seek',elapsed}),

@@ -4,6 +4,9 @@ import { scene, camera, controls, renderer } from './scene.js';
 import { getState } from './state.js';
 import { tourStep } from './tour-data.js';
 import { tourStarProgress } from './tour-effects.js';
+import { tourRestartSky } from './tour-motion.js';
+import { createStarBudget } from './star-budget.js';
+const starBudget=createStarBudget();
 const sky=new THREE.Scene(),skyCamera=new THREE.PerspectiveCamera(65,1,.1,400);
 scene.background=null;renderer.setClearColor(0x04040f);renderer.autoClear=false;
 const sprite=document.createElement('canvas');sprite.width=sprite.height=32;
@@ -11,7 +14,7 @@ const ctx=sprite.getContext('2d'),glow=ctx.createRadialGradient(16,16,0,16,16,16
 glow.addColorStop(0,'#fff');glow.addColorStop(.22,'#fff');glow.addColorStop(1,'#fff0');ctx.fillStyle=glow;ctx.fillRect(0,0,32,32);
 const map=new THREE.CanvasTexture(sprite);
 let seed=43193;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
-const layers=[{max:7200,size:.23,opacity:.8},{max:800,size:.44,opacity:1}].map(config=>{
+const layers=[{max:10800,size:.23,opacity:.8},{max:1200,size:.44,opacity:1}].map(config=>{
   const positions=[],colors=[];
   for(let i=0;i<config.max;i++) {
     const radius=30+random()*85,azimuth=random()*Math.PI*2,z=random()*2-1,r=Math.sqrt(1-z*z);
@@ -30,8 +33,10 @@ const layers=[{max:7200,size:.23,opacity:.8},{max:800,size:.44,opacity:1}].map(c
   points.material.customProgramCacheKey=()=> 'hollow-star-birth-v1';
   sky.add(points);return {points,baseCount,birthCount,max:config.max};
 });
-export function updateStarfield() {
-  const state=getState(),count=state.display.starCount,bright=Math.round(count*.1),progress=tourStarProgress(tourStep(state)?.scene,state.tour.elapsed);
+export function updateStarfield(dt=0) {
+  const state=getState(),recipe=tourStep(state)?.scene,count=state.display.starCount,bright=Math.round(count*.1);
+  const budget=starBudget.update(dt,!!recipe?.starRampDuration&&state.tour.playing&&!document.hidden);
+  const progress=tourStarProgress(recipe,state.tour.elapsed)*budget*(state.tour.phase==='restarting'?tourRestartSky(state.tour.restartElapsed):1);
   layers.forEach((layer,i)=>{
     const base=i?bright:count-bright,birth=base+(layer.max-base+64)*progress;
     layer.baseCount.value=base;layer.birthCount.value=birth;

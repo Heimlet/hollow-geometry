@@ -47,11 +47,12 @@ function clearEffects() {
 }
 export function resetTourCamera() {
   if(!getState().tour.id)return false;
+  if(getState().tour.phase==='restarting')return true;
   queueTourShot({holdTimeline:false});return true;
 }
 export function updateTours(dt) {
   const state=getState();
-  if(state.tour.playing&&!document.hidden&&!tourCameraBusy())actions.tickTour(Math.min(dt,.05));
+  if(state.tour.playing&&!document.hidden&&(!tourCameraBusy()||state.tour.phase==='restarting'))actions.tickTour(Math.min(dt,.05));
 }
 export function updateTourStage(dt) {
   const state=getState(),recipe=tourStep(state)?.scene;
@@ -63,13 +64,13 @@ export function updateTourStage(dt) {
   if(!getState().tour.id||!status)return;
   const s=tourCameraStatus(),p=tourProgress(getState());
   const symbol=recipe.camera?.symbol,cue=s.locked&&!s.flight&&symbol&&p>=symbol.from&&p<=symbol.to?symbol.label:null;
-  const motion=getState().tour.phase==='complete'?'✓ Тур завершён':getState().tour.playing?'▶ Анимация идёт':'Ⅱ ТУР НА ПАУЗЕ';
+  const motion=getState().tour.playing?(s.restarting?'↻ Возвращение к началу':'▶ Анимация идёт'):getState().tour.phase==='complete'?'✓ Тур завершён':'Ⅱ ТУР НА ПАУЗЕ';
   const control=s.reading?'🔒 Открыта справка':s.locked?'🔒 Камера по сценарию':'↔ Можно вращать';
   if(animationState.textContent!==motion)animationState.textContent=motion;
   if(cameraState.textContent!==control)cameraState.textContent=control;
   cameraState.dataset.locked=String(s.locked);
-  returnCamera.disabled=!!(s.locked||s.flight);
-  const message=cue|| (s.reading?'Сцена остановлена на время чтения.':s.flight?'Переход к следующему ракурсу.':s.locked?'Ручное вращение заблокировано. «Пауза и осмотр» освобождает камеру.':getState().tour.playing?'Тур продолжается. Вращайте свободно; ↶ вернёт ракурс этой главы.':getState().tour.phase==='complete'?'Путешествие завершено. Вращайте сцену; ↶ вернёт финальный ракурс.':'Вращайте фигуру. ↶ вернёт ракурс, «Продолжить тур» — движение.');
+  returnCamera.disabled=!!(s.locked||s.flight||s.restarting);
+  const message=cue|| (s.reading?'Сцена остановлена на время чтения.':s.restarting?'Фигура становится точкой. Отсюда начнётся новый круг.':s.flight?'Переход к следующему ракурсу.':s.locked?'Ручное вращение заблокировано. «Пауза и осмотр» освобождает камеру.':getState().tour.playing?'Тур продолжается. Вращайте свободно; ↶ вернёт ракурс этой главы.':getState().tour.phase==='complete'?'Путешествие завершено. Вращайте сцену; ↶ вернёт финальный ракурс.':'Вращайте фигуру. ↶ вернёт ракурс, «Продолжить тур» — движение.');
   const projection=projectionDepth>0?` · Перспектива ${Math.round(projectionDepth*100)}%`:' · Точная ортография';
   if(status.textContent!==message+projection)status.textContent=message+projection;
 }
@@ -146,6 +147,7 @@ export function initTours() {
   const title=el('h2'),text=el('p',null,'tour-narration'),controlsRow=el('div',null,'tour-controls');
   const previous=button(controlsRow,'←',()=>actions.tourStep(getState().tour.index-1));previous.setAttribute('aria-label','Предыдущая глава');
   const play=button(controlsRow,'Пауза',()=>actions.tourControl({playing:!getState().tour.playing}));play.className='tour-play';
+  const restart=button(controlsRow,'↻ Начать заново',()=>actions.restartTour());restart.className='tour-restart';restart.setAttribute('aria-label','Начать заново');restart.hidden=true;
   const next=button(controlsRow,'Дальше →',()=>actions.tourStep(getState().tour.index+1));next.setAttribute('aria-label','Следующая глава');
   returnCamera=button(controlsRow,'↶ Ракурс',resetTourCamera);returnCamera.className='tour-return';returnCamera.title='Вернуть ракурс тура';returnCamera.setAttribute('aria-label',returnCamera.title);
   const inspect=button(player,'Покинуть тур → лаборатория',()=>actions.interface('advanced'));inspect.className='tour-exit';
@@ -170,15 +172,16 @@ export function initTours() {
     player.dataset.playback=state.tour.phase==='complete'?'complete':state.tour.playing?'playing':'paused';
     if(!active){if(previousState?.tour.id){clearEffects();cancelCameraAnimation();cancelTourShot();}currentKey='';return;}
     const tour=TOURS[state.tour.id],step=tourStep(state),key=`${state.tour.id}:${state.tour.index}`;
-    if(key!==currentKey || ['tour/start','tour/step'].includes(action.type) || action.type.startsWith('history/')) {
+    const chapterChanged=key!==currentKey || ['tour/start','tour/step'].includes(action.type) || action.type.startsWith('history/');
+    if(chapterChanged) {
       clearEffects();currentKey=key;title.textContent=step.title;text.textContent=step.text;
       if(step.scene.dimensions)text.replaceChildren(...step.text.split(/(разрешаем)/u).map(part=>part==='разрешаем'?el('span',part,'tour-gold'):part));
       if(!quietFinale)linkTourText(text);
       if(!matchMedia('(prefers-reduced-motion: reduce)').matches)for(const node of [title,text])node.animate([{opacity:.3,transform:'translateY(4px)'},{opacity:1,transform:'translateY(0)'}],{duration:260,easing:'ease-out'});
       chapter.textContent=`${tour.name} · ${state.tour.index+1} / ${tour.steps.length}`;
-      previous.disabled=state.tour.index===0;next.disabled=state.tour.index===tour.steps.length-1;
+      previous.disabled=state.tour.index===0;next.disabled=state.tour.index===tour.steps.length-1;next.hidden=next.disabled;
       document.getElementById('info').classList.remove('vis');options.open=false;
-      queueTourShot({holdTimeline:!step.scene.continuousMotion});
+      queueTourShot({holdTimeline:!step.scene.continuousMotion,entrance:state.tour.index===0});
     }
     if(currentTour!==state.tour.id) {
       currentTour=state.tour.id;chapters.replaceChildren();progress.replaceChildren();
@@ -193,10 +196,11 @@ export function initTours() {
       node.firstElementChild.style.width=`${value*100}%`;node.dataset.status=index<state.tour.index?'complete':index===state.tour.index?'current':'next';
       node.setAttribute('aria-current',index===state.tour.index?'step':'false');
     });
-    play.textContent=state.tour.phase==='complete'?'Смотреть снова':state.tour.playing?'Ⅱ Пауза и осмотр':'▶ Продолжить тур';
+    restart.hidden=state.tour.index!==tour.steps.length-1;restart.disabled=state.tour.phase==='restarting';
+    play.hidden=state.tour.phase==='complete';play.textContent=state.tour.playing?'Ⅱ Пауза и осмотр':'▶ Продолжить тур';
     wait.checked=!state.tour.auto;
     if(previousState?.tour.playing&&!state.tour.playing)cancelTourShot();
-    if(previousState&&!previousState.tour.playing&&state.tour.playing)queueTourShot();
+    if(previousState&&!previousState.tour.playing&&state.tour.playing&&!chapterChanged&&state.tour.phase!=='restarting')queueTourShot();
   }
   render(getState());subscribe(render);
   const pause=()=>{if(getState().tour.id&&getState().tour.playing)actions.tourControl({playing:false});};
