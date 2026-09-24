@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { scene, camera, controls, renderer } from './scene.js';
 import { getState } from './state.js';
 import { tourStep } from './tour-data.js';
-import { tourStarProgress } from './tour-effects.js';
+import { tourStarDensity } from './tour-effects.js';
 import { tourRestartSky } from './tour-motion.js';
 import { createStarBudget } from './star-budget.js';
 const starBudget=createStarBudget();
@@ -35,11 +35,15 @@ const layers=[{max:10800,size:.23,opacity:.8},{max:1200,size:.44,opacity:1}].map
 });
 export function updateStarfield(dt=0) {
   const state=getState(),recipe=tourStep(state)?.scene,count=state.display.starCount,bright=Math.round(count*.1);
-  const budget=starBudget.update(dt,!!recipe?.starRampDuration&&state.tour.playing&&!document.hidden);
-  const progress=tourStarProgress(recipe,state.tour.elapsed)*budget*(state.tour.phase==='restarting'?tourRestartSky(state.tour.restartElapsed):1);
+  const density=tourStarDensity(recipe,state.tour.elapsed),cinematic=density!==null;
+  const budget=starBudget.update(dt,cinematic&&state.tour.playing&&!document.hidden);
+  // Replay restores the opening sky while the construction retreats to a point.
+  const progress=state.tour.phase==='restarting'&&cinematic
+    ?density+(1-density)*(1-tourRestartSky(state.tour.restartElapsed)):density;
   layers.forEach((layer,i)=>{
-    const base=i?bright:count-bright,birth=base+(layer.max-base+64)*progress;
-    layer.baseCount.value=base;layer.birthCount.value=birth;
+    const base=i?bright:count-bright,birth=cinematic?(base+(layer.max-base)*budget+64)*progress:base;
+    // All stars participate in the fade, including the laboratory's base count.
+    layer.baseCount.value=cinematic?0:base;layer.birthCount.value=birth;
     layer.points.geometry.setDrawRange(0,Math.min(layer.max,Math.ceil(birth)));
   });
   // Focal-length compensation of the mathematical object camera must not throw

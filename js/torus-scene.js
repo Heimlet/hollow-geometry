@@ -161,7 +161,8 @@ export function createTorusScene(scene) {
       line.material.opacity=preview*(seed===ORBIT_SEEDS[7]?.8:.18)*(cage?handoff:1);target.material.opacity=preview*.85;
     });
     futureBodies.forEach(({line,pairs,side})=>{
-      const bodyInk=mechanism?preparation:cage?1:growing||kind==='traces'?arrival*.65*traceIn:0;
+      // The next pair first appears in the cube chapter, after the core proof.
+      const bodyInk=cage?ease(p/.12):growing||kind==='traces'?arrival*.65*traceIn:0;
       line.visible=bodyInk>0;line.material.opacity=bodyInk*(cage?.4+.1*(1-carry)-.24*handoff:.4);
       if(!line.visible)return;
       const index=pairs[0][0],base=ORBIT_SEEDS[index].point,anchor=actual[index];
