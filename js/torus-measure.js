@@ -42,25 +42,25 @@ export function createTorusHeightMeasure(parent=document.body){
   const overlay=document.createElement('div');overlay.className='torus-height-measure';overlay.hidden=true;overlay.setAttribute('aria-hidden','true');
   const svg=make('svg'),lower=make('path',{class:'height-leader cyan'}),upper=make('path',{class:'height-leader pink'}),dimension=make('path',{class:'height-dimension'}),dots=[make('circle',{r:3,class:'cyan'}),make('circle',{r:3,class:'pink'})];
   svg.append(lower,upper,dimension,...dots);
-  const rulerText=make('text',{class:'height-ruler-text','text-anchor':'middle',dy:-6});rulerText.textContent='Высота тора';svg.append(rulerText);
+  const rulerText=make('text',{class:'height-ruler-text','text-anchor':'middle',dy:-8});
+  const rulerExponent=make('tspan',{'baseline-shift':'super','font-size':'70%'});
+  rulerText.append('H₀ × φ',rulerExponent);svg.append(rulerText);
   const label=document.createElement('div');label.className='torus-height-label';
   const title=document.createElement('span');title.textContent='Высота тора';
-  const value=document.createElement('strong'),exponent=document.createElement('sup'),caption=document.createElement('small'),origin=document.createElement('small');
-  value.append('H₀ × φ',exponent);origin.textContent='H₀ — до расширения';
-  const edgeOn=document.createElement('small');edgeOn.textContent='вид вдоль оси';edgeOn.hidden=true;
-  label.append(title,value,caption,origin,edgeOn);overlay.append(svg,label);parent.append(overlay);
+  const value=document.createElement('strong'),exponent=document.createElement('sup');
+  value.append('H₀ × φ',exponent);
+  label.append(title,value);overlay.append(svg,label);parent.append(overlay);
   const project=(p,camera,w,h)=>{const v=p.clone().project(camera);return [(v.x+1)*w/2,(1-v.y)*h/2];};
   const path=points=>points.map(([x,y],i)=>(i?'L':'M')+x.toFixed(2)+','+y.toFixed(2)).join(' ');
   return {update({enabled,anchors,camera,units=0,viewport,opacity=1,obstacles=[],panelTop}){
     overlay.hidden=!enabled||!anchors||opacity<=0;if(overlay.hidden)return;
     const {width,height}=viewport,data=placeHeightDimension(torusHeightDimension(anchors,camera),camera,viewport),ends=data.ends.map(p=>project(p,camera,width,height)),starts=data.supports.map(p=>project(p,camera,width,height));
     svg.setAttribute('viewBox',`0 0 ${width} ${height}`);overlay.style.opacity=opacity;
-    const log=heightGrowthLog(data.height,units),power=formatGoldenHeight(log),factor=formatHeightGrowth(log);
-    if(exponent.textContent!==power)exponent.textContent=power;
-    if(caption.textContent!==factor)caption.textContent=factor;
+    const log=heightGrowthLog(data.height,units),power=formatGoldenHeight(log);
+    if(exponent.textContent!==power){exponent.textContent=power;rulerExponent.textContent=power;}
     const [a,b]=ends,dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy),visible=length>=24;
-    svg.style.opacity=String(Math.min(1,Math.max(0,(length-12)/24)));edgeOn.hidden=visible;
-    const readable=length>=72;let textAngle=Math.atan2(dy,dx)*180/Math.PI;
+    svg.style.opacity=String(Math.min(1,Math.max(0,(length-12)/24)));
+    const readable=length>=Math.max(76,52+power.length*5);let textAngle=Math.atan2(dy,dx)*180/Math.PI;
     if(textAngle>90)textAngle-=180;if(textAngle< -90)textAngle+=180;
     rulerText.setAttribute('transform',`translate(${(a[0]+b[0])/2} ${(a[1]+b[1])/2}) rotate(${textAngle})`);
     rulerText.style.display=readable?'':'none';overlay.setAttribute('data-ruler-text',String(readable));
@@ -81,7 +81,7 @@ export function createTorusHeightMeasure(parent=document.body){
     }
     // The same projected bracket follows free orbit. At a polar view its true
     // height is foreshortened to zero; retain the number without a false ruler.
-    const labelWidth=136,labelHeight=visible?84:100;
+    const labelWidth=136,labelHeight=48;
     const x=visible?(a[0]+b[0])/2+10:left+8,y=visible?(a[1]+b[1])/2-labelHeight/2:viewport.centerY-labelHeight/2;
     const labelX=Math.max(left+4,Math.min(right-labelWidth-4,x)),clampY=y=>Math.max(top+4,Math.min(bottom-labelHeight-4,y));
     const candidates=[y,...obstacles.flatMap(r=>[r.bottom+7,r.top-labelHeight-7]),top+4,bottom-labelHeight-4].map(clampY);

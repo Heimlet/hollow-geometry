@@ -41,10 +41,10 @@ for(const camera of cameras)for(const scale of [.15,1,8.99])for(const angle of [
 const camera=cameras[0],anchors=merkabaAnchors(level);
 measure.update({enabled:true,anchors,camera,viewport});
 const previousTop=parseFloat(label.style.top),previousLeft=parseFloat(label.style.left);
-const obstacle={left:previousLeft,right:previousLeft+136,top:previousTop,bottom:previousTop+84};
+const obstacle={left:previousLeft,right:previousLeft+136,top:previousTop,bottom:previousTop+48};
 measure.update({enabled:true,anchors,camera,viewport,obstacles:[obstacle]});
 const shiftedTop=parseFloat(label.style.top);
-assert.ok(shiftedTop+84<=obstacle.top-5||shiftedTop>=obstacle.bottom+5,'Height caption avoids existing geometric annotations');
+assert.ok(shiftedTop+48<=obstacle.top-5||shiftedTop>=obstacle.bottom+5,'Height caption avoids existing geometric annotations');
 for(const [width,height,panelTop,stageBottom]of [[390,844,624,594],[390,844,410,380],[320,568,350,320],[844,390,104,166]]){
  const phone={width,height,usableWidth:width-48,usableHeight:stageBottom-76,centerX:width/2,centerY:(stageBottom+76)/2};
  measure.update({enabled:true,anchors,camera,viewport:phone,panelTop});
