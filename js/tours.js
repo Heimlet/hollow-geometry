@@ -113,7 +113,7 @@ export function applyTourEffects() {
       if(!recipe.golden)object.eMat.opacity=.97*layerAlpha;
       if((recipe.pairFocus||recipe.spiralFocus)&&['merkaba_up','merkaba_down'].includes(object.id)){const focus=smooth(p/.12)*(1-smooth((p-.87)/.13));object.eMat.opacity=.97*(.2+.75*focus);}
       if(recipe.intersectionWitness&&['merkaba_up','merkaba_down'].includes(object.id)){object.fMat.opacity=.12*(1-smooth((p-.18)/.12));object.eMat.opacity=.97*(1-(1-layerAlpha)*smooth((p-.22)/.08));}
-      if(recipe.sourceSurfaces&&['merkaba_up','merkaba_down'].includes(object.id)){const mix=torusSourceMix(recipe,p);object.fMat.opacity=object.op*mix;object.eMat.opacity=.97*(.2+.65*mix);}
+      if(recipe.sourceSurfaces&&['merkaba_up','merkaba_down'].includes(object.id)){const mix=torusSourceMix(recipe,p);object.fMat.opacity=(recipe.sourceFaceOpacity??object.op)*mix;object.eMat.opacity=.97*(.2+.65*mix);}
       if(recipe.tetraWitness&&['merkaba_up','merkaba_down'].includes(object.id)){const focus=tetraWitnessAppearance(p,object.id);object.eMat.opacity=.97*focus.edges;object.fMat.opacity=focus.faces;}
     }
   }
@@ -124,7 +124,7 @@ export function applyTourEffects() {
     owner.object.fMat.opacity=(tourFaceOpacity({...recipe,...layer},p)+pulse)*alpha*proof;owner.object.eMat.opacity=(layer?.edgeOpacity??.85)*alpha*proof;
     if(recipe.pairFocus||recipe.spiralFocus){const focus=1-smooth(p/.12)*(1-smooth((p-.87)/.13));owner.object.fMat.opacity*=focus;owner.object.eMat.opacity*=focus;}
     if(recipe.intersectionWitness&&owner.kind==='intersection'){owner.object.eMat.opacity*=smooth((p-.2)/.07);owner.object.fMat.opacity*=smooth((p-.15)/.1);}
-    if(recipe.tetraWitness&&owner.kind==='hull'){const mix=smooth((p-.82)/.18);owner.object.fMat.opacity=(.004+.004*mix)*alpha;owner.object.eMat.opacity=(.12+.04*mix)*alpha;}
+    if(recipe.tetraWitness&&owner.kind==='hull'){const mix=smooth((p-.82)/.18);const entry=smooth(p/.12);owner.object.fMat.opacity=(.004+.004*mix)*alpha*entry;owner.object.eMat.opacity=(.12+.04*mix)*alpha*entry;}
     if(recipe.tetraWitness&&owner.kind==='intersection'){const focus=tetraWitnessAppearance(p);owner.object.fMat.opacity=focus.coreFaces+.1*focus.handoff*Math.cos(2*state.lab.rotation.up*Math.PI/180)**24;owner.object.eMat.opacity=focus.coreEdges;}
   }
 }

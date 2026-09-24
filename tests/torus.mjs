@@ -32,10 +32,10 @@ assert.ok(ids.indexOf('torus-expansion')<ids.indexOf('torus-orbits'));
 assert.ok(ids.indexOf('torus-expansion')<ids.indexOf('torus-birth'));
 const expanded=TOURS.torus.steps.find(s=>s.id==='torus-expansion').scene;
 assert.equal(expanded.growth,true);assert.equal(expanded.depth,undefined,'The same original pair grows instead of being replaced by recursion copies');
-assert.equal(ids[5],'torus-hull');assert.equal(ids[6],'torus-expansion');
+assert.equal(ids.indexOf('torus-expansion'),ids.indexOf('torus-hull')+1);
 assert.equal(ids.at(-1),'torus-cosmos');
 let lastExpansion=null,lastChapter=null;
-for(const chapter of TOURS.torus.steps.slice(6)){
+for(const chapter of TOURS.torus.steps.slice(ids.indexOf('torus-expansion'))){
  const r=chapter.scene,start=expansionAt(r,0),end=expansionAt(r,1);
  assert.ok(start.active&&end.level>start.level,'Every chapter, including the last, continues growth');
  if(lastExpansion){assert.deepEqual({...start,ratio:null},{...lastExpansion,ratio:null},'The selected growth law may change, but pose and scale never reset');assert.deepEqual(r.camera.path[0].dir,lastChapter.scene.camera.path.at(-1).dir,'Camera has no chapter jump');assert.equal(r.camera.zoom[0][1],lastChapter.scene.camera.zoom.at(-1)[1]);}
@@ -61,29 +61,18 @@ for(let i=1;i<=18;i++)assert.ok(Math.hypot(...torusPoint(i*tau,i*tau*phi).map((v
 assert.equal(Object.keys(TOURS).at(-1),'torus');
 assert.ok(tourDuration('torus')>=90&&tourDuration('torus')<=360,'Expanded finale remains a bounded reading sequence');
 assert.equal(TOURS.torus.steps[0].scene.fruit,'network');
-const rectangleIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-rectangles');
-const depthIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-rectangle-depth');
-const axisIndex=TOURS.torus.steps.findIndex(s=>s.scene.axisGuide);
-assert.ok(rectangleIndex>=0&&depthIndex===rectangleIndex+1&&axisIndex>depthIndex,'Golden subdivision and its continuation precede the vertical axis');
-for(const index of [rectangleIndex,depthIndex]) {
-  const chapter=TOURS.torus.steps[index];
-  const initial=reduce(initialState(),{type:'tour/start',id:'torus',index});
-  const halfway=reduce(initial,{type:'tour/seek',elapsed:chapter.seconds*.5});
-  assert.equal(initial.goldenScene.id,'division');assert.equal(initial.objects.icosahedron.visible,true);
-  assert.equal(initial.lab.layers.intersection,false);assert.equal(initial.lab.layers.hull,false);
-  assert.equal(chapter.scene.axisGuide,undefined);
-  assert.ok(halfway.goldenScene.progress>initial.goldenScene.progress,'Rectangles and spirals draw during the chapter');
-  const axisState=reduce(halfway,{type:'tour/step',index:axisIndex});
-  assert.equal(axisState.goldenScene.id,'none');assert.equal(axisState.objects.icosahedron.visible,false,'The golden source leaves with its overlay');
-  const returned=reduce(axisState,{type:'tour/step',index});
-  assert.deepEqual(returned.goldenScene,initial.goldenScene,'Returning starts the construction again');
+const intersectionIndex=ids.indexOf('torus-intersection');
+assert.equal(intersectionIndex,2,'The cube reveals the pair, then explains its intersection without an unrelated golden detour');
+for(let index=0;index<TOURS.torus.steps.length;index++){
+  const state=reduce(initialState(),{type:'tour/start',id:'torus',index});
+  assert.equal(state.objects.icosahedron.visible,false,'No unrelated icosahedron enters the finale');
+  assert.equal(state.goldenScene.id,'none','Spiral coupling uses the actual tetrahedron vertices');
 }
-assert.equal(TOURS.torus.steps[depthIndex].scene.divisionFrom,TOURS.torus.steps[rectangleIndex].scene.divisionTo??6,'The close-up continues the existing subdivisions');
 for(const topic of ['torus','vortex'])for(const [,text,refs=[]]of KNOWLEDGE[topic].sections){assert.ok(text.length>30);for(const ref of refs)assert.match(KNOWLEDGE[topic].sources[ref][1],/^https:\/\//);}
 assert.equal(KNOWLEDGE.vortex.sections.filter(s=>s[3]).length,4,'Vorticity has its own short, sourced formula card');
 for(const id of ['torus-birth','torus-weave'])assert.equal(TOURS.torus.steps.find(s=>s.id===id).scene.reading,'vortex');
 assert.equal(KNOWLEDGE.torus.setting,null,'The article must not link to unrelated laboratory controls');
-let state=reduce(initialState(),{type:'tour/start',id:'torus',index:4});state=reduce(state,{type:'tour/seek',elapsed:5});
+let state=reduce(initialState(),{type:'tour/start',id:'torus',index:intersectionIndex});state=reduce(state,{type:'tour/seek',elapsed:5});
 const paused=reduce(state,{type:'knowledge/open',topic:'torus'});assert.equal(paused.tour.elapsed,5);assert.equal(paused.tour.playing,false);
 assert.deepEqual(paused.objects,state.objects);assert.equal(reduce(paused,{type:'tour/tick',seconds:2}),paused);
 const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
@@ -223,7 +212,7 @@ const {torusOpeningHandoff}=await import('../js/tour-effects.js');
 assert.deepEqual(torusOpeningHandoff(0),{network:1,scale:3,bounds:1});
 assert.equal(torusOpeningHandoff(.18).scale,3,'The cube stays at the network vertices until the network has faded');
 assert.deepEqual(torusOpeningHandoff(1),{network:0,scale:1,bounds:0});
-const held=reduce(initialState(),{type:'tour/start',id:'torus',index:4});
-assert.equal(reduce(held,{type:'tour/seek',elapsed:TOURS.torus.steps[4].seconds*.29}).lab.rotation.up,0,'The inner octahedron is explained while the original pair is canonical');
+const held=reduce(initialState(),{type:'tour/start',id:'torus',index:intersectionIndex});
+assert.equal(reduce(held,{type:'tour/seek',elapsed:TOURS.torus.steps[intersectionIndex].seconds*.29}).lab.rotation.up,0,'The inner octahedron is explained while the original pair is canonical');
 assert.equal(TOURS.torus.steps.at(-1).title,'Расширение или сжатие');
 for(const id of ['torus-spiral-law','torus-whole'])assert.ok(TOURS.torus.steps.find(s=>s.id===id).scene.camera.path.some(key=>key.dir[1]/Math.hypot(...key.dir)>.99),'Spirals are revealed from above');

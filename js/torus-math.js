@@ -29,13 +29,17 @@ export const expansionPath=(seed,segments=192)=>Array.from({length:segments+1},(
 // Mirrored spatial logarithmic spirals. Scaling Z as well keeps every anchor
 // on the same similar torus, rather than sliding it off the contact meridian.
 export function spiralGuide(seed,turns,ratio=SPIRAL_RATIO){return orbitPoint(seed,turns*Math.PI/2).map(x=>x*ratio**turns);}
-export const spiralGuidePath=(seed,ratio=SPIRAL_RATIO,segments=512)=>Array.from({length:segments+1},(_,i)=>spiralGuide(seed,-5+7*i/segments,ratio));
+// A fixed window travels with the current supports. Its inward end is below
+// a pixel; its outward end is hundreds of body sizes beyond the camera frame.
+// Similarity maps this window onto the SAME infinite curve as the body grows.
+export const SPIRAL_WINDOW={from:-20,to:12,segments:2048};
+export const spiralGuidePath=(seed,ratio=SPIRAL_RATIO,segments=SPIRAL_WINDOW.segments)=>Array.from({length:segments+1},(_,i)=>spiralGuide(seed,SPIRAL_WINDOW.from+(SPIRAL_WINDOW.to-SPIRAL_WINDOW.from)*i/segments,ratio));
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export function expansionLevel(time){
   const t=Math.min(2,time);
   return time/10-(1/90)*(t-t**3/4+t**4/16);
 }
-// One clock from chapter seven to the end. Logarithmic units keep indefinitely
+// One clock from the start of expansion to the end. Logarithmic units keep indefinitely
 // repeated growth numerically small; every visible layer shares this frame.
 // The pooled reference shells retain their exact relative sizes when units change.
 export function expansionAt(recipe={},p=0,motion={}){
@@ -93,8 +97,11 @@ export function cubeWitnessPhase(p,slope){
   if(p<=to)return .5;
   return hermite((p-to)/(1-to),.5,1,0,slope*(1-to));
 }
+/** Carry the complete spiral view into the gradual orbit construction. */
+export const traceEntrance=p=>ease(p/.18);
 export const cubeWitnessInk=p=>ease((p-.14)/.16)*(1-ease((p-.74)/.12));
-export const cubeWitnessView=p=>1+(EXPANSION_TARGET_SCALE-1)*ease((p-.12)/.2);
+// The enlarged pair is already visible in the preceding chapter.
+export const cubeWitnessView=()=>EXPANSION_TARGET_SCALE;
 export const TORI=[TORUS,TORUS_OUTER];
 export const TORUS_AXIS=[0,1,0];
 export const TORUS_POLE=TORUS.height*1.1;

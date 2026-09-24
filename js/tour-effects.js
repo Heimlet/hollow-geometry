@@ -31,7 +31,7 @@ export function tourObjectAlpha(recipe,p,level,id) {
   return visible*(dim?1-(1-(dim[2]??0))*ease((p-dim[0])/(dim[1]-dim[0])):1);
 }
 
-/** Carry the same pair through chapters 5 → 6 → 7. Only emphasis changes. */
+/** Carry the same pair through the intersection, cube witness and growth. Only emphasis changes. */
 export function tetraWitnessAppearance(p,id='merkaba_up'){
   const handoff=ease((p-.82)/.18),focus=ease(p/.16)*(1-handoff),start=id==='merkaba_up'?.38:.5;
   return {edges:start*(1-handoff)+.2*handoff+(1-start)*focus,

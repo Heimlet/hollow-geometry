@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,expansionZoom,cubeWitnessView,EXPANSION_TARGET_SCALE } from './torus-math.js';
+import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,expansionZoom,cubeWitnessView,traceEntrance,EXPANSION_TARGET_SCALE } from './torus-math.js';
 import { fruitVolume,FRUIT_PLANAR } from './fruit-life.js';
 import { dimensionFrame,dimensionSequence } from './dimension-scene.js';
 import { torusOpeningHandoff } from './tour-effects.js';
@@ -35,7 +35,8 @@ function scenePoints() {
       // Until the torus exists, frame the cube being reached, not the future shell.
       // Its world size stays fixed while the original core grows towards it.
       const phase=e.turns-2*Math.floor(e.turns/2),reveal=e.turns<.2?1:smooth(phase/.2);
-      const target=e.scale*(1+(EXPANSION_TARGET_SCALE-1)*reveal)/((1+Math.sqrt(5))/2)**phase;
+      let target=e.scale*(1+(EXPANSION_TARGET_SCALE-1)*reveal)/((1+Math.sqrt(5))/2)**phase;
+      if(r.torus==='traces')target=THREE.MathUtils.lerp(e.scale*1.8,target,traceEntrance(tourProgress(getState())));
       points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(target)));
     }else if(['pair','inscription'].includes(r.torus))points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*3)));
     else if(r.torus==='spiral')points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*1.8)));

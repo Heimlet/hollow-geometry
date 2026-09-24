@@ -182,12 +182,26 @@ console.log('PASS: endless final camera follows scale without overflow and relea
 // Chapter changes may alter panel height, but not teleport the projection.
 for(const [width,screenHeight,panelWidth]of [[1280,800,440],[390,844,366]]){
  globalThis.innerWidth=width;globalThis.innerHeight=screenHeight;
- actions.startTour('torus',5);actions.seekTour(TOURS.torus.steps[5].seconds);rig.queueTourShot();
+ const witnessIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-hull');
+ actions.startTour('torus',witnessIndex-1);actions.seekTour(TOURS.torus.steps[witnessIndex-1].seconds);rig.queueTourShot();
+ for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,panelWidth);
+ const previewCenter=new Vector3().project(scene.camera),previewHeight=scene.getViewHeight();
+ actions.tourStep(witnessIndex);rig.queueTourShot({holdTimeline:false});rig.updateTourCamera(0,385,panelWidth);
+ assert.ok(new Vector3().project(scene.camera).distanceTo(previewCenter)<1e-10,'Intersection → witness keeps the same centre');
+ assert.ok(Math.abs(scene.getViewHeight()-previewHeight)<1e-10,'Intersection → witness retains the enlarged preview framing');
+ actions.startTour('torus',witnessIndex);actions.seekTour(TOURS.torus.steps[witnessIndex].seconds);rig.queueTourShot();
  for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,panelWidth);
  const before=new Vector3().project(scene.camera),height=scene.getViewHeight();
- actions.tourStep(6);rig.queueTourShot({holdTimeline:false});rig.updateTourCamera(0,385,panelWidth);
- assert.ok(new Vector3().project(scene.camera).distanceTo(before)<1e-10,'6 → 7 keeps the same projected centre at the boundary');
- assert.ok(Math.abs(scene.getViewHeight()-height)<1e-10,'6 → 7 starts at the exact current scale');
+ actions.tourStep(witnessIndex+1);rig.queueTourShot({holdTimeline:false});rig.updateTourCamera(0,385,panelWidth);
+ assert.ok(new Vector3().project(scene.camera).distanceTo(before)<1e-10,'Witness → growth keeps the same projected centre at the boundary');
+ assert.ok(Math.abs(scene.getViewHeight()-height)<1e-10,'Witness → growth starts at the exact current scale');
+ const traceIndex=TOURS.torus.steps.findIndex(s=>s.id==='torus-orbits');
+ actions.startTour('torus',traceIndex-1);actions.seekTour(TOURS.torus.steps[traceIndex-1].seconds);rig.queueTourShot();
+ for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,panelWidth);
+ const spiralCenter=new Vector3().project(scene.camera),spiralHeight=scene.getViewHeight();
+ actions.tourStep(traceIndex);rig.queueTourShot({holdTimeline:false});rig.updateTourCamera(0,385,panelWidth);
+ assert.ok(new Vector3().project(scene.camera).distanceTo(spiralCenter)<1e-10,'Spiral → traces preserves projected centre');
+ assert.ok(Math.abs(scene.getViewHeight()-spiralHeight)<1e-10,'Spiral → traces preserves the current scale');
  actions.startTour('torus',0);actions.seekTour(TOURS.torus.steps[0].seconds);rig.queueTourShot();
  for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,panelWidth);
  const openingPose=scene.camera.position.clone().normalize(),openingHeight=scene.getViewHeight();

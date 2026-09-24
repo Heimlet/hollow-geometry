@@ -446,15 +446,15 @@ the previous mismatch as a negative control.
 
 ## Continuous finale and the cube witness
 
-The finale has 16 chapters. Chapter six holds the canonical pair for about six
+The finale has 14 chapters. The cube witness holds the canonical pair for about six
 seconds: the current pair stays inside its small cube, while a gold cube at
 φ² times its size reveals the next scale. Eight two-quarter-turn spiral paths
 start at actual corners, reach their endpoints, then reveal the future cube edges
-and its octahedral core. Chapter five previews the enlarged live intersection.
+and its octahedral core. The preceding chapter previews the enlarged live intersection.
 `cubeWitnessPhase` eases the angular velocity to zero and back; entry/exit speed
 still matches the neighbouring chapters.
 
-Chapters seven through thirteen share `expansionFrom` / `expansionDuration`.
+All chapters from `torus-expansion` through the finale share `expansionFrom` / `expansionDuration`.
 `expansionAt` is the shared angle/log-scale frame for source bodies, hull/intersection,
 guides and camera. Torus dimensions are measured from those actual world-space
 source vertices by `merkabaAnchors` / `torusFrameFromAnchors`. The clock does not
@@ -502,11 +502,11 @@ lower circles pass through all eight moving vertex anchors. No future-scale
 multiplier is used for height. The second shell remains a radial 6% visual echo
 with the same height. Both are measured from source world coordinates.
 
-Chapter six hands its paths, destination cube, source previews, spiral arrows
-and pooled contours to chapter seven with matching opacity and transforms.
+The cube witness hands its paths, destination cube, source previews, spiral arrows
+and pooled contours to the first growth chapter with matching opacity and transforms.
 The camera eases changing UI offsets, keeping its target at the geometric centre.
-From chapter fourteen the live intersection fades out while source tetrahedron
-faces reach their default opacity. Subsequent chapters disable the derived
+From `torus-golden` the live intersection fades out while source tetrahedron
+faces reach a stronger transient opacity of .26. Saved laboratory opacity stays unchanged. Subsequent chapters disable the derived
 intersection and hull; the reference cube, golden witness and spirals remain.
 The witness is a child of the actual dodecahedron transform, with five marked
 vertices, an explicit face label and measured edge/diagonal lengths.
@@ -577,9 +577,9 @@ the construction to the opening. All other tours retain their normal completion.
 
 The opening network survives into chapter two at its completed 3× size. The
 source cube appears on the same corners, then returns to normal scale only after
-the network fades. Chapter five holds the canonical tetrahedra while six crossing
+the network fades. The intersection chapter holds the canonical tetrahedra while six crossing
 edge pairs reveal the six computed intersection vertices and twelve octahedral
-edges. Rotation then resumes continuously. Chapter nine separately constructs the
+edges. Rotation then resumes continuously. The inscription chapter separately constructs the
 outer octahedron from six cube-face centres, then shows its face medians and the
 smaller cube at their centroids. The golden outer construction and green live
 intersection are intentionally distinct.
@@ -590,3 +590,24 @@ The early growth shot retains visible enlargement. The last chapter is titled
 “Расширение или сжатие”; its existing `torus-cosmos` ID remains stable for links.
 The homepage and torus/coupling reading explain the explicit golden constraint,
 current cube/intersection height, mirrored handedness and reversible log-scale.
+
+
+The torus finale omits the unrelated icosahedron/rectangle interlude: the revealed
+Merkaba proceeds directly to its six edge crossings. Golden subdivision remains
+in the golden tour; φ enters the finale as the explicitly chosen spiral law.
+Its two opposite-chirality guides use fixed 2,048-segment buffers over turns
+[-20,12], from subpixel inward coils to an outward continuation far beyond the
+frame. The window follows the supports by the same similarity, so its visible
+points remain on the same mathematical trajectories through growth, reversal and
+unit rebasing. Both branches have equal emphasis; no new geometry accumulates.
+
+The intersection preview carries both long guides and the enlarged pair into the
+cube witness. Its live core fades over the first 12% while the current cube/hull
+appears; the enlarged frame stays fitted throughout. Source edge intensity and
+all overlay poses/opacity match at the boundary. Regression checks cover this
+handoff as well as witness-to-growth on desktop and phone.
+
+The spiral-to-traces boundary also carries both guide opacities and the two
+tracked vertices exactly. Extra markers, scale references and destination paths
+fade with `traceEntrance`; framing uses that same envelope instead of abruptly
+fitting a different set of bounds.

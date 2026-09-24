@@ -3,7 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
 import {initialState,reduce} from '../js/state.js';
 import {TOURS,tourStep} from '../js/tour-data.js';
-import {expansionAt,expansionZoom,spiralGuide,torusFrameFromAnchors,TORUS,ORBIT_SEEDS,EXPANSION_TARGET_SCALE} from '../js/torus-math.js';
+import {expansionAt,expansionZoom,spiralGuide,spiralGuidePath,SPIRAL_WINDOW,torusFrameFromAnchors,TORUS,ORBIT_SEEDS,EXPANSION_TARGET_SCALE} from '../js/torus-math.js';
 import {PHI,CR,A} from '../js/constants.js';
 import {tetraWitnessAppearance,torusSourceMix} from '../js/tour-effects.js';
 const near=(a,b,message,epsilon=1e-9)=>assert.ok(Math.abs(a-b)<epsilon,`${message}: ${a} vs ${b}`);
@@ -41,8 +41,8 @@ near(frame(state).logScale,before.logScale-.001*Math.log(PHI),'No scale reset be
 const boundary=frame(state);state=reduce(state,{type:'tour/tick',seconds:1});
 near(frame(state).logScale-boundary.logScale,-.1*Math.log(PHI),'The next movement retains the golden law');
 
-const tetraFocus=tetraWitnessAppearance(.5);assert.ok(tetraFocus.edges>.9&&tetraFocus.coreFaces<.04&&tetraFocus.coreEdges<.2,'Sixth chapter emphasises the original tetrahedra');
-near(tetraWitnessAppearance(1).edges,.2,'The pair hands over smoothly to the green core in chapter seven');
+const tetraFocus=tetraWitnessAppearance(.5);assert.ok(tetraFocus.edges>.9&&tetraFocus.coreFaces<.04&&tetraFocus.coreEdges<.2,'Cube witness emphasises the original tetrahedra');
+near(tetraWitnessAppearance(1).edges,.2,'The pair hands over smoothly to the green core at the start of growth');
 
 // Completing the narration never freezes the finale. Pause, reading, inverse
 // motion and restart remain explicit actions; no new chapter or object is added.
@@ -68,6 +68,25 @@ for(const ratio of [3,PHI])for(const seed of ORBIT_SEEDS)for(const turn of [-8,-
  near(Math.hypot(q[0],q[1])/Math.hypot(p[0],p[1]),ratio,'Mirrored guides have the same radial growth');
  near(q[2]/p[2],ratio,'Height shares the same similarity');
  r.forEach((v,i)=>near(v/(ratio**4),p[i],'A full turn preserves direction and changes scale',1e-7));
+}
+
+// A moving finite window must lie on one infinite curve, not generate a new
+// path each frame. The two tracked supports have opposite heights and winding.
+for(const turn of [-50,-4,0,.6,12,50]){
+ const upper=spiralGuide(ORBIT_SEEDS[7],turn),lower=spiralGuide(ORBIT_SEEDS[0],turn);
+ near(upper[2],-lower[2],'The paired paths extend upward and downward',1e-4);
+ near(Math.hypot(...upper),Math.hypot(...lower),'Both supports share one scale',1e-4);
+}
+for(const index of [0,7]){
+ const seed=ORBIT_SEEDS[index],path=spiralGuidePath(seed),zero=SPIRAL_WINDOW.segments*(-SPIRAL_WINDOW.from)/(SPIRAL_WINDOW.to-SPIRAL_WINDOW.from);
+ assert.deepEqual(path[zero],seed.point,'The fixed buffer passes through the actual current support');
+ assert.ok(Math.abs(path[0][2]/seed.point[2])<1e-4,'Inward coils converge below a screen pixel');
+ assert.ok(Math.abs(path.at(-1)[2]/seed.point[2])>300,'Both outward branches continue far beyond the camera frame');
+ for(const shift of [-3,.37,8])for(const t of [-8,0,1.6]){
+  const a=shift*Math.PI/2*seed.side,p=spiralGuide(seed,t),scale=PHI**shift;
+  const moved=[(p[0]*Math.cos(a)-p[1]*Math.sin(a))*scale,(p[0]*Math.sin(a)+p[1]*Math.cos(a))*scale,p[2]*scale];
+  spiralGuide(seed,t+shift).forEach((v,k)=>near(moved[k],v,'Moving window remains on the same infinite curve',1e-6));
+ }
 }
 
 // Load the real source-mesh/renderer code, not an independent mathematical mock.
@@ -155,19 +174,32 @@ for(const face of faceProof.children){const dot=face.children.find(o=>o.geometry
 
 // A chapter boundary must agree in every actually drawn overlay, not only angle.
 function drawn(){const parts=[];root.updateMatrixWorld(true);root.traverseVisible(o=>{if(!o.material||o.material.opacity<1e-8||o.geometry.drawRange.count===0)return;parts.push({id:o.uuid,opacity:o.material.opacity,matrix:o.matrixWorld.elements.slice(),range:o.geometry.drawRange.count});});return parts;}
+const previewMesh=new THREE.Mesh(new THREE.OctahedronGeometry(A)),previewEdges=new THREE.LineSegments(new THREE.EdgesGeometry(previewMesh.geometry));
+const intersectionSource={mesh:previewMesh,edges:previewEdges};
+torus.update('mechanism',1,0,{rotation:Math.PI,intersectionWitness:true,intersectionSource});const lastMechanism=drawn();
+torus.update('cage',0,0,{rotation:Math.PI,intersectionSource});const firstWitness=drawn();
+assert.equal(lastMechanism.length,firstWitness.length,'No teaching layers jump between the intersection and cube witness');
+lastMechanism.forEach((part,i)=>{const next=firstWitness[i];assert.equal(part.id,next.id);near(part.opacity,next.opacity,'Teaching opacity is continuous');part.matrix.forEach((v,k)=>near(v,next.matrix[k],'Teaching pose is continuous'));assert.equal(part.range,next.range);});
+previewMesh.geometry.dispose();previewEdges.geometry.dispose();previewMesh.material.dispose();previewEdges.material.dispose();
 torus.update('cage',1,0,{rotation:2*Math.PI});const lastSix=drawn();
 torus.update('growth',0,0,{rotation:2*Math.PI,expansion:expansionAt({expansionFrom:0,expansionDuration:1},0)});const firstSeven=drawn();
-assert.equal(lastSix.length,firstSeven.length,'No contours pop in at 6 → 7');
+assert.equal(lastSix.length,firstSeven.length,'No contours pop in from cube witness to growth');
 lastSix.forEach((part,i)=>{const next=firstSeven[i];assert.equal(part.id,next.id);near(part.opacity,next.opacity,'Opacity is continuous');part.matrix.forEach((v,k)=>near(v,next.matrix[k],'World transform is continuous'));assert.equal(part.range,next.range);});
-for(const i of [13,14,15]){
+const traceRecipe=TOURS.torus.steps.find(s=>s.id==='torus-orbits').scene,traceFrame=expansionAt(traceRecipe,0);
+const traceOptions={scale:traceFrame.scale,expansion:traceFrame,rotation:traceRecipe.expansionAngle*Math.PI/180+traceFrame.turns*Math.PI/2};
+torus.update('spiral',1,0,traceOptions);const lastSpiral=drawn();
+torus.update('traces',0,0,traceOptions);const firstTrace=drawn();
+assert.equal(lastSpiral.length,firstTrace.length,'No extra paths or markers pop in at spiral → traces');
+lastSpiral.forEach((part,i)=>{const next=firstTrace[i];assert.equal(part.id,next.id);near(part.opacity,next.opacity,'Spiral emphasis carries into the orbit chapter');part.matrix.forEach((v,k)=>near(v,next.matrix[k],'Spiral world pose remains continuous'));assert.equal(part.range,next.range);});
+for(const i of [index,index+1,index+2]){
  const s=reduce(initialState(),{type:'tour/start',id:'torus',index:i}),recipe=TOURS.torus.steps[i].scene;
  for(const id of ['merkaba_up','merkaba_down']){assert.equal(s.objects[id].faces,true);assert.equal(s.objects[id].opacity,initialState().objects[id].opacity,'Use the laboratory default face transparency');}
  assert.equal(s.objects.cube.visible,true);assert.equal(s.objects.dodecahedron.visible,true);
  near(torusSourceMix(recipe,1),1,'The end of each final chapter contains source surfaces');
- if(i>13){assert.equal(s.lab.layers.intersection,false);assert.equal(s.lab.layers.hull,false);}
+ if(i>index){assert.equal(s.lab.layers.intersection,false);assert.equal(s.lab.layers.hull,false);}
  torus.update(recipe.torus,1,0);assert.ok(root.children.filter(o=>o.name.startsWith('Intersection scale echo')).every(o=>!o.visible),'No green pooled cores after the surface exchange');
 }
-near(torusSourceMix(TOURS.torus.steps[13].scene,0),0,'Chapter 14 begins on the previous core');
+near(torusSourceMix(TOURS.torus.steps[index].scene,0),0,'The source reveal begins on the previous core');
 
 // Five equal edges and planarity establish that the highlighted diagonal
 // belongs to a real pentagonal face, not a camera-space decoration.
