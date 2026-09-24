@@ -47,8 +47,16 @@ for(const p of [.7,.9,1]){const shot=shotAt(intro[4],base,p);assert.ok(shot.dire
 // Rendering with real projection matrices: actual bounds stay above the player,
 // at both desktop/mobile aspect ratios, during all stages of separation.
 let checks=0;
-for(const [width,height,panel] of [[1280,900,330],[1366,768,340],[390,844,360],[320,568,340]]) {
+for(const [width,height,panel] of [[1280,900,330],[1366,768,340],[1920,1080,440],[2560,1080,440],[3440,1440,440],[5120,1440,620],[2560,720,400],[390,844,360],[320,568,340]]) {
   const viewport=stageViewport(width,height,panel);
+  if(viewport.compact){
+    const panelLeft=width-viewport.panelRight-440,sceneRight=viewport.centerX+viewport.usableWidth/2;
+    assert.ok(Math.abs(panelLeft-sceneRight-32)<1e-8,'Model and narration share a fixed 32px gutter');
+    assert.ok(viewport.usableWidth<=1160&&viewport.usableWidth<=viewport.usableHeight*1.25,'Ultrawide screens do not stretch the composition');
+    assert.ok(viewport.centerY-panel/2>=76&&viewport.centerY+panel/2<=height-28,'Centred narration stays clear of the header and screen edge');
+    const left=viewport.centerX-viewport.usableWidth/2;
+    assert.ok(Math.abs(left-viewport.panelRight)<1e-8,'The complete composition has equal outer margins');
+  }
   for(const explode of [0,.1,.35,.7,1]) {
     const points=[];
     for(let body=0;body<6;body++)for(const x of [-1,1])for(const y of [-1,1])for(const z of [-1,1]) {
@@ -76,4 +84,7 @@ for(const [width,height,panel] of [[1280,900,330],[1366,768,340],[390,844,360],[
 }
 const vp=stageViewport(1280,900,330),small=[new THREE.Vector3(-2,-2,-2),new THREE.Vector3(2,2,2)];
 assert.ok(fitTourFrame(small,base,vp).height<14,'A compact scene does not inherit the exploded endpoint zoom');
+const wide=stageViewport(3440,1440,440),wider=stageViewport(5120,1440,440);
+assert.equal(wide.usableWidth,wider.usableWidth,'Extra monitor width becomes breathing room outside the model and text');
+assert.equal(fitTourFrame(small,base,wide).height,fitTourFrame(small,base,wider).height,'32:9 preserves the model scale of 21:9');
 console.log(`PASS: ${Object.values(TOURS).reduce((n,t)=>n+t.steps.length,0)} continuous camera/opacity scripts, exact symmetric finales, golden pass-through, ${checks} projected bounds checks with true object-centred framing`);

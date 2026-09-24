@@ -115,3 +115,19 @@ for(const [width,screenHeight,panelHeight,panelWidth]of [[1280,800,390,440],[390
  assert.ok(3*startHeight/scene.getViewHeight()>1.3,'The visible growth is not cancelled by camera compensation');
 }
 console.log('PASS: opening Metatron expansion remains centered, symmetric and visibly larger on desktop and phone');
+
+// Resizing a paused, manually rotated tour keeps its pose while fitting the
+// same compact composition used by the narration panel.
+actions.startTour('fruit');rig.queueTourShot();actions.tourControl({playing:false});rig.cancelTourShot();rig.updateTourCamera(.025,440,440);
+const manual=new Vector3(3,1,-2).normalize();scene.camera.position.copy(scene.controls.target).addScaledVector(manual,30);scene.controls.update();
+const {stageViewport}=await import(await load('tour-camera-math'));
+for(const [width,height]of [[3440,1440],[5120,1440],[2560,720],[1280,800],[390,844]]){
+ globalThis.innerWidth=width;globalThis.innerHeight=height;rig.updateTourCamera(.025,360,width<700?366:440);
+ const viewport=stageViewport(width,height,360,width<700?366:440),center=scene.controls.target.clone().project(scene.camera);
+ assert.ok(scene.camera.position.clone().sub(scene.controls.target).normalize().distanceTo(manual)<1e-10,'Resize preserves the manual orbit');
+ assert.ok(Math.abs((center.x+1)*width/2-viewport.centerX)<1e-8);
+ assert.ok(Math.abs((1-center.y)*height/2-viewport.centerY)<1e-8);
+ assert.equal(getState().tour.playing,false);assert.equal(scene.controls.enabled,true);
+}
+actions.stopTour();rig.updateTourCamera(.025,360,366);assert.equal(scene.camera.view.enabled,false,'Leaving the tour clears its framing');
+console.log('PASS: paused orbit survives ultrawide, desktop and phone resize with matching stage framing');

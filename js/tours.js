@@ -19,7 +19,9 @@ import { tourIcon } from './tour-icons.js';
 import { initTourReading,linkTourText } from './tour-reading.js';
 import { mountTorusPreface } from './tour-preface.js';
 import { queueTourShot,cancelTourShot,tourCameraBusy,updateTourCamera,tourCameraStatus } from './tour-camera.js';
+import { stageViewport } from './tour-camera-math.js';
 let player, effectActive=false, status, animationState, cameraState,returnCamera;
+let playerLayout='';
 const transition=createTourTransition(scene);
 const nodeStudy=createMetatronStudy(scene);
 const fruitScene=createFruitScene(scene);
@@ -60,6 +62,13 @@ export function updateTourStage(dt) {
   const expansion=expansionAt(recipe,tourProgress(state)),scale=expansion.scale;
   if(expansion.active||recipe?.worldScale){for(const level of levels){level.group.scale.setScalar(scale);level.group.updateMatrixWorld(true);}for(const owner of derivedObjects){owner.object.group.scale.setScalar(scale);owner.object.group.updateMatrixWorld(true);}}
   const bounds=player?.getBoundingClientRect();
+  const layout=stageViewport(innerWidth,innerHeight,bounds?.height||220,bounds?.width||440);
+  const layoutKey=`${layout.panelRight}:${layout.centerY}:${layout.compact}`;
+  if(player&&layoutKey!==playerLayout){
+    playerLayout=layoutKey;player.dataset.compact=String(layout.compact);
+    player.style.setProperty('--tour-panel-right',`${layout.panelRight}px`);
+    player.style.setProperty('--tour-panel-center',`${layout.centerY}px`);
+  }
   updateTourCamera(dt,bounds?.height||220,bounds?.width||440);
   if(!getState().tour.id||!status)return;
   const s=tourCameraStatus(),p=tourProgress(getState());

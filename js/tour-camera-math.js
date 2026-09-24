@@ -26,9 +26,14 @@ export function stageViewport(width,height,panelHeight,panelWidth=440) {
   const top=76,side=width>=1100&&height>=600;
   const bottom=side?32:Math.min(panelHeight+38,Math.max(0,height-top-90));
   const usableHeight=Math.max(90,height-top-bottom);
-  const usableWidth=Math.max(120,width-(side?panelWidth+80:48));
-  const centerX=side?24+usableWidth/2:width/2,centerY=top+usableHeight/2;
-  return {width,height,usableWidth,usableHeight,centerX,centerY,offsetX:width/2-centerX,offsetY:height/2-centerY};
+  // Keep the model and narration in one centred composition. Limiting only
+  // CSS would let wide/exploded geometry grow behind the relocated player.
+  const compositionWidth=side?Math.min(width,1680,usableHeight*1.25+panelWidth+80):width;
+  const inset=(width-compositionWidth)/2;
+  const usableWidth=Math.max(120,compositionWidth-(side?panelWidth+80:48));
+  const centerX=side?inset+24+usableWidth/2:width/2,centerY=top+usableHeight/2;
+  return {width,height,usableWidth,usableHeight,centerX,centerY,offsetX:width/2-centerX,offsetY:height/2-centerY,
+    compact:side&&inset>0,panelRight:24+inset};
 }
 export function fitTourFrame(points,direction,viewport,depth=0,focus=null) {
   const center=focus?.clone()||new THREE.Box3().setFromPoints(points).getCenter(new THREE.Vector3());

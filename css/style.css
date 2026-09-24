@@ -437,7 +437,8 @@ body:has(#info.vis) .lab-projection{top:calc(var(--toolbar-height) + 12px)}
 @media(prefers-reduced-motion:reduce){.tour-player{transition:none}.knowledge-dialog::backdrop{backdrop-filter:none}}
 .knowledge-related h3{flex-basis:100%;margin-bottom:2px}
 @media(min-width:1100px) and (min-height:600px){
-  .tour-player{width:440px;left:auto;right:24px;bottom:28px;transform:none;padding:20px;max-height:calc(100dvh - 110px);overflow:auto}
+  .tour-player{width:440px;left:auto;right:var(--tour-panel-right,24px);bottom:28px;transform:none;padding:20px;max-height:calc(100dvh - 110px);overflow:auto}
+  .tour-player[data-compact=true]{top:var(--tour-panel-center,50%);bottom:auto;transform:translateY(-50%)}
   .tour-player h2{font-size:22px}.tour-narration{max-height:190px;font-size:13px}
   .tour-player-head{gap:10px}.tour-player-head .tour-eyebrow{max-width:280px}
 }
