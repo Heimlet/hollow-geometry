@@ -491,3 +491,13 @@ preallocated exponential quarter-turn curves only change matrices and draw count
 intersection carries the visual emphasis; dim source tetrahedra and cube outlines
 explain it. Five pooled octahedron contours show upcoming and previous scales,
 including the exact overlap at arrival, without accumulating scene objects.
+
+The first finale chapter briefly reveals a line, square and cube in a fixed
+point lattice (`dimension-scene.js`), then blends into the existing Metatron
+network. Its camera and opacity follow chapter time; seeking restores the same
+geometry. Detailed narration links and reading shortcuts wait until chapter 13.
+
+`tour-history.js` stores completed tour IDs separately in localStorage. Completion
+adds an SVG eye and slightly dims the home card; scene undo/redo cannot erase it.
+Blocked storage falls back to the current session. `tests/tour-history.mjs` covers
+reload, invalid data and unavailable storage.

@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import { createTourHistory } from '../js/tour-history.js';
+const data=new Map(),storage={getItem:key=>data.get(key),setItem:(key,value)=>data.set(key,value)};
+const history=createTourHistory(storage);
+assert.equal(history.has('torus'),false);
+assert.equal(history.complete('unknown'),false);assert.equal(data.size,0);
+assert.equal(history.complete('torus'),true);assert.equal(history.complete('torus'),false);
+assert.equal(createTourHistory(storage).has('torus'),true,'A completed tour stays marked after reload');
+assert.equal(createTourHistory(storage).has('fruit'),false,'Other tours remain unmarked');
+const corrupt=createTourHistory({getItem:()=>'{broken',setItem(){throw new Error('Unavailable');}});
+assert.equal(corrupt.complete('fruit'),true);assert.equal(corrupt.has('fruit'),true,'Unavailable storage must not break this session');
+const unavailable=createTourHistory({getItem(){throw new Error('Denied');},setItem(){throw new Error('Denied');}});
+assert.equal(unavailable.complete('torus'),true);
+assert.equal(createTourHistory({getItem:()=>'{"torus":true}'}).has('torus'),false);
+console.log('PASS: viewed tours persist independently, unknown IDs rejected, malformed or blocked storage remains usable');

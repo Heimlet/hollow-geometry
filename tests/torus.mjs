@@ -90,6 +90,20 @@ const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;bas
 let source=await readFile(new URL('../js/torus-scene.js',import.meta.url),'utf8');
 source=source.replace("'three'",JSON.stringify(three)).replace("'./torus-math.js'",JSON.stringify(new URL('../js/torus-math.js',import.meta.url).href));
 const {createTorusScene}=await import(url(source)),THREE=await import(three),scene=new THREE.Scene(),study=createTorusScene(scene),root=scene.children[0];
+// The opening reveals successive dimensions in fixed coordinates, before the network.
+const dimensionsSource=(await readFile(new URL('../js/dimension-scene.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three)).replace("'./constants.js'",JSON.stringify(new URL('../js/constants.js',import.meta.url).href));
+const {createDimensionScene,dimensionFrame}=await import(url(dimensionsSource));
+const openingScene=new THREE.Scene(),opening=createDimensionScene(openingScene),openingRoot=openingScene.children[0];
+assert.equal(TOURS.torus.steps[0].scene.dimensions,true);
+assert.equal(dimensionFrame(.25).line,1);assert.equal(dimensionFrame(.25).plane,0);
+assert.equal(dimensionFrame(.46).plane,1);assert.equal(dimensionFrame(.46).volume,0);
+assert.equal(dimensionFrame(.72).volume,1);assert.equal(dimensionFrame(.72).network,0);
+assert.equal(dimensionFrame(1).ink,0);assert.equal(dimensionFrame(1).network,1);
+const originalPositions=new Map();openingRoot.traverse(o=>{if(o.geometry)originalPositions.set(o.geometry,Array.from(o.geometry.attributes.position.array));});
+const openingSnapshot=()=>{const result=[];openingRoot.traverse(o=>result.push([o.visible,o.position.toArray(),o.scale.toArray(),o.material?.opacity]));return result;};
+for(const p of [0,.2,.4,.6,.8,1]){opening.update(true,p);const expected=openingSnapshot();opening.update(true,.9);opening.update(true,p);assert.deepEqual(openingSnapshot(),expected,'Opening seeks and pauses deterministically');}
+for(const [geometry,positions]of originalPositions)assert.deepEqual(Array.from(geometry.attributes.position.array),positions,'The selected points and source geometry never move');
+opening.update(false);assert.equal(openingRoot.visible,false);opening.dispose();assert.equal(openingScene.children.length,0);
 const mathSource=(await readFile(new URL('../js/polyhedra-math.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three));
 const {hull,intersection}=await import(url(mathSource));
 const up=[[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]].map(v=>new THREE.Vector3(...v));

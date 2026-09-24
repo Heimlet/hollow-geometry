@@ -27,7 +27,7 @@ export function createFruitScene(scene) {
   cube.name='Fruit cube';triangles.forEach((line,i)=>line.name=`Planar star ${i}`);
   const network=stroke(links(data.pairs),gold,1.8);
   const scaffold=[cube,inner,octa,up,down,network,...triangles];
-  function update(kind,p,viewDirection=axis) {
+  function update(kind,p,viewDirection=axis,opacity=1) {
     root.visible=!!kind;if(!kind)return;
     const aligned=Math.abs(viewDirection.dot(axis)),tilt=Math.sqrt(Math.max(0,1-aligned*aligned));
     const flat=FRUIT_PLANAR.includes(kind),unfold=kind==='spheres';
@@ -68,6 +68,7 @@ export function createFruitScene(scene) {
       cube.material.opacity=inner.material.opacity=.25+.5*Math.sin(Math.PI*p)**2;
       octa.material.opacity=.55;up.material.opacity=down.material.opacity=.2+.55*Math.sin(Math.PI*p*2)**2;
     }
+    if(opacity!==1)root.traverse(part=>{if(part.material)part.material.opacity*=opacity;});
   }
   return {update,dispose(){const geometries=new Set(),materials=new Set();root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());scene.remove(root);}};
 }

@@ -12,7 +12,9 @@ export function mountTorusPreface(parent) {
   const mark=el('div',null,'preface-mark');mark.append(tourIcon('torus'));
   mark.setAttribute('aria-hidden','true');
   const title=el('h2',TORUS_PREFACE.title);title.id='torus-preface-title';
-  article.append(mark,el('p','ПРЕДИСЛОВИЕ К «ТОР · ПЕРЕПЛЕТЕНО»','tour-eyebrow'),title,el('p',TORUS_PREFACE.lead,'preface-lead'));
+  const lead=el('p',null,'preface-lead');
+  for(const part of TORUS_PREFACE.lead)lead.append(typeof part==='string'?part:el('span',part.gold,'preface-gold'));
+  article.append(mark,el('p','ПРЕДИСЛОВИЕ К «ТОР · ПЕРЕПЛЕТЕНО»','tour-eyebrow'),title,lead);
   article.append(geometryFigure(TORUS_PREFACE.figure));
   for(const item of TORUS_PREFACE.sections) {
     const section=el('section'),copy=el('p');
