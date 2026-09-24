@@ -145,7 +145,7 @@ export function createTorusScene(scene) {
     intersectionEdges.forEach((line,i)=>line.material.opacity=proofInk*ease((p-.13-i*.006)/.025));
     root.visible=!!kind||axis;
     const teachingInk=paired?ease(p/.12)*(1-ease((p-.87)/.13)):0,alignment=ease((Math.abs(Math.cos(rotation*2))-.92)/.08);
-    inscription.visible=paired;inscription.scale.setScalar(scale);
+    inscription.visible=kind==='inscription';inscription.scale.setScalar(scale);
     oldCube.children.forEach(line=>line.material.opacity=kind==='inscription'?teachingInk*.24:0);
     const octaBuild=kind==='inscription'?ease((p-.23)/.2):1,smallBuild=kind==='inscription'?ease((p-.58)/.2):1;
     oldOcta.children.forEach((part,i)=>{part.material.opacity=teachingInk*(part.isMesh?.035:.55)*(part.isMesh?octaBuild:ease(octaBuild*12-i));part.material.color.set(kind==='inscription'?0xffd277:0x76dcb8);});

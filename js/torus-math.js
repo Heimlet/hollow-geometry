@@ -33,6 +33,7 @@ export function spiralGuide(seed,turns,ratio=SPIRAL_RATIO){return orbitPoint(see
 // a pixel; its outward end is hundreds of body sizes beyond the camera frame.
 // Similarity maps this window onto the SAME infinite curve as the body grows.
 export const SPIRAL_WINDOW={from:-20,to:12,segments:2048};
+export const spiralGuideRadius=(scale=1)=>Math.sqrt(3)*A*SPIRAL_RATIO**SPIRAL_WINDOW.to*scale;
 export const spiralGuidePath=(seed,ratio=SPIRAL_RATIO,segments=SPIRAL_WINDOW.segments)=>Array.from({length:segments+1},(_,i)=>spiralGuide(seed,SPIRAL_WINDOW.from+(SPIRAL_WINDOW.to-SPIRAL_WINDOW.from)*i/segments,ratio));
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export function expansionLevel(time){
@@ -99,6 +100,7 @@ export function cubeWitnessPhase(p,slope){
 }
 /** Carry the complete spiral view into the gradual orbit construction. */
 export const traceEntrance=p=>ease(p/.18);
+export const torusMacroFocus=p=>ease((p-.06)/.16)*(1-ease((p-.72)/.18));
 export const cubeWitnessInk=p=>ease((p-.14)/.16)*(1-ease((p-.74)/.12));
 // The enlarged pair is already visible in the preceding chapter.
 export const cubeWitnessView=()=>EXPANSION_TARGET_SCALE;

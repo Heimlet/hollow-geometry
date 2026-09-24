@@ -13,7 +13,7 @@ export function enterTourStep(state,id,index=0,auto=state.tour.auto,continueMoti
   const step=TOURS[id]?.steps[index];if(!step)throw new Error('Unknown tour step');
   const recipe=step.scene,ids=recipe.golden?GOLDEN_SCENES[recipe.golden].objects:recipe.objects;
   const objects=Object.fromEntries(Object.entries(state.objects).map(([key,o])=>[key,{...o,
-    visible:ids.includes(key),edges:ids.includes(key),faces:ids.includes(key)&&(recipe.faces!==false||!!recipe.sourceSurfaces&&['merkaba_up','merkaba_down'].includes(key)),
+    visible:ids.includes(key),edges:ids.includes(key),faces:ids.includes(key)&&(recipe.faces!==false||!!(recipe.sourceSurfaces||recipe.macro)&&['merkaba_up','merkaba_down'].includes(key)),
     nodes:key==='_metatron_'&&ids.includes(key),lines:key==='_metatron_'&&ids.includes(key)&&recipe.lines!==false,
     opacity:recipe.sourceSurfaces&&['merkaba_up','merkaba_down'].includes(key)?OBJECT_OPACITY[key]:key==='_metatron_'?(recipe.effect==='network'?.48:.3):recipe.golden?.035:.11}]));
   const lab=initialLab();

@@ -232,3 +232,9 @@ for(const turn of [-100000,-20,-2,0,2,20,100000]){
 torus.dispose();dodeca.dispose();for(const object of Object.values(level.objs)){object.mesh.geometry.dispose();object.mesh.material.dispose();}
 assert.equal(scene.children.length,0);
 console.log('PASS: reversible golden coupling and cube-defined torus height, continuous chapters, source-measured torus contacts, real dodecahedron ratio, pause/seek and bounded reversible units');
+
+for(const id of ['torus-pair','torus-orbits']){
+ const index=TOURS.torus.steps.findIndex(s=>s.id===id),state=reduce(initialState(),{type:'tour/start',id:'torus',index});
+ assert.equal(state.objects.cube.visible,true);assert.equal(state.objects.cube.faces,false,'The macro cube is a contour, not an opaque green panel');
+ for(const body of ['merkaba_up','merkaba_down'])assert.equal(state.objects[body].faces,true,'The macro shot reveals actual tetrahedron surfaces');
+}

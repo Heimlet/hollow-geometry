@@ -611,3 +611,16 @@ The spiral-to-traces boundary also carries both guide opacities and the two
 tracked vertices exactly. Extra markers, scale references and destination paths
 fade with `traceEntrance`; framing uses that same envelope instead of abruptly
 fitting a different set of bounds.
+
+`torus-pair` and `torus-orbits` provide two macro shots before surface birth.
+Their shared `torusMacroFocus` eases framing toward the actual source-body
+bounds, reveals source faces, and returns to the overview before either chapter
+ends. A restrained cube contour appears and fades with the same interval.
+The unrelated outer teaching octahedron stays in the inscription chapter.
+
+The full spiral window needs more depth than the framed bodies. Only during the
+orthographic render, `withOrthographicDepth` moves the eye back along its own
+axis and extends near/far coverage, preserving all screen XY coordinates.
+A finally block restores the interactive camera, including on render errors.
+The sky pass, camera transitions and free orbit use the original pose. Projection
+regressions cover both branches, top/side/bottom views and near-rebase scales.

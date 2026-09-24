@@ -20,7 +20,7 @@ const stubs={
   'knowledge-preview': 'export const updateKnowledgePreview=()=>{};',
   'screen-lines': 'export const createScreenLines=()=>({prepare(){},restore(){}});',
   'tour-reading': 'export const openTourReading=()=>{};',
-  tours:'export const initTours=()=>{},updateTours=()=>{},applyTourEffects=()=>{},applyTourTransition=()=>{},restoreTourMaterials=()=>{},updateTourStage=()=>{},resetTourCamera=()=>{};',
+  tours:'export const renderTourScene=draw=>draw();export const initTours=()=>{},updateTours=()=>{},applyTourEffects=()=>{},applyTourTransition=()=>{},restoreTourMaterials=()=>{},updateTourStage=()=>{},resetTourCamera=()=>{};',
   lab:'export const updateLab=()=>{};',
   'lab-projection':'export const drawLabProjection=()=>{};',
   state:"export const ALL_IDS=[],actions={},getState=()=>({tour:{id:null},display:{autoRotate:false,speed:0},ui:{mode:'advanced'}});",

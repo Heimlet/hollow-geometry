@@ -210,3 +210,17 @@ for(const [width,screenHeight,panelWidth]of [[1280,800,440],[390,844,366]]){
  assert.ok(Math.abs(scene.getViewHeight()-openingHeight)<1e-10,'1 → 2 preserves the end of the completed network');
 }
 console.log('PASS: both chapter handoffs preserve the first camera frame on desktop and phone');
+
+// Two close views enlarge the moving bodies, then return before the next stage.
+globalThis.innerWidth=1280;globalThis.innerHeight=800;
+for(const id of ['torus-pair','torus-orbits']){
+ const index=TOURS.torus.steps.findIndex(s=>s.id===id),chapter=TOURS.torus.steps[index];
+ let wide;
+ for(const p of [0,.4]){
+  actions.startTour('torus',index);actions.seekTour(chapter.seconds*p);rig.queueTourShot();
+  for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
+  const e=expansionAt(chapter.scene,p),size=e.scale/scene.getViewHeight();
+  if(p===0)wide=size;else assert.ok(size/wide>1.25,`${id}: macro frame makes the source bodies materially larger`);
+ }
+}
+console.log('PASS: two pre-torus macro chapters visibly enlarge the rotating pair and supports');

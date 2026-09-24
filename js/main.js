@@ -2,7 +2,7 @@ import { updateKnowledgePreview } from './knowledge-preview.js';
 import { initOnboarding } from './onboarding.js';
 import { createScreenLines } from './screen-lines.js';
 import { openTourReading } from './tour-reading.js';
-import { initTours, updateTours, applyTourEffects, applyTourTransition, restoreTourMaterials, updateTourStage, resetTourCamera } from './tours.js';
+import { initTours, updateTours, applyTourEffects, applyTourTransition, restoreTourMaterials, renderTourScene, updateTourStage, resetTourCamera } from './tours.js';
 import { updateLab } from './lab.js';
 import { drawLabProjection } from './lab-projection.js';
 /**
@@ -82,7 +82,7 @@ function animate() {
   updateStarfield(dt);
   updateGoldenScenes(dt);
   renderStarfield();
-  if(getState().ui.mode==='advanced'||getState().tour.id){screenLines.prepare(!!getState().tour.id);renderer.render(scene, camera);screenLines.restore();}
+  if(getState().ui.mode==='advanced'||getState().tour.id)renderTourScene(()=>{screenLines.prepare(!!getState().tour.id);renderer.render(scene, camera);screenLines.restore();});
   restoreTourMaterials();
   updateKnowledgePreview();
   drawProjectionGuide();

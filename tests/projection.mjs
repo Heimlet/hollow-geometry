@@ -7,7 +7,7 @@ const threeURL = pathToFileURL(process.argv[2]).href;
 const THREE = await import(threeURL);
 const source = (await readFile(new URL('../js/projection.js', import.meta.url), 'utf8'))
   .replace("from 'three'", `from '${threeURL}'`);
-const { frameCamera, configureProjection, viewHeight } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
+const { frameCamera, configureProjection, viewHeight, withOrthographicDepth } = await import('data:text/javascript;base64,' + Buffer.from(source).toString('base64'));
 const near = (a, b, message) => assert.ok(Math.abs(a - b) < 1e-8, `${message}: ${a} vs ${b}`);
 const target = new THREE.Vector3(2, -1, 3);
 let camera = new THREE.OrthographicCamera();
@@ -49,3 +49,21 @@ for (let i = 0; i < positions.count; i++) {
 const maxDot = Math.max(...vertices.values());
 assert.equal([...vertices.values()].filter(dot => Math.abs(dot - maxDot) < 1e-6).length, 5);
 console.log('PASS: dodecahedron five-fold projection axis');
+
+// Long spirals must not be sliced by depth planes in an otherwise exact 2D view.
+const {spiralGuidePath,spiralGuideRadius,ORBIT_SEEDS}=await import('../js/torus-math.js');
+const orient=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(0,1,0));
+for(const scale of [1,8.99])for(const dir of [[0,1,.025],[3,1,6],[-2,-4,1]]){
+ const c=new THREE.OrthographicCamera(-12,12,8,-8,.01,500);c.position.set(...dir).normalize().multiplyScalar(30);c.lookAt(0,0,0);c.updateMatrixWorld(true);
+ const points=[0,7].flatMap(index=>spiralGuidePath(ORBIT_SEEDS[index]).map(p=>new THREE.Vector3(...p).multiplyScalar(scale).applyQuaternion(orient)));
+ const before=points.map(p=>p.clone().project(c)),position=c.position.clone(),projection=c.projectionMatrix.clone();
+ let clipped=0;withOrthographicDepth(c,spiralGuideRadius(scale),()=>points.forEach((p,i)=>{
+  const q=p.clone().project(c);near(q.x,before[i].x,'Extended depth preserves screen X');near(q.y,before[i].y,'Extended depth preserves screen Y');
+  assert.ok(q.z>=-1&&q.z<=1,'No upper/lower coil is lost to near/far clipping');if(before[i].z<-1||before[i].z>1)clipped++;
+ }));
+ assert.ok(clipped>0,'The fixture reproduces the original clipped coils');
+ assert.deepEqual(c.position,position);assert.deepEqual(c.projectionMatrix,projection);
+ assert.throws(()=>withOrthographicDepth(c,spiralGuideRadius(scale),()=>{throw new Error('render failed');}));
+ assert.deepEqual(c.position,position);assert.deepEqual(c.projectionMatrix,projection);
+}
+console.log('PASS: long orthographic spirals retain all depth, identical screen coordinates and restored interactive cameras');

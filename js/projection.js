@@ -40,3 +40,19 @@ export function configureProjection(previous, next, target, depth, aspect) {
   next.updateMatrixWorld(true);
   return next;
 }
+
+/** Extend only render depth for very long orthographic constructions. Moving
+ * along the viewing axis leaves XY, zoom and orientation exactly unchanged.
+ * Restore the interactive camera even if drawing fails; OrbitControls and the
+ * separately rendered sky never inherit this temporary displacement. */
+export function withOrthographicDepth(camera,radius,draw){
+  if(!camera.isOrthographicCamera||!(radius>0))return draw();
+  const position=camera.position.clone(),near=camera.near,far=camera.far;
+  camera.position.addScaledVector(camera.getWorldDirection(new THREE.Vector3()),-radius);
+  camera.near=.01;camera.far=Math.max(far+2*radius,position.length()+3*radius);
+  camera.updateProjectionMatrix();camera.updateMatrixWorld(true);
+  try{return draw();}finally{
+    camera.position.copy(position);camera.near=near;camera.far=far;
+    camera.updateProjectionMatrix();camera.updateMatrixWorld(true);
+  }
+}

@@ -4,7 +4,8 @@ import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
 import { tourFaceOpacity,recursionMoment,tourObjectAlpha,tetraWitnessAppearance,torusSourceMix,torusOpeningHandoff } from './tour-effects.js';
-import { expansionAt,cubeWitnessInk } from './torus-math.js';
+import { expansionAt,cubeWitnessInk,torusMacroFocus,spiralGuideRadius } from './torus-math.js';
+import { withOrthographicDepth } from './projection.js';
 import { createTorusScene } from './torus-scene.js';
 import { merkabaAnchors,cubeHalfHeight,createTorusWitness } from './torus-witness.js';
 import { createFruitScene } from './fruit-scene.js';
@@ -37,6 +38,11 @@ export function applyTourTransition(dt) {
   document.body.style.setProperty('--tour-ink-opacity',fadeInk?blend:1);
 }
 export const restoreTourMaterials=()=>transition.restore();
+export function renderTourScene(draw){
+  const state=getState(),recipe=tourStep(state)?.scene;
+  const extent=recipe?.axisGuide?spiralGuideRadius(expansionAt(recipe,tourProgress(state),state.tour.motion).scale):0;
+  return withOrthographicDepth(camera,extent,draw);
+}
 const minutes=id=>`${Math.ceil(tourDuration(id)/60)} мин`;
 function clearEffects() {
   if(!effectActive)return;
@@ -110,8 +116,9 @@ export function applyTourEffects() {
       if(recipe.effect==='edges')object.edges.geometry.setDrawRange(0,Math.floor(object.edges.geometry.attributes.position.count*reveal/2)*2);
       const layerAlpha=alpha*tourObjectAlpha(recipe,p,level.idx,object.id);
       object.fMat.opacity=tourFaceOpacity(recipe,p)*layerAlpha;
-      if(!recipe.golden)object.eMat.opacity=.97*layerAlpha;
+      if(!recipe.golden)object.eMat.opacity=.97*layerAlpha*(recipe.edgeEmphasis?.[object.id]??1);
       if((recipe.pairFocus||recipe.spiralFocus)&&['merkaba_up','merkaba_down'].includes(object.id)){const focus=smooth(p/.12)*(1-smooth((p-.87)/.13));object.eMat.opacity=.97*(.2+.75*focus);}
+      if(recipe.macro&&['merkaba_up','merkaba_down'].includes(object.id))object.fMat.opacity=.18*torusMacroFocus(p);
       if(recipe.intersectionWitness&&['merkaba_up','merkaba_down'].includes(object.id)){object.fMat.opacity=.12*(1-smooth((p-.18)/.12));object.eMat.opacity=.97*(1-(1-layerAlpha)*smooth((p-.22)/.08));}
       if(recipe.sourceSurfaces&&['merkaba_up','merkaba_down'].includes(object.id)){const mix=torusSourceMix(recipe,p);object.fMat.opacity=(recipe.sourceFaceOpacity??object.op)*mix;object.eMat.opacity=.97*(.2+.65*mix);}
       if(recipe.tetraWitness&&['merkaba_up','merkaba_down'].includes(object.id)){const focus=tetraWitnessAppearance(p,object.id);object.eMat.opacity=.97*focus.edges;object.fMat.opacity=focus.faces;}
