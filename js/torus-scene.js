@@ -123,14 +123,15 @@ export function createTorusScene(scene) {
     vertexShader:`varying vec3 tint;void main(){tint=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=8.;}`,
     fragmentShader:`uniform float alpha;varying vec3 tint;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(tint,alpha*exp(-5.*d*d));}`});
   const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.name='Moving torus particles';dots.frustumCulled=false;root.add(dots);
-  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0,showHeightGuide=true,previewTime=elapsed}={}) {
+  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0,showHeightGuide=true,previewTime=elapsed,layers={}}={}) {
     const mechanism=kind==='mechanism',cage=kind==='cage',growing=kind==='growth',paired=kind==='pair'||kind==='golden-step',spiral=kind==='spiral',orbit=kind==='traces'||cage||growing||mechanism||paired||spiral,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
     root.quaternion.copy(rootOrientation).multiply(referenceRotation.setFromAxisAngle(localAxis,referenceYaw));
     referenceInverse.setFromAxisAngle(worldAxis,-referenceYaw);
     const c=Math.cos(referenceYaw),s=Math.sin(referenceYaw);
     const localAnchors=anchors?.map(([x,y,z])=>[c*x+s*y,-s*x+c*y,z]);
     const actual=localAnchors||ORBIT_SEEDS.map(seed=>orbitPoint(seed,rotation).map(x=>x*scale)),frame=torusFrameFromAnchors(actual,cubeHalfHeight);
-    funnels.update(kind,p,frame,actual);
+    funnels.update(kind,p,frame,actual,{rounded:layers.rounded!==false,spiral:layers.spiral!==false});
+    const shellVisible=[layers.inner!==false,layers.outer!==false];
     const carry=cage?1-ease(p/.12):0,traceIn=kind==='traces'?traceEntrance(p):1;
     const handoff=cage?ease((p-.82)/.18):1,sourceFocus=growth?ease(p/.12):whole?1:0;
     const proofInk=intersectionWitness?1-ease((p-.25)/.05):0;
@@ -210,13 +211,13 @@ export function createTorusScene(scene) {
       line.material.opacity=(birth?1-ease((p-.4)/.32):1)*.52;
       head.visible=(orbit&&!spiral)||i===0||i===7;head.material.opacity=i===0||i===7?1:traceIn;head.scale.setScalar(i===0||i===7?1.8:1);head.position.set(...actual[i].map(x=>x/scale));
     });
-    contacts.visible=!!kind&&!orbit&&(!birth||p>.85);
+    contacts.visible=shellVisible.every(Boolean)&&!!kind&&!orbit&&(!birth||p>.85);
     contactLines.forEach(({index,line})=>{
       const p=actual[index],base=ORBIT_SEEDS[index].point;
       line.rotation.z=Math.atan2(p[1],p[0])-Math.atan2(base[1],base[0]);line.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);
     });
-    shells.forEach(s=>{s.group.visible=!!kind&&!orbit;s.group.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);});
-    dots.visible=!!kind&&!orbit&&!growing&&!growth;dots.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);
+    shells.forEach((s,index)=>{s.group.visible=shellVisible[index]&&!!kind&&!orbit;s.group.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);});
+    dots.visible=shellVisible.some(Boolean)&&!!kind&&!orbit&&!growing&&!growth;dotsGeometry.setDrawRange(shellVisible[0]?0:12,shellVisible.filter(Boolean).length*12);dots.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);
     if(!kind)return;
     const fraction=growth?ease((p-.08)/.84):1;
     shells.forEach((s,index)=>{

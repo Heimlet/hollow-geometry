@@ -68,3 +68,25 @@ assert.ok(levels.every(l=>l.objs.merkaba_up.group.quaternion.angleTo(new THREE.Q
 actions.assembly('merkaba',{explode:1});updateLab(0);assert.ok(traditionalFields.every(f=>!f.group.visible));
 actions.objects(ALL_IDS,{visible:false});updateLab(0);assert.ok(traditionalFields.every(f=>!f.group.visible));
 console.log('PASS: central reflections, no duplicate symmetric solids, pair recursion and cascades, two whole traditional stars, stable canonical source');
+
+// Tour display switches hide render sources without changing their geometry,
+// intersection, clock or later chapters. Laboratory visibility stays independent.
+actions.startTour('torus',4);actions.seekTour(5);actions.tourControl({playing:true});updateLab(0);
+const beforeToggle=getState(),beforeVolume=derivedObjects.find(o=>o.kind==='intersection').data.volume;
+const beforeMatrices=['merkaba_up','merkaba_down'].map(id=>levels[0].objs[id].group.matrixWorld.toArray());
+actions.display({torusTetrahedra:false,torusInner:false,torusRounded:false});updateLab(0);
+assert.deepEqual(getState().tour,beforeToggle.tour,'Toggles neither pause nor restart the film');
+assert.deepEqual(getState().objects,beforeToggle.objects,'Source configuration is preserved');
+for(const [i,id]of ['merkaba_up','merkaba_down'].entries()){
+ assert.equal(levels[0].objs[id].vis,true);assert.equal(levels[0].objs[id].group.visible,false);
+ assert.deepEqual(levels[0].objs[id].group.matrixWorld.toArray(),beforeMatrices[i]);
+}
+assert.equal(derivedObjects.find(o=>o.kind==='intersection').data.volume,beforeVolume);
+actions.tickTour(.1);updateLab(0);assert.ok(getState().tour.elapsed>beforeToggle.tour.elapsed);
+actions.tourStep(5);updateLab(0);
+assert.equal(getState().display.torusInner,false);assert.equal(getState().display.torusRounded,false);
+assert.equal(levels[0].objs.merkaba_up.group.visible,false,'Choice survives chapter recipes');
+actions.display({torusTetrahedra:true});updateLab(0);assert.equal(levels[0].objs.merkaba_up.group.visible,true);
+actions.display({torusTetrahedra:false});actions.stopTour();updateLab(0);
+assert.equal(levels[0].objs.merkaba_up.group.visible,true,'Tour-only hiding does not leak into the laboratory');
+console.log('PASS: independent display switches preserve source geometry, derived intersection, animation and chapters');

@@ -75,7 +75,7 @@ export function updateLab(dt) {
     else if(pack&&object.vis)offset=explodedOffset(pack.members.indexOf(id),pack.members.length,CR*level.scale,conf.explode).applyQuaternion(componentPlanes.get(pack.id)||new THREE.Quaternion());
     const merkaba=pack?.id==='merkaba';object.group.position.copy(merkaba&&lab.explode.scope==='components'?offset.clone().applyQuaternion(whole):offset);
     object.group.quaternion.copy(merkaba?whole.clone().multiply(id==='merkaba_up'?qUp:qDown):new THREE.Quaternion());
-    object.group.visible=object.vis&&(!merkaba||lab.layers.source);
+    object.group.visible=object.vis&&(!merkaba||lab.layers.source)&&!(merkaba&&state.tour.id==='torus'&&!state.display.torusTetrahedra);
     if(object.vis && offset.lengthSq()>0)positions.push(new THREE.Vector3(),object.group.position.clone());
     object.group.updateMatrixWorld(true);
   }

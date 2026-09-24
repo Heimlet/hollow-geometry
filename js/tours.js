@@ -106,7 +106,7 @@ export function applyTourEffects() {
   dimensionScene.update(!!intro,sequence.build);
   fruitScene.update(recipe?.networkHandoff?'network':recipe?.fruit,recipe?.networkHandoff?1:intro?Math.max(0,(sequence.build-.75)/.25):progress,camera.position.clone().sub(controls.target).normalize(),recipe?.networkHandoff?torusOpeningHandoff(progress).network:intro?dimensionFrame(sequence.build).network:1,recipe?.networkHandoff?1:intro?sequence.expansion:0);
   const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion);
-  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':recipe?.spiralPreview?'mechanism':null),tourProgress(state),expansion.active?expansion.turns*10:state.tour.elapsed,{showHeightGuide:false,previewTime:(recipe?.timelineFrom||0)+state.tour.elapsed,referenceYaw:torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up),axis:!!recipe?.axisGuide,intersectionWitness:!!recipe?.intersectionWitness,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null,anchors:recipe?.axisGuide?merkabaAnchors(levels[0]):null,cubeHalfHeight:recipe?.axisGuide?cubeHalfHeight(levels[0]):null,direction:state.tour.motion?.direction||1,intersectionSource:derivedObjects.find(o=>o.kind==='intersection'&&o.level===0)?.object});
+  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':recipe?.spiralPreview?'mechanism':null),tourProgress(state),expansion.active?expansion.turns*10:state.tour.elapsed,{layers:{inner:state.display.torusInner,outer:state.display.torusOuter,rounded:state.display.torusRounded,spiral:state.display.torusSpiral},showHeightGuide:false,previewTime:(recipe?.timelineFrom||0)+state.tour.elapsed,referenceYaw:torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up),axis:!!recipe?.axisGuide,intersectionWitness:!!recipe?.intersectionWitness,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null,anchors:recipe?.axisGuide?merkabaAnchors(levels[0]):null,cubeHalfHeight:recipe?.axisGuide?cubeHalfHeight(levels[0]):null,direction:state.tour.motion?.direction||1,intersectionSource:derivedObjects.find(o=>o.kind==='intersection'&&o.level===0)?.object});
   torusScene.updateAxisView(camera,innerWidth,innerHeight);
   torusWitness.update(recipe?.goldenCoupling||recipe?.goldenWitnessCarry?levels[0]?.objs.dodecahedron:null,progress,camera,{carry:!!recipe?.goldenWitnessCarry});
   const measureBounds=player?.getBoundingClientRect();
@@ -215,6 +215,11 @@ export function initTours() {
   measureToggle.className='tour-measure-toggle';measureToggle.append(tourIcon('ruler'),el('span','Высота тора'));
   measureToggle.title='Высота H₀ × φⁿ: размерные линии и золотые шаги от начала расширения';
   measureToggle.setAttribute('aria-label','Размерная разметка высоты тора');
+  const layerButtons=[['torusInner','Внутренний тор'],['torusOuter','Внешний тор'],['torusRounded','Округлые воронки'],['torusSpiral','По спиралям'],['torusTetrahedra','Тетраэдры']].map(([key,label])=>{
+    const node=button(measureRow,label,()=>actions.display({[key]:!getState().display[key]}));
+    node.className='tour-measure-toggle';node.setAttribute('aria-label','Показать: '+label.toLowerCase());
+    return {key,node};
+  });
   const inspect=button(player,'Покинуть тур → лаборатория',()=>actions.interface('advanced'));inspect.className='tour-exit';
   const options=el('details',null,'tour-options');options.append(el('summary','Главы и просмотр'));
   const waitLabel=el('label',null,'lab-check'),wait=el('input');wait.type='checkbox';wait.setAttribute('aria-label','Останавливаться между главами');
@@ -238,6 +243,10 @@ export function initTours() {
     setControlText(advanced,active?'Покинуть тур':'Лаборатория');advanced.title=active?'Покинуть тур и перейти в лабораторию':'Открыть лабораторию';
     player.dataset.playback=state.tour.phase==='complete'&&!tourStep(state)?.scene.endless?'complete':state.tour.playing?'playing':'paused';
     measureRow.hidden=!hasTorusHeight(tourStep(state)?.scene);measureToggle.setAttribute('aria-pressed',String(state.display.torusHeight));
+    for(const {key,node}of layerButtons){
+      node.setAttribute('aria-pressed',String(state.display[key]));
+      node.hidden=['torusRounded','torusSpiral'].includes(key)&&!['whole','cosmos'].includes(tourStep(state)?.scene.torus);
+    }
     const reversible=!!state.tour.motion;
     coupling.hidden=!reversible;reverse.disabled=state.tour.phase==='restarting'||state.tour.phase==='complete'&&!tourStep(state)?.scene.endless;
     const contracting=state.tour.motion?.direction===-1;

@@ -16,6 +16,7 @@ export function perspective(){const c=new THREE.PerspectiveCamera(20,1.5,.01,500
 export const setDepth=()=>{},setViewHeight=()=>{},resizeCamera=()=>{};
 `);
 const stubs={
+  'page-zoom':'export const initPageZoom=()=>{};',
   analytics:'export const initAnalytics=()=>{};',
   onboarding:'export const initOnboarding=()=>{};',
   'knowledge-preview': 'export const updateKnowledgePreview=()=>{};',

@@ -251,6 +251,13 @@ study.update('growth',0,0,{expansion:expansionAt(expanded,0)});
 study.update('cosmos',.8,late.time,{scale:late.scale,expansion:late});assert.deepEqual(snapshot(),lateSnapshot,'Seeking restores the same pooled expansion frame');
 
 const dots=root.getObjectByName('Moving torus particles');study.update('weave',.5,7);const first=Array.from(dots.geometry.attributes.position.array);study.update('weave',.5,7);assert.deepEqual(Array.from(dots.geometry.attributes.position.array),first,'Pause freezes particles');study.update('weave',.51,7.1);assert.notDeepEqual(Array.from(dots.geometry.attributes.position.array),first);
+for(const inner of [false,true])for(const outer of [false,true]){
+ study.update('cosmos',.8,7,{layers:{inner,outer}});
+ assert.equal(root.getObjectByName('Inner torus · intersection').visible,inner);
+ assert.equal(root.getObjectByName('Outer torus · hull').visible,outer);
+ assert.equal(dots.visible,inner||outer);
+ assert.deepEqual(dots.geometry.drawRange,{start:inner?0:12,count:(Number(inner)+Number(outer))*12});
+}
 study.update(null,0,0,{axis:true});assert.equal(root.visible,true);assert.ok(root.children.filter(o=>o.isGroup).every(o=>!o.visible));
 study.update(null,0);assert.equal(root.visible,false);study.dispose();assert.equal(scene.children.length,0);
 console.log('PASS: exact torus trajectories, closed trefoil, non-closing phi sample, short finale order, sourced reading, deterministic pause/seek, world alignment and cleanup');

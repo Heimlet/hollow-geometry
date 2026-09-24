@@ -1,4 +1,5 @@
 import { updateKnowledgePreview } from './knowledge-preview.js';
+import { initPageZoom } from './page-zoom.js';
 import { initAnalytics } from './analytics.js';
 import { initOnboarding } from './onboarding.js';
 import { createScreenLines } from './screen-lines.js';
@@ -25,6 +26,7 @@ import { updateStarfield, renderStarfield } from './starfield.js';
 import { updateGoldenScenes } from './golden-scenes.js';
 
 // ── Build UI ──
+initPageZoom();
 initAnalytics(controls);
 initUI();
 
