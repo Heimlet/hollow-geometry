@@ -1,26 +1,26 @@
-/** Coaxial, vertically elongated tori. Local Z maps to the world's vertical Y. */
+/** Coaxial tori. Local Z maps to the world's vertical Y. */
 import { A,R_META,PHI } from './constants.js';
 export const SPIRAL_RATIO=PHI;
 export const EXPANSION_TARGET_TURNS=2;
 export const EXPANSION_TARGET_SCALE=PHI**EXPANSION_TARGET_TURNS;
-// Explicit cube construction, not a uniquely implied surface of rotating bodies:
-// R is the current cube's inradius; H is the half-side of the phi²-scale cube.
-// The remaining ellipse radius is fixed by its contact with all eight vertices.
+// Choose a circular meridian whose diameter joins the two vertex-orbit planes.
+// Its radius a is also the canonical intersection octahedron's polar radius.
+// R = sqrt(2)a puts the top/bottom circles through the actual cube vertices.
+// Circularity is an explicit construction condition, not a consequence of spin.
 export function torusFromCube(halfSide){
-  const major=halfSide,height=halfSide*EXPANSION_TARGET_SCALE,rho=Math.SQRT2*halfSide;
-  return {major,tube:(rho-major)/Math.sqrt(1-(halfSide/height)**2),height};
+  return {major:Math.SQRT2*halfSide,tube:halfSide,height:halfSide};
 }
 export const TORUS=torusFromCube(A);
 // The second shell is a visual radial echo, not a second geometric deduction.
 // Both shells have the SAME cube-defined top and bottom planes.
 export const TORUS_OUTER={major:TORUS.major*1.06,tube:TORUS.tube*1.06,height:TORUS.height};
-export const TORUS_CONTACT=Math.asin(1/EXPANSION_TARGET_SCALE);
+export const TORUS_CONTACT=Math.PI/2;
 /** Read actual source vertices. They have equal orbit radii and absolute heights
  * under the supported counterrotation + uniform scaling, including reverse.
  */
-export function torusFrameFromAnchors(anchors){
+export function torusFrameFromAnchors(anchors,cubeHalfHeight=null){
   const radialScale=anchors.reduce((sum,p)=>sum+Math.hypot(p[0],p[1]),0)/anchors.length/R_META;
-  const axialScale=anchors.reduce((sum,p)=>sum+Math.abs(p[2]),0)/anchors.length/A;
+  const axialScale=(cubeHalfHeight??anchors.reduce((sum,p)=>sum+Math.abs(p[2]),0)/anchors.length)/A;
   return {radialScale,axialScale,shape:{major:TORUS.major*radialScale,tube:TORUS.tube*radialScale,height:TORUS.height*axialScale}};
 }
 export const ORBIT_SEEDS=Array.from({length:8},(_,i)=>{const p=[i&1?A:-A,i&2?A:-A,i&4?A:-A];return {point:[p[0],-p[2],p[1]],side:Math.sign(p[0]*p[1]*p[2])};});
@@ -109,4 +109,10 @@ export function torusBounds() {
   const points=[[0,0,-TORUS_POLE],[0,0,TORUS_POLE]];
   for(const shape of TORI)for(let u=0;u<64;u++)for(let v=0;v<32;v++)points.push(torusPoint(u/64*Math.PI*2,v/32*Math.PI*2,shape));
   return points;
+}
+
+/** Establish the real intersection at rest, then depart with the next chapter's speed. */
+export function intersectionWitnessPhase(p,slope){
+  const q=Math.max(0,(p-.3)/.7);
+  return ease(q)+slope*.7*(q*q*q-q*q);
 }

@@ -27,7 +27,20 @@ export function createTorusScene(scene) {
   const reference=new THREE.Group();reference.name='Fixed scale reference';root.add(reference);
   const corners=ORBIT_SEEDS.map(s=>s.point);
   for(let i=0;i<8;i++)for(let j=i+1;j<8;j++)if(corners[i].filter((v,k)=>v!==corners[j][k]).length===1)stroke(reference,[corners[i],corners[j]],0xe5ca8d,.24,1.2);
-  const heightGuide=new THREE.Group();heightGuide.name='Torus height · next cube';root.add(heightGuide);
+  // Six real crossings of the canonical source edges, then the twelve
+  // intersection edges. These points are also the small cube's face centres.
+  const intersectionProof=new THREE.Group();intersectionProof.name='Octahedron from six edge crossings';root.add(intersectionProof);
+  const octaPoints=[0,1,2].flatMap(axis=>[-1,1].map(sign=>{const p=[0,0,0];p[axis]=sign*Math.abs(corners[0][0]);return p;}));
+  const crossingMarks=octaPoints.map(p=>{
+    const group=new THREE.Group();intersectionProof.add(group);
+    for(const side of [-1,1]){const vertices=ORBIT_SEEDS.filter(seed=>seed.side===side).map(seed=>seed.point);
+      for(let i=0;i<4;i++)for(let j=i+1;j<4;j++)if(vertices[i].every((x,k)=>Math.abs((x+vertices[j][k])/2-p[k])<1e-7))stroke(group,[vertices[i],vertices[j]],side>0?0xff9edb:0x94e6ff,0,2.8);
+    }
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(.075,12,8),new THREE.MeshBasicMaterial({color:0xffe5ae,transparent:true,depthWrite:false}));dot.position.set(...p);group.add(dot);return group;
+  });
+  const intersectionEdges=[];
+  for(let i=0;i<6;i++)for(let j=i+1;j<6;j++)if(Math.floor(i/2)!==Math.floor(j/2))intersectionEdges.push(stroke(intersectionProof,[octaPoints[i],octaPoints[j]],0x76ffc2,0,2.5));
+  const heightGuide=new THREE.Group();heightGuide.name='Torus height · current cube';root.add(heightGuide);
   for(const sign of [-1,1])stroke(heightGuide,[[-.24,0,sign*TORI[0].height],[TORI[0].major+.24,0,sign*TORI[0].height]],0xffd277,0,2);
   stroke(heightGuide,[[TORI[0].major,0,-TORI[0].height],[TORI[0].major,0,TORI[0].height]],0xffd277,0,1.5);
   const futureCube=reference.clone();futureCube.name='Future cube · next scale';futureCube.scale.setScalar(EXPANSION_TARGET_SCALE);root.add(futureCube);
@@ -44,6 +57,19 @@ export function createTorusScene(scene) {
   const oldOcta=bridge.clone();oldOcta.scale.setScalar(3/EXPANSION_TARGET_SCALE);oldOcta.traverse(o=>{if(o.material)o.material=o.material.clone();});inscription.add(oldOcta);
   const innerCube=reference.clone();innerCube.traverse(o=>{if(o.material)o.material=o.material.clone();});inscription.add(innerCube);
   const centroids=corners.map(p=>{const marker=new THREE.Mesh(new THREE.SphereGeometry(.06,10,8),new THREE.MeshBasicMaterial({color:0xffde94,transparent:true}));marker.position.set(...p);inscription.add(marker);return marker;});
+  const cubeFaceProof=new THREE.Group();cubeFaceProof.name='Six cube faces to octahedron vertices';inscription.add(cubeFaceProof);
+  const outerA=3*Math.abs(corners[0][0]);
+  const faceCentres=octaPoints.map(p=>p.map(x=>3*x));
+  const squareProofs=faceCentres.map((center,index)=>{
+    const group=new THREE.Group();cubeFaceProof.add(group);const axis=Math.floor(index/2),other=[0,1,2].filter(k=>k!==axis);
+    const points=[[-1,-1],[1,-1],[1,1],[-1,1]].map(pair=>{const p=[...center];other.forEach((k,i)=>p[k]=outerA*pair[i]);return p;});
+    for(const pair of [[0,2],[1,3]])stroke(group,pair.map(i=>points[i]),0xffd277,0,1.5);
+    const plane=new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([0,1,2,0,2,3].map(i=>new THREE.Vector3(...points[i]))),new THREE.MeshBasicMaterial({color:0xffd277,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));group.add(plane);
+    const dot=new THREE.Mesh(new THREE.SphereGeometry(.085,12,8),new THREE.MeshBasicMaterial({color:0xffdc95,transparent:true,depthWrite:false}));dot.position.set(...center);group.add(dot);return {group,plane,dot};
+  });
+  const medians=new THREE.Group();medians.name='Octahedron face medians to small cube vertex';inscription.add(medians);
+  const triangle=[[outerA,0,0],[0,outerA,0],[0,0,outerA]];
+  triangle.forEach((p,i)=>stroke(medians,[p,triangle[(i+1)%3].map((x,k)=>(x+triangle[(i+2)%3][k])/2)],0xffd277,0,1.8));
   // One reusable half-turn growth path per original vertex. Matrices and
   // draw ranges advance along it; no buffers or thick-line proxies are rebuilt.
   const futurePaths=ORBIT_SEEDS.map(seed=>{
@@ -108,42 +134,51 @@ export function createTorusScene(scene) {
     vertexShader:`varying vec3 tint;void main(){tint=color;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=8.;}`,
     fragmentShader:`uniform float alpha;varying vec3 tint;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(tint,alpha*exp(-5.*d*d));}`});
   const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.frustumCulled=false;root.add(dots);
-  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,direction=1,intersectionSource=null}={}) {
+  function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false}={}) {
     const mechanism=kind==='mechanism',cage=kind==='cage',growing=kind==='growth',paired=kind==='pair'||kind==='inscription',spiral=kind==='spiral',orbit=kind==='traces'||cage||growing||mechanism||paired||spiral,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
-    const actual=anchors||ORBIT_SEEDS.map(seed=>orbitPoint(seed,rotation).map(x=>x*scale)),frame=torusFrameFromAnchors(actual);
+    const actual=anchors||ORBIT_SEEDS.map(seed=>orbitPoint(seed,rotation).map(x=>x*scale)),frame=torusFrameFromAnchors(actual,cubeHalfHeight);
+    const handoff=cage?ease((p-.82)/.18):1,sourceFocus=growth?ease(p/.12):whole?1:0;
+    const proofInk=intersectionWitness?1-ease((p-.25)/.05):0;
+    intersectionProof.visible=proofInk>0;intersectionProof.scale.setScalar(scale);
+    crossingMarks.forEach((group,i)=>group.children.forEach(part=>{part.material.opacity=proofInk*ease((p-.025-i*.012)/.035)*(part.isMesh?1:i===0?.85:.18);}));
+    intersectionEdges.forEach((line,i)=>line.material.opacity=proofInk*ease((p-.13-i*.006)/.025));
     root.visible=!!kind||axis;
     const teachingInk=paired?ease(p/.12)*(1-ease((p-.87)/.13)):0,alignment=ease((Math.abs(Math.cos(rotation*2))-.92)/.08);
     inscription.visible=paired;inscription.scale.setScalar(scale);
     oldCube.children.forEach(line=>line.material.opacity=kind==='inscription'?teachingInk*.24:0);
-    oldOcta.children.forEach(part=>part.material.opacity=teachingInk*(part.isMesh?.022:.38));
-    innerCube.children.forEach(line=>line.material.opacity=teachingInk*.32*alignment);
-    centroids.forEach(marker=>marker.material.opacity=kind==='inscription'?teachingInk*alignment:0);pole.visible=axis||!!kind;pole.scale.setScalar(scale);
-    reference.visible=cage;reference.scale.setScalar(scale);
-    reference.children.forEach(line=>line.material.opacity=.1+.75*ease((Math.abs(Math.cos(rotation*2))-.9)/.1));
-    const witness=cage?cubeWitnessInk(p):0,preparation=mechanism?ease((p-.12)/.18):0;
+    const octaBuild=kind==='inscription'?ease((p-.23)/.2):1,smallBuild=kind==='inscription'?ease((p-.58)/.2):1;
+    oldOcta.children.forEach((part,i)=>{part.material.opacity=teachingInk*(part.isMesh?.035:.55)*(part.isMesh?octaBuild:ease(octaBuild*12-i));part.material.color.set(kind==='inscription'?0xffd277:0x76dcb8);});
+    cubeFaceProof.visible=kind==='inscription';
+    squareProofs.forEach(({group,plane,dot},i)=>{const ink=teachingInk*ease((p-.035-i*.025)/.07)*(1-.75*ease((p-.45)/.2));group.children.forEach(part=>part.material.opacity=part===dot?ink:part===plane?ink*.035:ink*.24);});
+    medians.visible=kind==='inscription';medians.children.forEach(line=>line.material.opacity=teachingInk*ease((p-.43)/.13)*.75);
+    innerCube.children.forEach(line=>line.material.opacity=teachingInk*.42*smallBuild*(kind==='inscription'?1:alignment));
+    centroids.forEach(marker=>marker.material.opacity=kind==='inscription'?teachingInk*smallBuild*(.7+.3*alignment):0);pole.visible=axis||!!kind;pole.scale.setScalar(scale);
+    reference.visible=cage&&handoff<1;reference.scale.setScalar(scale);
+    reference.children.forEach(line=>line.material.opacity=(1-handoff)*(.1+.75*ease((Math.abs(Math.cos(rotation*2))-.9)/.1)));
+    const witness=cage?cubeWitnessInk(p):0,preparation=mechanism?ease((p-(intersectionWitness?.34:.12))/.18):0;
     const turns=expansion?.turns||0,phase=turns-EXPANSION_TARGET_TURNS*Math.floor(turns/EXPANSION_TARGET_TURNS),contracting=direction<0,nextScale=scale*phi**((contracting?0:EXPANSION_TARGET_TURNS)-phase);
     const heightInk=birth?ease(p/.15)*(1-ease((p-.6)/.22)):0;
     heightGuide.visible=heightInk>0;heightGuide.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);heightGuide.children.forEach(line=>line.material.opacity=heightInk*.6);
-    const arrival=expansion?(1-ease((phase-1.88)/.12))*(turns<.12?1:ease(phase/.12)):0,futureInk=cage?Math.max(witness,.5*ease((p-.82)/.18)):birth?heightInk*.28:growing||kind==='traces'?arrival:0;
-    futureCube.visible=futureInk>0;futureCube.scale.setScalar(cage||birth?scale*EXPANSION_TARGET_SCALE:nextScale);
+    const arrival=expansion?(1-ease((phase-1.88)/.12))*(turns<.12?1:ease(phase/.12)):0,futureInk=cage?Math.max(witness,handoff):birth?heightInk*.28:growing||kind==='traces'?arrival:0;
+    futureCube.visible=futureInk>0;futureCube.scale.setScalar(cage?scale*EXPANSION_TARGET_SCALE:birth?scale:nextScale);
     const edgesReveal=cage?ease((p-.42)/.13):1,coreReveal=cage?ease((p-.51)/.1):1;
-    futureCube.children.forEach((line,i)=>line.material.opacity=futureInk*(cage?.3:.6)*(cage?ease(edgesReveal*12-i):1));
+    futureCube.children.forEach((line,i)=>line.material.opacity=futureInk*(cage?.3+.3*handoff:.6)*(cage?ease(edgesReveal*12-i):1));
     futureVertices.forEach((head,i)=>{head.visible=futureInk>0&&!birth;head.material.opacity=futureInk*(cage?ease((p-.4)/.06):1);head.scale.setScalar(scale);head.position.set(...corners[i].map(x=>x*(cage?scale*EXPANSION_TARGET_SCALE:nextScale)));});
-    const preview=cage?witness:mechanism?preparation*ease((p-.3)/.28):growing||kind==='traces'?arrival:0;
+    const preview=cage?Math.max(witness,handoff):mechanism?preparation*ease((p-.3)/.28):growing||kind==='traces'?arrival:0;
     bridge.visible=futureInk>0&&!birth;bridge.scale.setScalar(cage?scale:nextScale/EXPANSION_TARGET_SCALE);
     bridge.children.forEach(part=>part.material.opacity=futureInk*coreReveal*(part.isMesh?.032:.46)*(cage?.18+.82*ease((p-.82)/.18):1));
     futurePaths.forEach(({group,line,outward,target,seed,endpoint})=>{
       group.visible=preview>0;group.scale.setScalar(scale/phi**phase);group.rotation.z=(rotation-phase*Math.PI/2)*seed.side;
       line.geometry.setDrawRange(0,384-2*Math.ceil(phase/EXPANSION_TARGET_TURNS*192));
-      line.visible=!cage&&!contracting;outward.visible=cage||contracting;
+      line.visible=(!cage||handoff>0)&&!contracting;outward.visible=cage&&handoff<1||contracting;
       const reveal=cage?ease((p-.18)/.24):contracting?phase/EXPANSION_TARGET_TURNS:1;
-      outward.geometry.setDrawRange(0,2*Math.floor(192*reveal));outward.material.opacity=preview*(seed===ORBIT_SEEDS[7]?.85:.24);
+      outward.geometry.setDrawRange(0,2*Math.floor(192*reveal));outward.material.opacity=preview*(seed===ORBIT_SEEDS[7]?.85:.24)*(cage?1-handoff:1);
       target.position.set(...(cage?spiralGuide(seed,EXPANSION_TARGET_TURNS*reveal):contracting?seed.point:endpoint));
-      line.material.opacity=preview*(seed===ORBIT_SEEDS[7]?.8:.18);target.material.opacity=preview*.85;
+      line.material.opacity=preview*(seed===ORBIT_SEEDS[7]?.8:.18)*(cage?handoff:1);target.material.opacity=preview*.85;
     });
     futureBodies.forEach(({line,pairs,side})=>{
       const bodyInk=mechanism?preparation:cage?1:growing||kind==='traces'?arrival*.65:0;
-      line.visible=bodyInk>0;line.material.opacity=bodyInk*(cage?.5:.4);
+      line.visible=bodyInk>0;line.material.opacity=bodyInk*(cage?.5-.24*handoff:.4);
       if(!line.visible)return;
       const index=pairs[0][0],base=ORBIT_SEEDS[index].point,anchor=actual[index];
       const delta=(growing||kind==='traces'?((contracting?0:2)-phase):2)*Math.PI/2;
@@ -157,20 +192,20 @@ export function createTorusScene(scene) {
     const echoes=expansionReferences(turns,scale),haloInk=!kind||orbit?0:birth?ease((p-.85)/.15):1;
     const proofFocus=growth?1-.8*ease(p/.14)*(1-ease((p-.6)/.2)):1;
     nextCages.forEach(({group,core,halo},i)=>{
-      const echo=echoes[i];group.visible=!!expansion&&!paired&&!spiral;halo.visible=!!expansion&&haloInk>0;
-      core.visible=!!expansion&&!paired&&!spiral;core.scale.setScalar(echo.scale/EXPANSION_TARGET_SCALE);group.scale.setScalar(echo.scale);halo.scale.setScalar(echo.scale);
-      const alpha=echo.alpha*(.13+.27*Math.exp(-8*Math.log(echo.scale/scale)**2));
+      const echo=echoes[i];group.visible=(!!expansion||cage&&handoff>0)&&!paired&&!spiral;halo.visible=!!expansion&&haloInk>0;
+      core.visible=(!!expansion||cage&&handoff>0)&&!paired&&!spiral&&sourceFocus<1;core.scale.setScalar(echo.scale/EXPANSION_TARGET_SCALE);group.scale.setScalar(echo.scale);halo.scale.setScalar(echo.scale);
+      const alpha=handoff*echo.alpha*(.13+.27*Math.exp(-8*Math.log(echo.scale/scale)**2));
       group.children.forEach(line=>line.material.opacity=alpha*(orbit?.18:.35)*proofFocus);
-      core.children.forEach(part=>part.material.opacity=echo.alpha*(part.isMesh?.012:orbit?.12:.24)*proofFocus);
+      core.children.forEach(part=>part.material.opacity=handoff*echo.alpha*(part.isMesh?.012:orbit?.12:.24)*proofFocus*(1-sourceFocus));
       halo.children.forEach(line=>line.material.opacity=echo.alpha*.17*haloInk*proofFocus);
     });
     guides.forEach(({ratio,group,lines})=>{
       group.visible=(!!expansion||mechanism||cage)&&!!kind;group.scale.set(frame.radialScale,frame.radialScale,frame.axialScale);
-      const ink=mechanism?ease((p-.34)/.28):cage?witness*ease((p-.57)/.13):1;
+      const ink=mechanism?ease((p-(intersectionWitness?.52:.34))/.28):cage?Math.max(witness*ease((p-.57)/.13),handoff):1;
       lines.forEach((line,i)=>{line.rotation.z=rotation*ORBIT_SEEDS[i].side;line.material.opacity=(i===7?(spiral?.95:.64):i===0?(spiral?.5:.15):0)*ink*(birth?1-.7*ease(p/.3):1);});
     });
     arrows.forEach(({index,arrow})=>{
-      arrow.visible=!!kind&&!!expansion;
+      arrow.visible=!!kind&&(!!expansion||cage&&handoff>0);arrow.material.transparent=true;arrow.material.opacity=handoff;
       const [x,y,z]=actual[index],k=Math.log(expansion?.ratio||phi),w=ORBIT_SEEDS[index].side*Math.PI/2;
       const tangent=new THREE.Vector3(k*x-w*y,k*y+w*x,k*z).normalize().multiplyScalar(direction);
       arrow.position.set(x,y,z).addScaledVector(tangent,scale*.23);arrow.scale.setScalar(scale);arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),tangent);
@@ -193,7 +228,7 @@ export function createTorusScene(scene) {
     const fraction=growth?ease((p-.08)/.84):1;
     shells.forEach((s,index)=>{
       // First extend one meridian through the vertex trails, then sweep it
-      // around their shared axis. The surface is exactly the swept ellipse.
+      // around their shared axis. The surface is exactly the swept circular meridian.
       const sweep=birth?ease((p-.25-index*.12)/.6):1,ink=birth?ease((p-.26-index*.12)/.18):1;
       s.material.uniforms.reveal.value=sweep;
       s.material.uniforms.alpha.value=ink*(growth?.13:whole?.13:.18);

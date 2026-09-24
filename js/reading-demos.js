@@ -2,7 +2,7 @@ import {TOURS} from './tour-data.js';
 /** Stable chapter IDs: editing/reordering the film cannot silently change a link. */
 export const READING_DEMOS=[
   {topic:'coupling',section:'Две закрутки, один размер',label:'Увидеть зеркальные золотые спирали',tour:'torus',chapter:'torus-spiral-law'},
-  {topic:'coupling',section:'Высоту задаёт следующий куб',label:'Посмотреть, как куб задаёт высоту тора',tour:'torus',chapter:'torus-birth'},
+  {topic:'coupling',section:'Куб и октаэдр задают одну высоту',label:'Посмотреть, как куб задаёт высоту тора',tour:'torus',chapter:'torus-birth'},
   {topic:'coupling',section:'От пятиугольника к золотому шагу',label:'Додекаэдр, золотые направляющие и обратный ход',tour:'torus',chapter:'torus-golden'},
   {topic:'torus',section:'Как поворот связан с расширением',label:'Увидеть золотой шаг и развернуть движение',tour:'torus',chapter:'torus-golden'},
   {topic:'torus',section:'От двух тетраэдров к тору',label:'Проследить путь вершин и рождение поверхности',tour:'torus',chapter:'torus-orbits'},

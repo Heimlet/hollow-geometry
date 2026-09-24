@@ -1,9 +1,10 @@
 /** Deterministic tour timeline: seeking, backward steps and replay share one path. */
+import { OBJECT_OPACITY } from './constants.js';
 import { TOURS, tourStep } from './tour-data.js';
 import { initialLab } from './lab-state.js';
 import { GOLDEN_SCENES } from './golden-scene-data.js';
 import { wrapAngle } from './merkaba-motion.js';
-import { cubeWitnessPhase,expansionAt,initialExpansionMotion,advanceExpansion } from './torus-math.js';
+import { cubeWitnessPhase,intersectionWitnessPhase,expansionAt,initialExpansionMotion,advanceExpansion } from './torus-math.js';
 import { TOUR_RESTART_SECONDS } from './tour-motion.js';
 export const initialTour=()=>({id:null,index:0,elapsed:0,playing:false,auto:true,phase:'idle'});
 export const smooth=value=>{const t=Math.max(0,Math.min(1,value));return t*t*(3-2*t);};
@@ -12,9 +13,9 @@ export function enterTourStep(state,id,index=0,auto=state.tour.auto,continueMoti
   const step=TOURS[id]?.steps[index];if(!step)throw new Error('Unknown tour step');
   const recipe=step.scene,ids=recipe.golden?GOLDEN_SCENES[recipe.golden].objects:recipe.objects;
   const objects=Object.fromEntries(Object.entries(state.objects).map(([key,o])=>[key,{...o,
-    visible:ids.includes(key),edges:ids.includes(key),faces:ids.includes(key)&&recipe.faces!==false,
+    visible:ids.includes(key),edges:ids.includes(key),faces:ids.includes(key)&&(recipe.faces!==false||!!recipe.sourceSurfaces&&['merkaba_up','merkaba_down'].includes(key)),
     nodes:key==='_metatron_'&&ids.includes(key),lines:key==='_metatron_'&&ids.includes(key)&&recipe.lines!==false,
-    opacity:key==='_metatron_'?(recipe.effect==='network'?.48:.3):recipe.golden?.035:.11}]));
+    opacity:recipe.sourceSurfaces&&['merkaba_up','merkaba_down'].includes(key)?OBJECT_OPACITY[key]:key==='_metatron_'?(recipe.effect==='network'?.48:.3):recipe.golden?.035:.11}]));
   const lab=initialLab();
   if(recipe.rotationAxis)Object.assign(lab.rotation,{axis:recipe.rotationAxis,upAxis:recipe.rotationAxis,downAxis:recipe.rotationAxis});
   Object.assign(lab.layers,{source:ids.includes('merkaba_up')&&recipe.source!==false,
@@ -48,7 +49,7 @@ export function frameTour(state,elapsed) {
     const from=recipe.rotationFrom??0,to=recipe.rotationTo??180;
     // Match angular velocity at chapter boundaries while retaining exact cube alignments.
     const slope=8*step.seconds/(to-from||1);
-    const phase=recipe.cubeWitness?cubeWitnessPhase(p,slope):recipe.continuousMotion?smooth(p)+slope*(p-smooth(p)):smooth((p-.05)/((recipe.rotationUntil??.95)-.05));
+    const phase=recipe.intersectionWitness?intersectionWitnessPhase(p,slope):recipe.cubeWitness?cubeWitnessPhase(p,slope):recipe.continuousMotion?smooth(p)+slope*(p-smooth(p)):smooth((p-.05)/((recipe.rotationUntil??.95)-.05));
     const angle=recipe.expansionFrom===undefined?from+(to-from)*phase:recipe.expansionAngle+90*expansionAt(recipe,p,state.tour.motion).turns;
     lab={...lab,rotation:{...lab.rotation,mode:'counter',running:false,up:angle,down:-angle}};
   }

@@ -1,3 +1,5 @@
+export const OBJECT_OPACITY = { tetrahedron: .15, cube: .10, octahedron: .12, dodecahedron: .08,
+  icosahedron: .12, merkaba_up: .12, merkaba_down: .12, cuboctahedron: .06, _metatron_: .4 };
 import { COMPOUNDS, COMPONENT_COLORS } from './compound-data.js';
 /**
  * Mathematical constants, color palette, object IDs, and info card data.

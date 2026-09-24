@@ -3,10 +3,10 @@ import { getState, actions, subscribe } from './state.js';
 import { TOURS, tourDuration, tourStep } from './tour-data.js';
 import { tourProgress, smooth } from './tour-state.js';
 import { levels, refreshLevelAppearance } from './levels.js';
-import { tourFaceOpacity,recursionMoment,tourObjectAlpha,tetraWitnessAppearance } from './tour-effects.js';
+import { tourFaceOpacity,recursionMoment,tourObjectAlpha,tetraWitnessAppearance,torusSourceMix,torusOpeningHandoff } from './tour-effects.js';
 import { expansionAt,cubeWitnessInk } from './torus-math.js';
 import { createTorusScene } from './torus-scene.js';
-import { merkabaAnchors,createTorusWitness } from './torus-witness.js';
+import { merkabaAnchors,cubeHalfHeight,createTorusWitness } from './torus-witness.js';
 import { createFruitScene } from './fruit-scene.js';
 import { createDimensionScene,dimensionFrame,dimensionSequence } from './dimension-scene.js';
 import { createTourHistory } from './tour-history.js';
@@ -61,8 +61,8 @@ export function updateTours(dt) {
 export function updateTourStage(dt) {
   const state=getState(),recipe=tourStep(state)?.scene;
   if(recipe?.effect==='recursion')for(const level of levels){level.group.scale.setScalar(recursionMoment(tourProgress(state),level.idx,state.recursion.scale).scale);level.group.updateMatrixWorld(true);}
-  const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion),scale=expansion.scale;
-  if(expansion.active||recipe?.worldScale){for(const level of levels){level.group.scale.setScalar(scale);level.group.updateMatrixWorld(true);}for(const owner of derivedObjects){owner.object.group.scale.setScalar(scale);owner.object.group.updateMatrixWorld(true);}}
+  const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion),scale=recipe?.networkHandoff?torusOpeningHandoff(tourProgress(state)).scale:expansion.scale;
+  if(expansion.active||recipe?.worldScale||recipe?.networkHandoff){for(const level of levels){level.group.scale.setScalar(scale);level.group.updateMatrixWorld(true);}for(const owner of derivedObjects){owner.object.group.scale.setScalar(scale);owner.object.group.updateMatrixWorld(true);}}
   const bounds=player?.getBoundingClientRect();
   const layout=stageViewport(innerWidth,innerHeight,bounds?.height||220,bounds?.width||440);
   const layoutKey=`${layout.panelRight}:${layout.centerY}:${layout.compact}`;
@@ -91,10 +91,10 @@ export function applyTourEffects() {
   const progress=tourProgress(state),intro=recipe?.dimensions;
   const sequence=dimensionSequence(progress,recipe?.dimensionUntil);
   dimensionScene.update(!!intro,sequence.build);
-  fruitScene.update(recipe?.fruit,intro?Math.max(0,(sequence.build-.75)/.25):progress,camera.position.clone().sub(controls.target).normalize(),intro?dimensionFrame(sequence.build).network:1,intro?sequence.expansion:0);
+  fruitScene.update(recipe?.networkHandoff?'network':recipe?.fruit,recipe?.networkHandoff?1:intro?Math.max(0,(sequence.build-.75)/.25):progress,camera.position.clone().sub(controls.target).normalize(),recipe?.networkHandoff?torusOpeningHandoff(progress).network:intro?dimensionFrame(sequence.build).network:1,recipe?.networkHandoff?1:intro?sequence.expansion:0);
   const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion);
-  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':recipe?.spiralPreview?'mechanism':null),tourProgress(state),expansion.active?expansion.turns*10:state.tour.elapsed,{axis:!!recipe?.axisGuide,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null,anchors:recipe?.axisGuide?merkabaAnchors(levels[0]):null,direction:state.tour.motion?.direction||1,intersectionSource:derivedObjects.find(o=>o.kind==='intersection'&&o.level===0)?.object});
-  torusWitness.update(recipe?.goldenCoupling?levels[0]?.objs.dodecahedron:null,progress,camera);
+  torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':recipe?.spiralPreview?'mechanism':null),tourProgress(state),expansion.active?expansion.turns*10:state.tour.elapsed,{axis:!!recipe?.axisGuide,intersectionWitness:!!recipe?.intersectionWitness,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null,anchors:recipe?.axisGuide?merkabaAnchors(levels[0]):null,cubeHalfHeight:recipe?.axisGuide?cubeHalfHeight(levels[0]):null,direction:state.tour.motion?.direction||1,intersectionSource:derivedObjects.find(o=>o.kind==='intersection'&&o.level===0)?.object});
+  torusWitness.update(recipe?.goldenCoupling||recipe?.goldenWitnessCarry?levels[0]?.objs.dodecahedron:null,progress,camera,{carry:!!recipe?.goldenWitnessCarry});
   if(!recipe)return;
   const p=tourProgress(state),reveal=smooth(Math.min(1,p/(recipe.buildUntil||.8)));effectActive=true;
   for(const level of levels) {
@@ -112,15 +112,19 @@ export function applyTourEffects() {
       object.fMat.opacity=tourFaceOpacity(recipe,p)*layerAlpha;
       if(!recipe.golden)object.eMat.opacity=.97*layerAlpha;
       if((recipe.pairFocus||recipe.spiralFocus)&&['merkaba_up','merkaba_down'].includes(object.id)){const focus=smooth(p/.12)*(1-smooth((p-.87)/.13));object.eMat.opacity=.97*(.2+.75*focus);}
+      if(recipe.intersectionWitness&&['merkaba_up','merkaba_down'].includes(object.id)){object.fMat.opacity=.12*(1-smooth((p-.18)/.12));object.eMat.opacity=.97*(1-(1-layerAlpha)*smooth((p-.22)/.08));}
+      if(recipe.sourceSurfaces&&['merkaba_up','merkaba_down'].includes(object.id)){const mix=torusSourceMix(recipe,p);object.fMat.opacity=object.op*mix;object.eMat.opacity=.97*(.2+.65*mix);}
       if(recipe.tetraWitness&&['merkaba_up','merkaba_down'].includes(object.id)){const focus=tetraWitnessAppearance(p,object.id);object.eMat.opacity=.97*focus.edges;object.fMat.opacity=focus.faces;}
     }
   }
   for(const owner of derivedObjects)if(owner.object.vis){
     const alpha=recipe.cubeWitness&&owner.kind==='hull'?Math.max(cubeWitnessInk(p),smooth((Math.abs(Math.cos(2*state.lab.rotation.up*Math.PI/180))-.9)/.1)):1;
     const layer=recipe.derived?.[owner.kind],pulse=recipe.coreEmphasis&&owner.kind==='intersection'?.1*Math.cos(2*state.lab.rotation.up*Math.PI/180)**24:0;
-    const proof=recipe.goldenCoupling?.2+.8*smooth((p-.5)/.3):1;
+    const proof=recipe.sourceSurfaces?1-torusSourceMix(recipe,p):1;
     owner.object.fMat.opacity=(tourFaceOpacity({...recipe,...layer},p)+pulse)*alpha*proof;owner.object.eMat.opacity=(layer?.edgeOpacity??.85)*alpha*proof;
     if(recipe.pairFocus||recipe.spiralFocus){const focus=1-smooth(p/.12)*(1-smooth((p-.87)/.13));owner.object.fMat.opacity*=focus;owner.object.eMat.opacity*=focus;}
+    if(recipe.intersectionWitness&&owner.kind==='intersection'){owner.object.eMat.opacity*=smooth((p-.2)/.07);owner.object.fMat.opacity*=smooth((p-.15)/.1);}
+    if(recipe.tetraWitness&&owner.kind==='hull'){const mix=smooth((p-.82)/.18);owner.object.fMat.opacity=(.004+.004*mix)*alpha;owner.object.eMat.opacity=(.12+.04*mix)*alpha;}
     if(recipe.tetraWitness&&owner.kind==='intersection'){const focus=tetraWitnessAppearance(p);owner.object.fMat.opacity=focus.coreFaces+.1*focus.handoff*Math.cos(2*state.lab.rotation.up*Math.PI/180)**24;owner.object.eMat.opacity=focus.coreEdges;}
   }
 }
@@ -206,7 +210,7 @@ export function initTours() {
       chapter.textContent=`${tour.name} · ${state.tour.index+1} / ${tour.steps.length}`;
       previous.disabled=state.tour.index===0;next.disabled=state.tour.index===tour.steps.length-1;next.hidden=next.disabled;
       document.getElementById('info').classList.remove('vis');options.open=false;
-      queueTourShot({holdTimeline:!step.scene.continuousMotion,entrance:state.tour.index===0});
+      queueTourShot({holdTimeline:!step.scene.continuousMotion&&!step.scene.networkHandoff,entrance:state.tour.index===0});
     }
     if(currentTour!==state.tour.id) {
       currentTour=state.tour.id;chapters.replaceChildren();progress.replaceChildren();

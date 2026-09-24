@@ -5,7 +5,7 @@ import {initialState,reduce} from '../js/state.js';
 import {TOURS,tourStep} from '../js/tour-data.js';
 import {expansionAt,expansionZoom,spiralGuide,torusFrameFromAnchors,TORUS,ORBIT_SEEDS,EXPANSION_TARGET_SCALE} from '../js/torus-math.js';
 import {PHI,CR,A} from '../js/constants.js';
-import {tetraWitnessAppearance} from '../js/tour-effects.js';
+import {tetraWitnessAppearance,torusSourceMix} from '../js/tour-effects.js';
 const near=(a,b,message,epsilon=1e-9)=>assert.ok(Math.abs(a-b)<epsilon,`${message}: ${a} vs ${b}`);
 const frame=state=>expansionAt(tourStep(state).scene,state.tour.elapsed/tourStep(state).seconds,state.tour.motion);
 const index=TOURS.torus.steps.findIndex(step=>step.id==='torus-golden');
@@ -73,20 +73,21 @@ for(const ratio of [3,PHI])for(const seed of ORBIT_SEEDS)for(const turn of [-8,-
 // Load the real source-mesh/renderer code, not an independent mathematical mock.
 const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64'),cache=new Map();
 async function load(name){if(cache.has(name))return cache.get(name);let source=await readFile(new URL('../js/'+name+'.js',import.meta.url),'utf8');source=source.replaceAll("'three'",JSON.stringify(three));for(const m of [...source.matchAll(/'\.\/([\w-]+)\.js'/g)])source=source.replaceAll(m[0],JSON.stringify(await load(m[1])));const result=url(source);cache.set(name,result);return result;}
-const THREE=await import(three),{tetraVerts,mkGeom}=await import(await load('geometry')),{merkabaAnchors,dodecahedronWitness}=await import(await load('torus-witness')),{createTorusScene}=await import(await load('torus-scene'));
+const THREE=await import(three),{tetraVerts,mkGeom}=await import(await load('geometry')),{merkabaAnchors,cubeHalfHeight,dodecahedronWitness,createTorusWitness}=await import(await load('torus-witness')),{createTorusScene}=await import(await load('torus-scene'));
 const parent=new THREE.Group(),level={objs:{}};
 for(const [id,inverted]of [['merkaba_up',false],['merkaba_down',true]]){
  const mesh=new THREE.Mesh(mkGeom(tetraVerts(CR,inverted)),new THREE.MeshBasicMaterial());parent.add(mesh);level.objs[id]={mesh};
 }
+const cube=new THREE.Mesh(new THREE.BoxGeometry(2*A,2*A,2*A));parent.add(cube);level.objs.cube={mesh:cube};
 const scene=new THREE.Scene(),torus=createTorusScene(scene),root=scene.children[0];
 for(const scale of [.23,1,3.14,8.8])for(const angle of [-12.7,-1.3,0,.4,Math.PI/2,6.8]){
  parent.scale.setScalar(scale);level.objs.merkaba_up.mesh.rotation.y=angle;level.objs.merkaba_down.mesh.rotation.y=-angle;parent.updateMatrixWorld(true);
- const anchors=merkabaAnchors(level),f=torusFrameFromAnchors(anchors),shape=f.shape;
- near(shape.height,Math.abs(anchors[0][2])*PHI**2,'Torus top/bottom coincide with the future cube faces');
- near(shape.major,A*scale,'Meridian centre uses the current cube inradius',1e-6);
+ const anchors=merkabaAnchors(level),f=torusFrameFromAnchors(anchors,cubeHalfHeight(level)),shape=f.shape;
+ near(shape.height,cubeHalfHeight(level),'Torus top/bottom coincide with the current cube faces');
+ near(shape.major,Math.SQRT2*A*scale,'Meridian centre lies at the actual vertex orbit radius',2e-6);
  for(const [x,y,z]of anchors)near(((Math.hypot(x,y)-shape.major)/shape.tube)**2+(z/shape.height)**2,1,'Actual source vertices lie on the analytic torus',1e-12);
  // Deliberately provide a wrong animation scale: the torus must measure sources.
- torus.update('whole',.5,5,{rotation:angle,scale:1,anchors});root.updateMatrixWorld(true);
+ torus.update('whole',.5,5,{rotation:angle,scale:1,anchors,cubeHalfHeight:cubeHalfHeight(level)});root.updateMatrixWorld(true);
  const inner=root.getObjectByName('Inner torus · intersection'),heads=root.getObjectByName('Actual tetrahedron vertex orbits').children.filter(o=>o.isMesh);
  near(inner.scale.x,f.radialScale,'Shell radius is measured from the source mesh');near(inner.scale.z,f.axialScale,'Shell height is measured from the source mesh');
  const surface=inner.children.find(o=>o.isMesh),inverse=surface.matrixWorld.clone().invert();
@@ -112,9 +113,9 @@ for(const sign of [1,-1]){
  for(const path of paths){assert.equal(path.children[0].visible,sign>0);assert.equal(path.children[1].visible,sign<0);}
 }
 torus.update('birth',.35,0,{scale:2});
-const heightGuide=root.getObjectByName('Torus height · next cube');
+const heightGuide=root.getObjectByName('Torus height · current cube');
 assert.equal(heightGuide.visible,true);
-near(heightGuide.children[0].geometry.attributes.position.getZ(0)*heightGuide.scale.z,-future.scale.z*A,'Lower torus guide meets the future cube plane',1e-6);
+near(heightGuide.children[0].geometry.attributes.position.getZ(0)*heightGuide.scale.z,-future.scale.z*A,'Lower torus guide meets the current cube plane',1e-6);
 torus.update('whole',.3,0);assert.equal(heightGuide.visible,false,'Temporary height construction clears after the reveal');
 
 torus.update('inscription',.5,0,{rotation:0});
@@ -125,10 +126,73 @@ for(const seed of ORBIT_SEEDS)near(seed.point.reduce((sum,x)=>sum+Math.abs(x),0)
 torus.update('spiral',.5,0);assert.equal(inscription.visible,false);
 const dodeca=new THREE.DodecahedronGeometry(CR),proof=dodecahedronWitness(dodeca);
 near(proof.diagonal[0].distanceTo(proof.diagonal[1])/proof.edge[0].distanceTo(proof.edge[1]),PHI,'Phi is measured on the rendered dodecahedron',1e-6);
+
+// Cube and live intersection have the SAME vertical extent at every angle.
+const {intersection}=await import(await load('polyhedra-math'));
+for(let degree=0;degree<=360;degree+=2){
+ const q=sign=>new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),sign*degree*Math.PI/180);
+ const points=sign=>tetraVerts(CR,sign<0).map(p=>new THREE.Vector3(...p).applyQuaternion(q(sign)));
+ const core=intersection(points(1),points(-1)),height=core.vertices.map(p=>p.y);
+ near(Math.max(...height),A,'Live intersection retains the upper cube-face centre');
+ near(Math.min(...height),-A,'Live intersection retains the lower cube-face centre');
+}
+// The teaching octahedra use six genuine edge crossings / cube face centres.
+torus.update('mechanism',.23,0,{intersectionWitness:true});root.updateMatrixWorld(true);
+const intersectionProof=root.getObjectByName('Octahedron from six edge crossings');assert.equal(intersectionProof.visible,true);
+const canonical=intersection(tetraVerts(CR,false).map(p=>new THREE.Vector3(...p)),tetraVerts(CR,true).map(p=>new THREE.Vector3(...p)));
+for(const crossing of intersectionProof.children.filter(o=>o.isGroup)){
+ const dot=crossing.children.find(o=>o.isMesh),world=dot.getWorldPosition(new THREE.Vector3());
+ assert.ok(canonical.vertices.some(p=>p.distanceTo(world)<1e-6),'Every teaching point is a computed intersection vertex');
+ assert.equal(crossing.children.filter(o=>o.isLineSegments).length,2);
+ for(const line of crossing.children.filter(o=>o.isLineSegments)){
+  const attr=line.geometry.attributes.position,mid=new THREE.Vector3().fromBufferAttribute(attr,0).lerp(new THREE.Vector3().fromBufferAttribute(attr,1),.5).applyMatrix4(line.matrixWorld);
+  near(mid.distanceTo(world),0,'The two original tetrahedron edges meet at their midpoint',1e-6);
+ }
+}
+torus.update('inscription',.55,0);root.updateMatrixWorld(true);
+const faceProof=root.getObjectByName('Six cube faces to octahedron vertices');assert.equal(faceProof.visible,true);
+for(const face of faceProof.children){const dot=face.children.find(o=>o.geometry.type==='SphereGeometry'),p=dot.position.toArray();assert.equal(p.filter(x=>x!==0).length,1);near(Math.hypot(...p),3*A,'The external octahedron vertex is a current outer-cube face centre');}
+
+// A chapter boundary must agree in every actually drawn overlay, not only angle.
+function drawn(){const parts=[];root.updateMatrixWorld(true);root.traverseVisible(o=>{if(!o.material||o.material.opacity<1e-8||o.geometry.drawRange.count===0)return;parts.push({id:o.uuid,opacity:o.material.opacity,matrix:o.matrixWorld.elements.slice(),range:o.geometry.drawRange.count});});return parts;}
+torus.update('cage',1,0,{rotation:2*Math.PI});const lastSix=drawn();
+torus.update('growth',0,0,{rotation:2*Math.PI,expansion:expansionAt({expansionFrom:0,expansionDuration:1},0)});const firstSeven=drawn();
+assert.equal(lastSix.length,firstSeven.length,'No contours pop in at 6 → 7');
+lastSix.forEach((part,i)=>{const next=firstSeven[i];assert.equal(part.id,next.id);near(part.opacity,next.opacity,'Opacity is continuous');part.matrix.forEach((v,k)=>near(v,next.matrix[k],'World transform is continuous'));assert.equal(part.range,next.range);});
+for(const i of [13,14,15]){
+ const s=reduce(initialState(),{type:'tour/start',id:'torus',index:i}),recipe=TOURS.torus.steps[i].scene;
+ for(const id of ['merkaba_up','merkaba_down']){assert.equal(s.objects[id].faces,true);assert.equal(s.objects[id].opacity,initialState().objects[id].opacity,'Use the laboratory default face transparency');}
+ assert.equal(s.objects.cube.visible,true);assert.equal(s.objects.dodecahedron.visible,true);
+ near(torusSourceMix(recipe,1),1,'The end of each final chapter contains source surfaces');
+ if(i>13){assert.equal(s.lab.layers.intersection,false);assert.equal(s.lab.layers.hull,false);}
+ torus.update(recipe.torus,1,0);assert.ok(root.children.filter(o=>o.name.startsWith('Intersection scale echo')).every(o=>!o.visible),'No green pooled cores after the surface exchange');
+}
+near(torusSourceMix(TOURS.torus.steps[13].scene,0),0,'Chapter 14 begins on the previous core');
+
 // Five equal edges and planarity establish that the highlighted diagonal
 // belongs to a real pentagonal face, not a camera-space decoration.
 const points=proof.face.points,normal=points[1].clone().sub(points[0]).cross(points[2].clone().sub(points[0])).normalize();
 for(let i=0;i<5;i++){near(points[i].distanceTo(points[(i+1)%5]),proof.face.short,'Regular pentagon edges',1e-6);near(points[i].clone().sub(points[0]).dot(normal),0,'Face is planar',1e-6);}
+
+// Verify the actual annotation geometry against actual rendered source edges,
+// including parent scaling, rotation, translation and camera changes.
+globalThis.innerWidth=1280;globalThis.innerHeight=800;
+globalThis.document={createElement:()=>({style:{},setAttribute(){},remove(){}}),body:{append(){}}};
+const {SObj}=await import(await load('geometry')),source=new SObj('dodecahedron',dodeca.clone(),null,0xff00ff,.08);
+scene.add(parent);parent.add(source.group);const witness=createTorusWitness(scene),camera=new THREE.OrthographicCamera(-20,20,12,-12,.01,500);
+camera.position.set(15,8,25);camera.lookAt(0,0,0);camera.updateMatrixWorld(true);
+for(const scale of [.3,2.7,8.9,1.01]){
+ parent.scale.setScalar(scale);source.group.rotation.set(.3,scale/3,-.1);source.group.position.set(.7,-.3,1.2);scene.updateMatrixWorld(true);
+ witness.update(source,.35,camera);
+ const highlight=source.group.getObjectByName('Dodecahedron · measured golden ratio');assert.ok(highlight,'Annotations inherit the source transform');
+ const outline=highlight.children.find(o=>o.isLineSegments),p=outline.geometry.attributes.position,e=source.edges.geometry.attributes.position;
+ for(let i=0;i<p.count;i+=2){const a=new THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(outline.matrixWorld),b=new THREE.Vector3().fromBufferAttribute(p,i+1).applyMatrix4(outline.matrixWorld);
+  let error=Infinity;for(let j=0;j<e.count;j+=2){const x=new THREE.Vector3().fromBufferAttribute(e,j).applyMatrix4(source.edges.matrixWorld),y=new THREE.Vector3().fromBufferAttribute(e,j+1).applyMatrix4(source.edges.matrixWorld);error=Math.min(error,a.distanceTo(x)+b.distanceTo(y),a.distanceTo(y)+b.distanceTo(x));}
+  near(error,0,'Every highlighted side is an actual rendered edge',2e-5);
+ }
+}
+witness.dispose();source.mesh.geometry.dispose();source.edges.geometry.dispose();source.fMat.dispose();source.eMat.dispose();scene.remove(parent);
+
 for(const turn of [-100000,-20,-2,0,2,20,100000]){
  const f=expansionAt({expansionFrom:2,expansionDuration:0},0,{turnOffset:turn,logOffset:turn*Math.log(PHI)});
  assert.ok(f.scale>=1&&f.scale<=9&&Number.isFinite(f.scale));near(f.logScale,Math.log(f.scale)+f.units*2*Math.log(3),'Rebasing retains the full physical scale',1e-9);

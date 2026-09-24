@@ -38,3 +38,12 @@ export function tetraWitnessAppearance(p,id='merkaba_up'){
     faces:.07*focus,coreFaces:.18*(1-focus)*(1-handoff)+.34*handoff,
     coreEdges:.85*(1-focus)*(1-handoff)+.16*focus+handoff,handoff};
 }
+
+/** Last three chapters exchange the derived core for its actual source bodies. */
+export const torusSourceMix=(recipe,p)=>recipe.sourceSurfaces==='reveal'?ease(p/.12):recipe.sourceSurfaces==='hold'?1:0;
+
+/** Keep the completed opening network at its last scale, reveal its cube there,
+ * then carry that same cube to the normal scene size as the network dissolves. */
+export function torusOpeningHandoff(p){
+  return {network:1-ease(p/.18),scale:3**(1-ease((p-.18)/.2)),bounds:1-ease(p/.38)};
+}

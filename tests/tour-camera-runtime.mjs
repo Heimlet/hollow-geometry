@@ -178,3 +178,21 @@ assert.ok(maxSize/minSize<2.3,'Two minutes of endless growth cannot overflow a f
 actions.tourControl({playing:false});rig.updateTourCamera(.025,330,440);assert.equal(scene.controls.enabled,true);
 actions.stopTour();rig.updateTourCamera(.025,330,440);
 console.log('PASS: endless final camera follows scale without overflow and releases on Pause');
+
+// Chapter changes may alter panel height, but not teleport the projection.
+for(const [width,screenHeight,panelWidth]of [[1280,800,440],[390,844,366]]){
+ globalThis.innerWidth=width;globalThis.innerHeight=screenHeight;
+ actions.startTour('torus',5);actions.seekTour(TOURS.torus.steps[5].seconds);rig.queueTourShot();
+ for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,panelWidth);
+ const before=new Vector3().project(scene.camera),height=scene.getViewHeight();
+ actions.tourStep(6);rig.queueTourShot({holdTimeline:false});rig.updateTourCamera(0,385,panelWidth);
+ assert.ok(new Vector3().project(scene.camera).distanceTo(before)<1e-10,'6 → 7 keeps the same projected centre at the boundary');
+ assert.ok(Math.abs(scene.getViewHeight()-height)<1e-10,'6 → 7 starts at the exact current scale');
+ actions.startTour('torus',0);actions.seekTour(TOURS.torus.steps[0].seconds);rig.queueTourShot();
+ for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,panelWidth);
+ const openingPose=scene.camera.position.clone().normalize(),openingHeight=scene.getViewHeight();
+ actions.tourStep(1);rig.queueTourShot({holdTimeline:false});rig.updateTourCamera(0,360,panelWidth);
+ assert.ok(scene.camera.position.clone().normalize().distanceTo(openingPose)<1e-10);
+ assert.ok(Math.abs(scene.getViewHeight()-openingHeight)<1e-10,'1 → 2 preserves the end of the completed network');
+}
+console.log('PASS: both chapter handoffs preserve the first camera frame on desktop and phone');

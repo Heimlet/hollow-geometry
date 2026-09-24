@@ -1,4 +1,6 @@
 /** Orthographic illustrations built from the same vertices as the tours. */
+import { ORBIT_SEEDS,spiralGuide,torusCurve } from './torus-math.js';
+import { A,PHI } from './constants.js';
 import { fruitVolume } from './fruit-life.js';
 import { el } from './lab-controls.js';
 const NS='http://www.w3.org/2000/svg',gold='#edcb8b',blue='#91cfe6',violet='#c4b0ef';
@@ -44,6 +46,19 @@ export function geometryFigure(kind){
     drawCube(pane(row,'Взгляд по диагонали',[1,1,1],34));
   }else if(kind==='merkaba'){
     drawStar(pane(row,'Звезда Давида',[1,1,1],34));drawStar(pane(row,'Два тетраэдра',[3,1,4],34));
+  }else if(kind==='spiral-growth'){
+    const spiral=pane(row,'90° → ×φ',[0,0,1],22);
+    for(const index of [0,7]){
+      const points=Array.from({length:129},(_,i)=>spiralGuide(ORBIT_SEEDS[index],-2+4*i/128).map(x=>x/A));
+      spiral.path(points,index===7?gold:blue,.9);
+      for(const turn of [0,1]){const p=spiralGuide(ORBIT_SEEDS[index],turn);spiral.circle([p[0]/A,p[1]/A,0],.07,index===7?gold:blue);}
+    }
+    const pair=pane(row,'Те же вершины · следующий размер',[3,1,4],23);
+    for(const size of [.7,.7*PHI**2])drawStar({path:(points,color)=>pair.path(points.map(p=>p.map(x=>x*size)),color,size<1?.35:.9)});
+    const shell=pane(row,'Опоры ведут за собой тор',[3,2,4],23);
+    drawStar({path:(points,color)=>shell.path(points,color,.8)});
+    for(let i=0;i<8;i++)shell.path(torusCurve(0,1,64).map(([x,y,z])=>[x*Math.cos(i*Math.PI/4)/A,z/A,-x*Math.sin(i*Math.PI/4)/A]),blue,.4);
+    for(const v of [Math.PI/2,3*Math.PI/2])shell.path(torusCurve(1,0,96,v).map(([x,y,z])=>[x/A,z/A,-y/A]),gold,.8);
   }else if(kind==='flower'){
     drawFlower(pane(row,'Цветок жизни',[1,1,1],15),true);drawFlower(pane(row,'Объёмная модель',[3,1,-1],15),false);
   }

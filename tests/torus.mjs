@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
-import {TORUS,TORUS_OUTER,TORI,TORUS_AXIS,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,expansionAt,expansionReferences,expansionViewZoom,expansionZoom,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS,CUBE_HOLD,cubeWitnessInk,torusPoint,torusCurve,torusBounds} from '../js/torus-math.js';
+import {TORUS,TORUS_OUTER,TORI,TORUS_AXIS,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,expansionAt,expansionReferences,expansionViewZoom,expansionZoom,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS,CUBE_HOLD,cubeWitnessInk,intersectionWitnessPhase,torusPoint,torusCurve,torusBounds} from '../js/torus-math.js';
 import {A,R_META} from '../js/constants.js';
 import {TOURS,tourDuration} from '../js/tour-data.js';
 import {KNOWLEDGE} from '../js/tour-knowledge.js';
@@ -11,7 +11,7 @@ for(const shape of TORI) {
   for(const points of [torusCurve(2,3,768,0,shape),torusCurve(-2,3,768,0,shape),torusCurve(18,18*phi,768,0,shape)])for(const [x,y,z] of points)
     assert.ok(Math.abs(((Math.hypot(x,y)-shape.major)/shape.tube)**2+(z/shape.height)**2-1)<1e-10,'Every trajectory follows its own stretched torus');
   assert.ok(shape.major>shape.tube,'The axial passage remains open');
-  assert.ok(shape.height>shape.major+shape.tube,'The whole shell is taller than it is wide');
+  assert.equal(shape.height,A,'Both tori have the current cube / intersection height');
 }
 
 // The new torus is anchored to real vertex paths, not an unrelated decoration.
@@ -133,7 +133,7 @@ assert.equal(cubeWitnessInk(.9),0,'The scale explanation leaves before eight-ver
 for(const id of ['torus-intersection','torus-hull']) {
   const index=TOURS.torus.steps.findIndex(s=>s.id===id),step=TOURS.torus.steps[index];
   const start=reduce(initialState(),{type:'tour/start',id:'torus',index});
-  const middle=reduce(start,{type:'tour/seek',elapsed:step.seconds*.2});
+  const middle=reduce(start,{type:'tour/seek',elapsed:step.seconds*(step.scene.intersectionWitness?.5:.2)});
   const end=reduce(start,{type:'tour/seek',elapsed:step.seconds});
   assert.ok(middle.lab.rotation.up>step.scene.rotationFrom&&middle.lab.rotation.up<step.scene.rotationTo);assert.equal(middle.lab.rotation.down,-middle.lab.rotation.up);
   assert.equal(middle.lab.rotation.upAxis,'y');assert.equal(middle.lab.rotation.downAxis,'y');
@@ -144,7 +144,7 @@ for(const id of ['torus-intersection','torus-hull']) {
   assert.ok(Math.abs(a.outer.volume-b.outer.volume)>1e-3,'The actual hull changes under relative rotation');
   assert.equal(c.inner.vertices.length,6);assert.equal(c.outer.vertices.length,8);
   assert.ok(Math.abs(c.inner.volume-a.inner.volume)<1e-10);assert.ok(Math.abs(c.outer.volume-a.outer.volume)<1e-10);
-  assert.deepEqual(reduce(end,{type:'tour/seek',elapsed:step.seconds*.2}).lab,middle.lab,'Seeking restores exact relative rotation and layers');
+  assert.deepEqual(reduce(end,{type:'tour/seek',elapsed:step.seconds*(step.scene.intersectionWitness?.5:.2)}).lab,middle.lab,'Seeking restores exact relative rotation and layers');
 }
 const snapshot=()=>{const result=[];root.traverse(o=>{if(o.material)result.push({visible:o.visible,opacity:o.material.opacity,range:o.geometry.drawRange.count,rotation:o.rotation.toArray(),position:o.position.toArray(),scale:o.scale.toArray(),uniforms:Object.entries(o.material.uniforms||{}).map(([k,v])=>[k,v.value]),points:o.isPoints?Array.from(o.geometry.attributes.position.array):null});});return result;};
 let previousMotion=null;
@@ -152,10 +152,10 @@ for(const step of TOURS.torus.steps.filter(s=>s.scene.continuousMotion)){
  if(previousMotion)assert.equal(step.scene.rotationFrom,previousMotion.rotationTo,'No rotation phase jump between chapters');
  const conf=step.scene,index=TOURS.torus.steps.indexOf(step),first=reduce(initialState(),{type:'tour/start',id:'torus',index});
  const mid=reduce(first,{type:'tour/seek',elapsed:step.seconds/2});
- assert.equal(mid.lab.rotation.up,conf.expansionFrom===undefined?(conf.rotationFrom+conf.rotationTo)/2:conf.expansionAngle+90*expansionAt(conf,.5).turns,'Rotation follows the growth phase');
+ assert.equal(mid.lab.rotation.up,conf.expansionFrom===undefined?(conf.rotationFrom+(conf.rotationTo-conf.rotationFrom)*(conf.intersectionWitness?intersectionWitnessPhase(.5,8*step.seconds/(conf.rotationTo-conf.rotationFrom)):.5)):conf.expansionAngle+90*expansionAt(conf,.5).turns,'Rotation follows the growth phase');
  const eps=1e-5,startNext=reduce(first,{type:'tour/seek',elapsed:eps});
  const last=reduce(first,{type:'tour/seek',elapsed:step.seconds}),beforeLast=reduce(first,{type:'tour/seek',elapsed:step.seconds-eps});
- assert.ok(Math.abs((startNext.lab.rotation.up-first.lab.rotation.up)/eps-(conf.expansionFrom>0?9:8))<.001,'Entry speed is shared by adjacent moving chapters');
+ assert.ok(Math.abs((startNext.lab.rotation.up-first.lab.rotation.up)/eps-(conf.intersectionWitness?0:conf.expansionFrom>0?9:8))<.001,'Entry speed is shared by adjacent moving chapters');
  assert.ok(Math.abs((last.lab.rotation.up-beforeLast.lab.rotation.up)/eps-(conf.expansionFrom===undefined?8:9))<.001,'Exit speed matches without a stop');
 
  previousMotion=conf;
@@ -185,8 +185,8 @@ for(const g of previews){assert.equal(g.visible,true);const marker=g.children.fi
 
 for(const step of TOURS.torus.steps.filter(s=>s.scene.axisGuide)){
  const conf=step.scene;assert.equal(conf.rotationAxis,'y');
- for(const key of conf.camera.path)assert.ok(Math.abs(key.dir[1]/Math.hypot(...key.dir))<.3,'Camera sees horizontal rotation from the side');
- if(conf.torus){assert.equal(conf.intersection,true);assert.equal(conf.hull,true);}
+ for(const key of conf.camera.path){assert.ok(Math.hypot(...key.dir)>0);if(conf.expansionFrom===undefined)assert.ok(Math.abs(key.dir[1]/Math.hypot(...key.dir))<.3,'Early explanation sees horizontal rotation from the side');}
+ if(conf.torus){assert.equal(conf.intersection,conf.sourceSurfaces!=='hold');assert.equal(conf.hull,conf.sourceSurfaces!=='hold');}
 }
 for(const kind of ['mechanism','cage','traces','growth','pair','inscription','spiral','birth','weave','golden','whole','cosmos'])for(const p of [0,.1,.5,1]) {
   study.update(kind,p,p*17);const expected=snapshot();study.update('golden',.7,9);study.update(kind,p,p*17);assert.deepEqual(snapshot(),expected,'Backward navigation restores every visible layer');assert.equal(root.children.length,count);
@@ -218,3 +218,12 @@ const dots=root.children.find(o=>o.isPoints);study.update('weave',.5,7);const fi
 study.update(null,0,0,{axis:true});assert.equal(root.visible,true);assert.ok(root.children.filter(o=>o.isGroup).every(o=>!o.visible));
 study.update(null,0);assert.equal(root.visible,false);study.dispose();assert.equal(scene.children.length,0);
 console.log('PASS: exact torus trajectories, closed trefoil, non-closing phi sample, short finale order, sourced reading, deterministic pause/seek, world alignment and cleanup');
+
+const {torusOpeningHandoff}=await import('../js/tour-effects.js');
+assert.deepEqual(torusOpeningHandoff(0),{network:1,scale:3,bounds:1});
+assert.equal(torusOpeningHandoff(.18).scale,3,'The cube stays at the network vertices until the network has faded');
+assert.deepEqual(torusOpeningHandoff(1),{network:0,scale:1,bounds:0});
+const held=reduce(initialState(),{type:'tour/start',id:'torus',index:4});
+assert.equal(reduce(held,{type:'tour/seek',elapsed:TOURS.torus.steps[4].seconds*.29}).lab.rotation.up,0,'The inner octahedron is explained while the original pair is canonical');
+assert.equal(TOURS.torus.steps.at(-1).title,'Расширение или сжатие');
+for(const id of ['torus-spiral-law','torus-whole'])assert.ok(TOURS.torus.steps.find(s=>s.id===id).scene.camera.path.some(key=>key.dir[1]/Math.hypot(...key.dir)>.99),'Spirals are revealed from above');

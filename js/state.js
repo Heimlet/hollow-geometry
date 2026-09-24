@@ -6,15 +6,14 @@ import { objectId, derivedKind } from './scene-selectors.js';
 /** Single source of truth for scene configuration. No DOM or Three.js objects.
  * Commands are atomic; subscribers only render committed, immutable snapshots.
  */
-import { OBJ_IDS } from './constants.js';
+import { OBJ_IDS, OBJECT_OPACITY } from './constants.js';
 import { getPreset } from './preset-data.js';
 import { GOLDEN_SCENES } from './golden-scene-data.js';
 import { initialTour, enterTourStep, frameTour, tickTour } from './tour-state.js';
 import { reverseExpansion,initialExpansionMotion } from './torus-math.js';
 import { TOURS } from './tour-data.js';
 export const ALL_IDS = [...OBJ_IDS, '_metatron_'];
-const opacity = { tetrahedron: .15, cube: .10, octahedron: .12, dodecahedron: .08,
-  icosahedron: .12, merkaba_up: .12, merkaba_down: .12, cuboctahedron: .06, _metatron_: .4 };
+
 function freeze(value) {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.values(value).forEach(freeze); Object.freeze(value);
@@ -23,7 +22,7 @@ function freeze(value) {
 }
 export function initialState() {
   return freeze({ objects: Object.fromEntries(ALL_IDS.map(id => [id, {
-    visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: opacity[id] ?? .12,
+    visible: false, edges: false, faces: false, nodes: false, lines: false, opacity: OBJECT_OPACITY[id] ?? .12,
   }])), recursion: { depth: 1, scale: .35 }, presetId: null,
   lab: initialLab(), viewContext: 'platonic', ui:{mode:'simple',topic:null,topicTrail:[]}, tour:initialTour(),
   study: { mode: 'none', progress: 0, running: false, speed: .12, steps: 5, turns: 3, size: 1, attached: false },

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,expansionZoom,cubeWitnessView,EXPANSION_TARGET_SCALE } from './torus-math.js';
 import { fruitVolume,FRUIT_PLANAR } from './fruit-life.js';
 import { dimensionFrame,dimensionSequence } from './dimension-scene.js';
+import { torusOpeningHandoff } from './tour-effects.js';
 import { TOUR_ENTRY_SECONDS,tourEntryScale,tourRestartScale } from './tour-motion.js';
 import { camera,controls,projectionDepth,getViewHeight,setViewHeight,setDepth,setCameraFrameOffset,settleControls } from './scene.js';
 import { levels } from './levels.js';
@@ -13,7 +14,7 @@ import { goldenSceneView } from './golden-scenes.js';
 import { cancelCameraAnimation } from './presets.js';
 import { shotAt,stageViewport,fitTourFrame } from './tour-camera-math.js';
 let pending=false,flight=null,base=null,baseKey=null,active=false,viewport=null,finishedKey=null,holdTimeline=true,entrance=false,restartPose=null;
-let expansionUnits=null;
+let expansionUnits=null,frameOffset=null;
 const torusOrientation=new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...TORUS_AXIS));
 const torusFramePoints=torusBounds().map(p=>new THREE.Vector3(...p).applyQuaternion(torusOrientation));
 export function queueTourShot(options={}){cancelCameraAnimation();settleControls();pending=true;flight=null;baseKey=null;holdTimeline=options.holdTimeline!==false;entrance=!!options.entrance;}
@@ -23,6 +24,11 @@ function scenePoints() {
   if(tourStep(getState())?.scene.dimensions){const f=fruitVolume(),sequence=dimensionSequence(tourProgress(getState()),tourStep(getState()).scene.dimensionUntil),t=dimensionFrame(sequence.build).network,scale=(f.halfSide/(f.halfSide+2*f.radius)*(1-t)+t)*sequence.framingScale;return f.flowerBounds.map(p=>new THREE.Vector3(...p).multiplyScalar(scale));}
   if(tourStep(getState())?.scene.fruit){const f=fruitVolume(),kind=tourStep(getState()).scene.fruit;return (FRUIT_PLANAR.includes(kind)||['spheres','flower','network'].includes(kind)?f.flowerBounds:f.bounds).map(p=>new THREE.Vector3(...p));}
   const points=[];
+  if(tourStep(getState())?.scene.networkHandoff){
+    const handoff=torusOpeningHandoff(tourProgress(getState()));
+    const scale=3/1.35*handoff.bounds;
+    if(scale>0)points.push(...fruitVolume().flowerBounds.map(p=>new THREE.Vector3(...p).multiplyScalar(scale)));
+  }
   if(tourStep(getState())?.scene.torus){
     const r=tourStep(getState()).scene,e=expansionAt(r,tourProgress(getState()),getState().tour.motion);
     if(['growth','traces'].includes(r.torus)){
@@ -35,7 +41,7 @@ function scenePoints() {
     else if(r.torus==='spiral')points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*1.8)));
     else points.push(...torusFramePoints.map(p=>p.clone().multiplyScalar(e.scale)));
   }
-  if(tourStep(getState())?.scene.torus==='birth'){const e=expansionAt(tourStep(getState()).scene,tourProgress(getState()),getState().tour.motion);points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(e.scale*EXPANSION_TARGET_SCALE)));}
+
   if(tourStep(getState())?.scene.axisGuide&&!tourStep(getState())?.scene.torus)points.push(new THREE.Vector3(0,TORUS_POLE,0),new THREE.Vector3(0,-TORUS_POLE,0));
   if(tourStep(getState())?.scene.cubeWitness)points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(torusOrientation).multiplyScalar(cubeWitnessView(tourProgress(getState())))));
   for(const level of levels){
@@ -44,7 +50,7 @@ function scenePoints() {
       const attr=object.edges.geometry.attributes.position;
       for(let i=0;i<attr.count;i++){
         const point=new THREE.Vector3().fromBufferAttribute(attr,i).applyMatrix4(object.group.matrixWorld);points.push(point);
-        if(tourStep(getState())?.scene.spiralPreview)points.push(point.clone().multiplyScalar(1+(EXPANSION_TARGET_SCALE-1)*smooth((tourProgress(getState())-.1)/.2)));
+        if(tourStep(getState())?.scene.spiralPreview)points.push(point.clone().multiplyScalar(1+(EXPANSION_TARGET_SCALE-1)*smooth((tourProgress(getState())-(tourStep(getState()).scene.intersectionWitness?.34:.1))/.2)));
       }
     }
     if(level.mc.vis)for(const p of level.mc.pos)points.push(new THREE.Vector3(...p).applyMatrix4(level.mc.group.matrixWorld));
@@ -64,7 +70,7 @@ export function tourCameraStatus() {
 export function updateTourCamera(dt,panelHeight,panelWidth) {
   const state=getState(),recipe=tourStep(state)?.scene;
   if(!recipe) {
-    restartPose=null;expansionUnits=null;if(active){setCameraFrameOffset(0);controls.enabled=true;controls.enablePan=true;active=false;cancelTourShot();}
+    restartPose=null;expansionUnits=null;frameOffset=null;if(active){setCameraFrameOffset(0);controls.enabled=true;controls.enablePan=true;active=false;cancelTourShot();}
     return;
   }
   active=true;controls.enablePan=false;controls.autoRotate=false;
@@ -79,7 +85,12 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   expansionUnits=expansion.active?expansion.units:null;
   const resized=viewport&&(viewport.width!==innerWidth||viewport.height!==innerHeight);
   viewport=stageViewport(innerWidth,innerHeight,panelHeight,panelWidth);
-  setCameraFrameOffset(viewport.offsetY,viewport.offsetX);
+  // A changed chapter paragraph/control row must not teleport the projection
+  // on narrow screens. Keep the real target fixed; ease only the UI offset.
+  const offsetBlend=frameOffset&&(recipe.continuousMotion||recipe.networkHandoff)&&!resized?1-Math.exp(-8*Math.min(dt,.05)):1;
+  frameOffset={x:(frameOffset?.x??viewport.offsetX)+(viewport.offsetX-(frameOffset?.x??viewport.offsetX))*offsetBlend,
+    y:(frameOffset?.y??viewport.offsetY)+(viewport.offsetY-(frameOffset?.y??viewport.offsetY))*offsetBlend};
+  setCameraFrameOffset(frameOffset.y,frameOffset.x);
   if(state.tour.phase==='restarting'){
     cancelTourShot();
     const scale=tourRestartScale(state.tour.restartElapsed),direction=camera.position.clone().sub(controls.target).normalize();

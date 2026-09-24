@@ -494,14 +494,22 @@ animation ticks never pollute history. `expansionZoom` follows actual log-scale
 in either direction, and camera rebasing handles forward and reverse crossings.
 
 `torus-witness.js` reads source mesh world matrices, including current scaling and
-rotation. In the axis frame, measured radial distance ρ and height ±h determine
-the stretched meridian with explicit cube constraints: R = ρ/√2 = a is the
-current cube inradius, and H = hφ² is the next cube half-side. Its top and bottom
-planes are shown during the meridian sweep. Each anchor satisfies
-((ρ−R)/b)²+(h/H)²=1. The remaining radius b follows from this contact.
-Shell transforms use these measurements rather than the tour clock. Two bright anchors, signed tangent arrows and mirrored spatial logarithmic
-guides expose the connection. The close outer torus is a visual echo, 6% wider at the same cube-defined
-height, linked by two short radial supports. These choices do not specify a unique torus from eight points.
+rotation. The measured height of the current source cube is 2a. For rotation
+about its vertical face axis, the canonical octahedron and the changing live
+intersection share the same polar points at ±a. The circular meridian is an
+explicit additional choice: R = √2a, r = a, full torus height 2a. Its upper and
+lower circles pass through all eight moving vertex anchors. No future-scale
+multiplier is used for height. The second shell remains a radial 6% visual echo
+with the same height. Both are measured from source world coordinates.
+
+Chapter six hands its paths, destination cube, source previews, spiral arrows
+and pooled contours to chapter seven with matching opacity and transforms.
+The camera eases changing UI offsets, keeping its target at the geometric centre.
+From chapter fourteen the live intersection fades out while source tetrahedron
+faces reach their default opacity. Subsequent chapters disable the derived
+intersection and hull; the reference cube, golden witness and spirals remain.
+The witness is a child of the actual dodecahedron transform, with five marked
+vertices, an explicit face label and measured edge/diagonal lengths.
 
 `tests/torus-coupling.mjs` checks real source vertices against the analytic AND
 rendered torus, the measured dodecahedral ratio, signed φ growth, inverse travel,
@@ -563,3 +571,22 @@ unwrapped angle/log-scale offsets at the incoming angular speed, with a fixed
 chapter time and fixed resource pool. Pause and reading freeze it; closing reading
 resumes the same final pose. Reverse works after completion; Restart still collapses
 the construction to the opening. All other tours retain their normal completion.
+
+
+### Finale construction and camera continuity
+
+The opening network survives into chapter two at its completed 3× size. The
+source cube appears on the same corners, then returns to normal scale only after
+the network fades. Chapter five holds the canonical tetrahedra while six crossing
+edge pairs reveal the six computed intersection vertices and twelve octahedral
+edges. Rotation then resumes continuously. Chapter nine separately constructs the
+outer octahedron from six cube-face centres, then shows its face medians and the
+smaller cube at their centroids. The golden outer construction and green live
+intersection are intentionally distinct.
+
+Late camera shots carry exact endpoints across chapters and include near-polar
+spiral views, side views of the torus meridian and oblique source-body views.
+The early growth shot retains visible enlargement. The last chapter is titled
+“Расширение или сжатие”; its existing `torus-cosmos` ID remains stable for links.
+The homepage and torus/coupling reading explain the explicit golden constraint,
+current cube/intersection height, mirrored handedness and reversible log-scale.

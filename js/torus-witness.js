@@ -3,6 +3,12 @@ import * as THREE from 'three';
 import { ORBIT_SEEDS } from './torus-math.js';
 import { verticesOf,pentagonalFaces } from './golden-math.js';
 const vertexCache=new WeakMap();
+export function cubeHalfHeight(level){
+  const mesh=level?.objs.cube?.mesh;if(!mesh)return null;
+  const points=mesh.geometry.attributes.position,p=new THREE.Vector3();let low=Infinity,high=-Infinity;
+  for(let i=0;i<points.count;i++){p.fromBufferAttribute(points,i).applyMatrix4(mesh.matrixWorld);low=Math.min(low,p.y);high=Math.max(high,p.y);}
+  return (high-low)/2;
+}
 export function merkabaAnchors(level){
   if(!level)return null;
   return ORBIT_SEEDS.map(seed=>{
@@ -20,9 +26,9 @@ export function dodecahedronWitness(geometry){
   return {face,edge:[face.points[0],face.points[1]],diagonal:[face.points[0],face.points[2]]};
 }
 export function createTorusWitness(scene){
-  const group=new THREE.Group();group.name='Dodecahedron · measured golden ratio';group.matrixAutoUpdate=false;group.visible=false;scene.add(group);
-  const labels=['a','φ · a'].map((text,i)=>{const node=document.createElement('span');node.className=`torus-measure ${i?'gold':'cyan'}`;node.textContent=text;node.hidden=true;node.setAttribute('aria-hidden','true');document.body.append(node);return node;});
-  let sourceGeometry,data,lines=[],surface;
+  const group=new THREE.Group();group.name='Dodecahedron · measured golden ratio';group.matrixAutoUpdate=false;group.visible=false;
+  const labels=['ребро a','диагональ φ · a','Грань додекаэдра'].map((text,i)=>{const node=document.createElement('span');node.className=`torus-measure ${i?'gold':'cyan'}`;node.textContent=text;node.hidden=true;node.setAttribute('aria-hidden','true');document.body.append(node);return node;});
+  let sourceGeometry,data,lines=[],surface,markers=[];
   function clear(){for(const object of group.children){object.geometry.dispose();object.material.dispose();}group.clear();lines=[];}
   function build(geometry){
     clear();sourceGeometry=geometry;data=dodecahedronWitness(geometry);
@@ -31,18 +37,27 @@ export function createTorusWitness(scene){
     for(const [vertices,color,width]of [[points.flatMap((p,i)=>[p,points[(i+1)%5]]),0xffd277,1.6],[data.edge,0x80dfff,3.3],[data.diagonal,0xffd277,3.3]]){
       const line=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(vertices),new THREE.LineBasicMaterial({color,transparent:true,opacity:1,linewidth:width,depthWrite:false}));line.renderOrder=12;group.add(line);lines.push(line);
     }
+    markers=points.map(p=>{const marker=new THREE.Mesh(new THREE.SphereGeometry(data.face.short*.027,10,8),new THREE.MeshBasicMaterial({color:0xffe5b0,transparent:true,depthWrite:false}));marker.position.copy(p);marker.renderOrder=13;group.add(marker);return marker;});
   }
-  return {update(source,p,camera){
+  return {update(source,p,camera,{carry=false}={}){
     const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
-    const ink=source?ease(p/.14)*(1-.8*ease((p-.5)/.3)):0;
+    const ink=source?(carry?.2:ease(p/.14)*(1-.8*ease((p-.5)/.3))):0;
     group.visible=ink>0;labels.forEach(label=>label.hidden=true);if(!source)return;
     if(sourceGeometry!==source.mesh.geometry)build(source.mesh.geometry);
-    group.matrix.copy(source.mesh.matrixWorld);group.updateMatrixWorld(true);
-    surface.material.opacity=.12*ink;lines.forEach(line=>line.material.opacity=ink);
-    [data.edge,data.diagonal].forEach((pair,i)=>{
+    // Share the source parent instead of maintaining a separate world transform.
+    // A paused orbit, a growing parent and render-unit rebasing all remain exact.
+    if(group.parent!==source.group)source.group.add(group);
+    group.matrix.copy(source.mesh.matrix);group.updateWorldMatrix(true,true);
+    surface.material.opacity=.14*ink;lines.forEach(line=>line.material.opacity=ink);markers.forEach(marker=>marker.material.opacity=ink);
+    const bottom=data.face.points.reduce((a,b)=>a.y<b.y?a:b);
+    const placed=[];
+    [data.edge,data.diagonal,[bottom,bottom]].forEach((pair,i)=>{
       const point=pair[0].clone().lerp(pair[1],.55).applyMatrix4(group.matrixWorld).project(camera),label=labels[i];
       label.hidden=ink<.1||point.z<-1||point.z>1||Math.abs(point.x)>.94||Math.abs(point.y)>.85;
-      label.style.left=`${(point.x+1)*innerWidth/2+9}px`;label.style.top=`${(1-point.y)*innerHeight/2+(i?-23:9)}px`;label.style.opacity=ink;
+      const width=label.textContent.length*8+16,height=28,x=Math.min(innerWidth-width-8,Math.max(8,(point.x+1)*innerWidth/2+9));
+      let y=(1-point.y)*innerHeight/2+(i===2?20:i?-23:9);
+      for(const other of placed)if(x<other.x+other.width+6&&x+width+6>other.x&&y<other.y+height+6&&y+height+6>other.y)y=other.y-height-8;
+      placed.push({x,y,width});label.style.left=`${x}px`;label.style.top=`${Math.max(8,y)}px`;label.style.opacity=ink;
     });
-  },dispose(){clear();scene.remove(group);labels.forEach(label=>label.remove());}};
+  },dispose(){clear();group.removeFromParent();labels.forEach(label=>label.remove());}};
 }
