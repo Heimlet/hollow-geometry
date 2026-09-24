@@ -202,6 +202,10 @@ for(const chapter of TOURS.torus.steps){const r=chapter.scene;if(r.effect!=='cou
   }
   finalAngle=r.rotationTo;
 }
+// The sky reaches its full density at the end of chapter ten and holds it.
+const skyPeak=TOURS.torus.steps.find(chapter=>chapter.id==='torus-weave').scene;
+for(const chapter of TOURS.torus.steps)if(chapter.scene.expansionFrom!==undefined)
+  chapter.scene.starRampDuration=skyPeak.expansionFrom+skyPeak.expansionDuration;
 // Optical comparison begins with depth, then proves the exact square/hexagon.
 for(const chapter of TOURS.projections.steps) {
   const r=chapter.scene;if(r.golden||r.orbit)continue;

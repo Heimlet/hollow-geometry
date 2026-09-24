@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import { scene, camera, controls, renderer } from './scene.js';
 import { getState } from './state.js';
+import { tourStep } from './tour-data.js';
+import { tourStarProgress } from './tour-effects.js';
 const sky=new THREE.Scene(),skyCamera=new THREE.PerspectiveCamera(65,1,.1,400);
 scene.background=null;renderer.setClearColor(0x04040f);renderer.autoClear=false;
 const sprite=document.createElement('canvas');sprite.width=sprite.height=32;
@@ -17,12 +19,24 @@ const layers=[{max:7200,size:.23,opacity:.8},{max:800,size:.44,opacity:1}].map(c
     const tone=random(),brightness=.65+.35*random();colors.push(...(tone<.15?[1,.82,.61]:tone<.45?[.68,.82,1]:[.94,.96,1]).map(v=>v*brightness));
   }
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
+  geometry.setAttribute('starIndex',new THREE.Float32BufferAttribute(Array.from({length:config.max},(_,i)=>i),1));
   const points=new THREE.Points(geometry,new THREE.PointsMaterial({map,size:config.size,opacity:config.opacity,transparent:true,vertexColors:true,sizeAttenuation:true,depthWrite:false,toneMapped:false}));
-  sky.add(points);return points;
+  const baseCount={value:0},birthCount={value:0};
+  points.material.onBeforeCompile=shader=>{
+    Object.assign(shader.uniforms,{baseCount,birthCount});
+    shader.vertexShader='attribute float starIndex;\nuniform float baseCount;\nuniform float birthCount;\nvarying float starVisibility;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nstarVisibility = starIndex < baseCount ? 1.0 : smoothstep(0.0, 64.0, birthCount - starIndex);');
+    shader.fragmentShader='varying float starVisibility;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.a *= starVisibility;');
+  };
+  points.material.customProgramCacheKey=()=> 'hollow-star-birth-v1';
+  sky.add(points);return {points,baseCount,birthCount,max:config.max};
 });
 export function updateStarfield() {
-  const count=getState().display.starCount,bright=Math.round(count*.1);
-  layers[0].geometry.setDrawRange(0,count-bright);layers[1].geometry.setDrawRange(0,bright);
+  const state=getState(),count=state.display.starCount,bright=Math.round(count*.1),progress=tourStarProgress(tourStep(state)?.scene,state.tour.elapsed);
+  layers.forEach((layer,i)=>{
+    const base=i?bright:count-bright,birth=base+(layer.max-base+64)*progress;
+    layer.baseCount.value=base;layer.birthCount.value=birth;
+    layer.points.geometry.setDrawRange(0,Math.min(layer.max,Math.ceil(birth)));
+  });
   // Focal-length compensation of the mathematical object camera must not throw
   // the observer outside the sky. A small physical orbit retains depth parallax.
   skyCamera.position.copy(camera.position).sub(controls.target).normalize().multiplyScalar(4).addScaledVector(controls.target,.02);

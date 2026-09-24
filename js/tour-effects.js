@@ -1,5 +1,8 @@
 /** Render-only surface choreography. Base laboratory opacity is never overwritten. */
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+/** Temporary sky choreography follows tour time, never the saved display setting. */
+export const tourStarProgress=(recipe,elapsed=0)=>recipe?.starRampDuration
+  ?ease((recipe.expansionFrom+elapsed)/recipe.starRampDuration):0;
 export function tourFaceOpacity(recipe,p) {
   if(recipe.faces===false)return 0;
   const count=recipe.objects?.filter(id=>id!=='_metatron_').length||1;
