@@ -1,8 +1,8 @@
 /** Coaxial tori. Local Z maps to the world's vertical Y. */
-import { A,R_META,PHI } from './constants.js';
+import { A,R_META,PHI,GOLDEN_CYCLE_SCALE } from './constants.js';
 export const SPIRAL_RATIO=PHI;
 export const EXPANSION_TARGET_TURNS=2;
-export const EXPANSION_TARGET_SCALE=PHI**EXPANSION_TARGET_TURNS;
+export const EXPANSION_TARGET_SCALE=GOLDEN_CYCLE_SCALE;
 // Choose a circular meridian whose diameter joins the two vertex-orbit planes.
 // Its radius a is also the canonical intersection octahedron's polar radius.
 // R = sqrt(2)a puts the top/bottom circles through the actual cube vertices.
@@ -52,7 +52,7 @@ export function expansionAt(recipe={},p=0,motion={}){
   const nominalTurns=expansionLevel(time),turns=nominalTurns+(motion.turnOffset||0);
   const logScale=(recipe.expansionLogFrom??expansionLevel(recipe.expansionFrom)*Math.log(ratio))
     +(nominalTurns-expansionLevel(recipe.expansionFrom))*Math.log(ratio)+(motion.logOffset||0);
-  const level=logScale/Math.log(3),units=Math.floor(level/2),scale=3**(level-2*units);
+  const level=logScale/Math.log(GOLDEN_CYCLE_SCALE),units=Math.floor(level/2),scale=GOLDEN_CYCLE_SCALE**(level-2*units);
   return {active:true,time,turns,logScale,ratio,level,units,scale};
 }
 export const initialExpansionMotion=()=>({direction:1,turnOffset:0,logOffset:0});
@@ -73,11 +73,11 @@ export function expansionReferences(level,scale){
     return {scale:scale*relative,alpha:ease((relative-.18)/.18)*(1-ease((relative-1.8)/.8))};
   });
 }
-// Let the visible body double before the camera catches up for the next cycle.
+// Let the visible body grow by phi before the camera catches up for the next cycle.
 // Its world-space retreat remains monotonic even during the growing close-up.
 export function expansionViewZoom(time){
   const phase=(time/12)-Math.floor(time/12);
-  return .52*2**(phase<.8?ease(phase/.8):1-ease((phase-.8)/.2));
+  return .64*PHI**(phase<.8?ease(phase/.8):1-ease((phase-.8)/.2));
 }
 export function expansionZoom(frame){
   // Follow logarithmic scale, including reversed travel.

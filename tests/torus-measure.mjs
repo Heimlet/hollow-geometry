@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from '../js/constants.js';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
@@ -45,8 +46,8 @@ measure.update({enabled:true,anchors,camera,viewport,obstacles:[obstacle]});
 const shiftedTop=parseFloat(label.style.top);
 assert.ok(shiftedTop+84<=obstacle.top-5||shiftedTop>=obstacle.bottom+5,'Height caption avoids existing geometric annotations');
 for(const units of [-10,0,10,100000])for(const scale of [1.001,4,8.99]){
- near(heightGrowthLog(2*A*scale,units),Math.log(scale)+units*Math.log(9),'Counter restores physical units');
- near(heightGrowthLog(2*A*scale,units),heightGrowthLog(2*A*scale/9,units+1),'Numerical rebasing cannot reset the counter');
+ near(heightGrowthLog(2*A*scale,units),Math.log(scale)+units*2*Math.log(GOLDEN_CYCLE_SCALE),'Counter restores physical units');
+ near(heightGrowthLog(2*A*scale,units),heightGrowthLog(2*A*scale/GOLDEN_CYCLE_SCALE**2,units+1),'Numerical rebasing cannot reset the counter');
  assert.ok(!/Infinity|NaN/.test(formatHeightGrowth(heightGrowthLog(2*A*scale,units))),'The endless finale has a finite notation');
 }
 near(heightGrowthLog(2*A*PHI)-heightGrowthLog(2*A),Math.log(PHI),'A golden step multiplies the measured height by phi');

@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from '../js/constants.js';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
@@ -46,7 +47,7 @@ for(const time of [0,1,20,100,1000,100000]){
  const refs=expansionReferences(frame.turns,frame.scale);assert.equal(refs.length,8);assert.ok(refs.every(x=>x.scale<=81&&x.alpha>=0&&x.alpha<=1));
 }
 let previousRetreat=-Infinity;
-for(let time=0;time<=200;time+=.1){const f=expansionAt({expansionFrom:time,expansionDuration:0},0),zoom=expansionZoom(f),retreat=f.level*Math.log(3)-Math.log(zoom);assert.ok(retreat>previousRetreat,'The camera always retreats in the expanding world');assert.ok(zoom>=.52&&zoom<=1.04);previousRetreat=retreat;}
+for(let time=0;time<=200;time+=.1){const f=expansionAt({expansionFrom:time,expansionDuration:0},0),zoom=expansionZoom(f),retreat=f.level*Math.log(GOLDEN_CYCLE_SCALE)-Math.log(zoom);assert.ok(retreat>previousRetreat,'The camera always retreats in the expanding world');assert.ok(zoom>=.52&&zoom<=1.04);previousRetreat=retreat;}
 // The two pooled ends are invisible; all surviving contours agree at rebasing.
 for(const level of [1,2,20,1000]){
  const before=expansionReferences(level-1e-8,9).filter(x=>x.alpha>1e-5),after=expansionReferences(level+1e-8,9).filter(x=>x.alpha>1e-5);
@@ -76,9 +77,9 @@ let state=reduce(initialState(),{type:'tour/start',id:'torus',index:intersection
 const paused=reduce(state,{type:'knowledge/open',topic:'torus'});assert.equal(paused.tour.elapsed,5);assert.equal(paused.tour.playing,false);
 assert.deepEqual(paused.objects,state.objects);assert.equal(reduce(paused,{type:'tour/tick',seconds:2}),paused);
 const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
-let source=await readFile(new URL('../js/torus-scene.js',import.meta.url),'utf8');
-source=source.replace("'three'",JSON.stringify(three)).replace("'./torus-math.js'",JSON.stringify(new URL('../js/torus-math.js',import.meta.url).href));
-const {createTorusScene}=await import(url(source)),THREE=await import(three),scene=new THREE.Scene(),study=createTorusScene(scene),root=scene.children[0];
+const cache=new Map();
+async function load(name){if(cache.has(name))return cache.get(name);let s=await readFile(new URL('../js/'+name+'.js',import.meta.url),'utf8');s=s.replaceAll("'three'",JSON.stringify(three));for(const m of [...s.matchAll(/'\.\/([\w-]+)\.js'/g)])s=s.replaceAll(m[0],JSON.stringify(await load(m[1])));const value=url(s);cache.set(name,value);return value;}
+const {createTorusScene}=await import(await load('torus-scene')),THREE=await import(three),scene=new THREE.Scene(),study=createTorusScene(scene),root=scene.children[0];
 const pole=root.getObjectByName('Shared vertical axis'),axisBuffer=pole.geometry.attributes.position;
 assert.equal(axisBuffer.count,2,'The continuing axis uses one fixed line segment');
 assert.equal(axisBuffer.getZ(0),-axisBuffer.getZ(1));assert.ok(axisBuffer.getZ(1)>TORUS.height*300,'Both axis ends are far beyond the growing bodies and visible frame');
@@ -106,7 +107,7 @@ for(const p of [0,.2,.49,.72,1]){
  const frame=dimensionSequence(p*until,until);
  assert.ok(Math.abs(frame.build-p)<1e-12);assert.equal(frame.expansion,0,'Growth waits for the completed network');
 }
-const grown=dimensionSequence(1,until);assert.equal(grown.scale,3);assert.equal(grown.build,1);
+const grown=dimensionSequence(1,until);assert.equal(grown.scale,GOLDEN_CYCLE_SCALE);assert.equal(grown.build,1);
 assert.ok(grown.framingScale>1&&grown.framingScale<grown.scale,'The camera retreats less than the network grows');
 assert.deepEqual(opener.scene.camera.path.filter(k=>k.at>=until).map(k=>k.dir),[[1,1,1],[1,1,1]],'The growth retains the exact symmetric projection');
 const originalPositions=new Map();openingRoot.traverse(o=>{if(o.geometry)originalPositions.set(o.geometry,Array.from(o.geometry.attributes.position.array));});
@@ -162,11 +163,11 @@ for(const step of TOURS.torus.steps.filter(s=>s.scene.continuousMotion)){
  previousMotion=conf;
 }
 const count=root.children.length;assert.equal(root.children.filter(o=>o.name.includes('torus ·')).length,2,'Both torus shells are rendered');
-for(const kind of ['mechanism','growth','traces','pair','inscription','spiral']){
+for(const kind of ['mechanism','growth','traces','pair','golden-step','spiral']){
  const e=expansionAt(expanded,.6);study.update(kind,.6,e.time,{scale:e.scale,expansion:e});
  assert.ok(root.children.filter(o=>o.name.includes('torus ·')||o.name.startsWith('Torus scale echo')).every(o=>!o.visible),'No premature torus: only rotation and its vertex traces');
 }
-assert.ok(Math.abs(expansionViewZoom(9.6)/expansionViewZoom(0)-2)<1e-12,'Growth must double the screen size instead of being cancelled by camera fitting');
+assert.ok(Math.abs(expansionViewZoom(9.6)/expansionViewZoom(0)-(1+Math.sqrt(5))/2)<1e-12,'Growth must visibly increase the screen size by phi instead of being cancelled by camera fitting');
 // At every next scale the moving originals really occupy the next cube corners.
 for(const integer of [1,2,3,10]){
  const time=(integer+1/90)*10,e=expansionAt({expansionFrom:time,expansionDuration:0},0);
@@ -189,7 +190,7 @@ for(const step of TOURS.torus.steps.filter(s=>s.scene.axisGuide)){
  for(const key of conf.camera.path){assert.ok(Math.hypot(...key.dir)>0);if(conf.expansionFrom===undefined)assert.ok(Math.abs(key.dir[1]/Math.hypot(...key.dir))<.3,'Early explanation sees horizontal rotation from the side');}
  if(conf.torus){assert.equal(conf.intersection,conf.sourceSurfaces!=='hold');assert.equal(conf.hull,conf.sourceSurfaces!=='hold');}
 }
-for(const kind of ['mechanism','cage','traces','growth','pair','inscription','spiral','birth','weave','golden','whole','cosmos'])for(const p of [0,.1,.5,1]) {
+for(const kind of ['mechanism','cage','traces','growth','pair','golden-step','spiral','birth','weave','golden','whole','cosmos'])for(const p of [0,.1,.5,1]) {
   study.update(kind,p,p*17);const expected=snapshot();study.update('golden',.7,9);study.update(kind,p,p*17);assert.deepEqual(snapshot(),expected,'Backward navigation restores every visible layer');assert.equal(root.children.length,count);
 }
 root.updateMatrixWorld(true);assert.ok(new THREE.Vector3(0,0,1).applyQuaternion(root.quaternion).distanceTo(new THREE.Vector3(...TORUS_AXIS))<1e-12);
@@ -221,8 +222,8 @@ study.update(null,0);assert.equal(root.visible,false);study.dispose();assert.equ
 console.log('PASS: exact torus trajectories, closed trefoil, non-closing phi sample, short finale order, sourced reading, deterministic pause/seek, world alignment and cleanup');
 
 const {torusOpeningHandoff}=await import('../js/tour-effects.js');
-assert.deepEqual(torusOpeningHandoff(0),{network:1,scale:3,bounds:1});
-assert.equal(torusOpeningHandoff(.18).scale,3,'The cube stays at the network vertices until the network has faded');
+assert.deepEqual(torusOpeningHandoff(0),{network:1,scale:GOLDEN_CYCLE_SCALE,bounds:1});
+assert.equal(torusOpeningHandoff(.18).scale,GOLDEN_CYCLE_SCALE,'The cube stays at the network vertices until the network has faded');
 assert.deepEqual(torusOpeningHandoff(1),{network:0,scale:1,bounds:0});
 const held=reduce(initialState(),{type:'tour/start',id:'torus',index:intersectionIndex});
 assert.equal(reduce(held,{type:'tour/seek',elapsed:TOURS.torus.steps[intersectionIndex].seconds*.29}).lab.rotation.up,0,'The inner octahedron is explained while the original pair is canonical');

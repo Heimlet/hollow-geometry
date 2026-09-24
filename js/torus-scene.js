@@ -1,5 +1,6 @@
 /** Two illustrative shells share the exact vertical axis of the live Merkaba. */
 import * as THREE from 'three';
+import { createGoldenScaleStep } from './torus-golden-step.js';
 import {TORI,TORUS_AXIS,TORUS_AXIS_EXTENT,TORUS_CONTACT,ORBIT_SEEDS,orbitPoint,expansionPath,spiralGuide,spiralGuidePath,torusFrameFromAnchors,torusPoint,torusCurve,expansionReferences,cubeWitnessInk,traceEntrance,EXPANSION_TARGET_SCALE,EXPANSION_TARGET_TURNS} from './torus-math.js';
 const tau=Math.PI*2,phi=(1+Math.sqrt(5))/2;
 const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
@@ -20,7 +21,7 @@ export function createTorusScene(scene) {
     const head=new THREE.Mesh(new THREE.SphereGeometry(.057,12,8),new THREE.MeshBasicMaterial({color:seed.side>0?0xffb9e5:0xacf0ff,transparent:true}));traces.add(head);return {seed,line,head};
   });
   const guides=[phi].map(ratio=>{
-    const group=new THREE.Group();group.name=`Spiral coupling · ${ratio===3?'cube':'phi'}`;root.add(group);
+    const group=new THREE.Group();group.name='Spiral coupling · phi';root.add(group);
     const lines=[0,7].map(index=>({index,line:stroke(group,spiralGuidePath(ORBIT_SEEDS[index],ratio),index===7?0xffd277:0x94e6ff,.72,2.5)}));
     return {ratio,group,lines};
   });
@@ -55,24 +56,7 @@ export function createTorusScene(scene) {
   for(let i=0;i<6;i++)for(let j=i+1;j<6;j++)if(Math.floor(i/2)!==Math.floor(j/2))stroke(bridge,[bridgeVertices[i],bridgeVertices[j]],0x76dcb8,0,1.6);
   const bridgeFaces=corners.flatMap(p=>p.map((value,axis)=>{const vertex=[0,0,0];vertex[axis]=Math.sign(value)*futureA;return new THREE.Vector3(...vertex);}));
   const bridgeSurface=new THREE.Mesh(new THREE.BufferGeometry().setFromPoints(bridgeFaces),new THREE.MeshBasicMaterial({color:0x76dcb8,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));bridge.add(bridgeSurface);
-  const inscription=new THREE.Group();inscription.name='Cube octahedron cube · exact factor three';root.add(inscription);
-  const oldCube=reference.clone();oldCube.scale.setScalar(3);oldCube.traverse(o=>{if(o.material)o.material=o.material.clone();});inscription.add(oldCube);
-  const oldOcta=bridge.clone();oldOcta.scale.setScalar(3/EXPANSION_TARGET_SCALE);oldOcta.traverse(o=>{if(o.material)o.material=o.material.clone();});inscription.add(oldOcta);
-  const innerCube=reference.clone();innerCube.traverse(o=>{if(o.material)o.material=o.material.clone();});inscription.add(innerCube);
-  const centroids=corners.map(p=>{const marker=new THREE.Mesh(new THREE.SphereGeometry(.06,10,8),new THREE.MeshBasicMaterial({color:0xffde94,transparent:true}));marker.position.set(...p);inscription.add(marker);return marker;});
-  const cubeFaceProof=new THREE.Group();cubeFaceProof.name='Six cube faces to octahedron vertices';inscription.add(cubeFaceProof);
-  const outerA=3*Math.abs(corners[0][0]);
-  const faceCentres=octaPoints.map(p=>p.map(x=>3*x));
-  const squareProofs=faceCentres.map((center,index)=>{
-    const group=new THREE.Group();cubeFaceProof.add(group);const axis=Math.floor(index/2),other=[0,1,2].filter(k=>k!==axis);
-    const points=[[-1,-1],[1,-1],[1,1],[-1,1]].map(pair=>{const p=[...center];other.forEach((k,i)=>p[k]=outerA*pair[i]);return p;});
-    for(const pair of [[0,2],[1,3]])stroke(group,pair.map(i=>points[i]),0xffd277,0,1.5);
-    const plane=new THREE.Mesh(new THREE.BufferGeometry().setFromPoints([0,1,2,0,2,3].map(i=>new THREE.Vector3(...points[i]))),new THREE.MeshBasicMaterial({color:0xffd277,transparent:true,opacity:0,side:THREE.DoubleSide,depthWrite:false}));group.add(plane);
-    const dot=new THREE.Mesh(new THREE.SphereGeometry(.085,12,8),new THREE.MeshBasicMaterial({color:0xffdc95,transparent:true,depthWrite:false}));dot.position.set(...center);group.add(dot);return {group,plane,dot};
-  });
-  const medians=new THREE.Group();medians.name='Octahedron face medians to small cube vertex';inscription.add(medians);
-  const triangle=[[outerA,0,0],[0,outerA,0],[0,0,outerA]];
-  triangle.forEach((p,i)=>stroke(medians,[p,triangle[(i+1)%3].map((x,k)=>(x+triangle[(i+2)%3][k])/2)],0xffd277,0,1.8));
+  const goldenStep=createGoldenScaleStep(root);
   // One reusable half-turn growth path per original vertex. Matrices and
   // draw ranges advance along it; no buffers or thick-line proxies are rebuilt.
   const futurePaths=ORBIT_SEEDS.map(seed=>{
@@ -138,7 +122,7 @@ export function createTorusScene(scene) {
     fragmentShader:`uniform float alpha;varying vec3 tint;void main(){float d=length(gl_PointCoord-.5)*2.;if(d>1.)discard;gl_FragColor=vec4(tint,alpha*exp(-5.*d*d));}`});
   const dots=new THREE.Points(dotsGeometry,dotsMaterial);dots.name='Moving torus particles';dots.frustumCulled=false;root.add(dots);
   function update(kind,p,elapsed=0,{axis=false,rotation=0,startRotation=0,scale=1,expansion=null,anchors=null,cubeHalfHeight=null,direction=1,intersectionSource=null,intersectionWitness=false,referenceYaw=0,showHeightGuide=true}={}) {
-    const mechanism=kind==='mechanism',cage=kind==='cage',growing=kind==='growth',paired=kind==='pair'||kind==='inscription',spiral=kind==='spiral',orbit=kind==='traces'||cage||growing||mechanism||paired||spiral,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
+    const mechanism=kind==='mechanism',cage=kind==='cage',growing=kind==='growth',paired=kind==='pair'||kind==='golden-step',spiral=kind==='spiral',orbit=kind==='traces'||cage||growing||mechanism||paired||spiral,birth=kind==='birth',growth=kind==='golden',whole=kind==='whole'||kind==='cosmos';
     root.quaternion.copy(rootOrientation).multiply(referenceRotation.setFromAxisAngle(localAxis,referenceYaw));
     referenceInverse.setFromAxisAngle(worldAxis,-referenceYaw);
     const c=Math.cos(referenceYaw),s=Math.sin(referenceYaw);
@@ -151,16 +135,8 @@ export function createTorusScene(scene) {
     crossingMarks.forEach((group,i)=>group.children.forEach(part=>{part.material.opacity=proofInk*ease((p-.025-i*.012)/.035)*(part.isMesh?1:i===0?.85:.18);}));
     intersectionEdges.forEach((line,i)=>line.material.opacity=proofInk*ease((p-.13-i*.006)/.025));
     root.visible=!!kind||axis;
-    const teachingInk=paired?ease(p/.12)*(1-ease((p-.87)/.13)):0,alignment=ease((Math.abs(Math.cos(rotation*2))-.92)/.08);
-    inscription.visible=kind==='inscription';inscription.scale.setScalar(scale);
-    oldCube.children.forEach(line=>line.material.opacity=kind==='inscription'?teachingInk*.24:0);
-    const octaBuild=kind==='inscription'?ease((p-.23)/.2):1,smallBuild=kind==='inscription'?ease((p-.58)/.2):1;
-    oldOcta.children.forEach((part,i)=>{part.material.opacity=teachingInk*(part.isMesh?.035:.55)*(part.isMesh?octaBuild:ease(octaBuild*12-i));part.material.color.set(kind==='inscription'?0xffd277:0x76dcb8);});
-    cubeFaceProof.visible=kind==='inscription';
-    squareProofs.forEach(({group,plane,dot},i)=>{const ink=teachingInk*ease((p-.035-i*.025)/.07)*(1-.75*ease((p-.45)/.2));group.children.forEach(part=>part.material.opacity=part===dot?ink:part===plane?ink*.035:ink*.24);});
-    medians.visible=kind==='inscription';medians.children.forEach(line=>line.material.opacity=teachingInk*ease((p-.43)/.13)*.75);
-    innerCube.children.forEach(line=>line.material.opacity=teachingInk*.42*smallBuild*(kind==='inscription'?1:alignment));
-    centroids.forEach(marker=>marker.material.opacity=kind==='inscription'?teachingInk*smallBuild*(.7+.3*alignment):0);pole.visible=axis||!!kind;polePoint.visible=false;pole.scale.setScalar(scale);
+    goldenStep.update(kind==='golden-step',p,actual,scale,direction);
+    pole.visible=axis||!!kind;polePoint.visible=false;pole.scale.setScalar(scale);
     reference.visible=cage&&handoff<1;reference.scale.setScalar(scale);
     reference.children.forEach(line=>line.material.opacity=(1-carry)*(1-handoff)*(.1+.75*ease((Math.abs(Math.cos(rotation*2))-.9)/.1)));
     const witness=cage?cubeWitnessInk(p):0,preparation=mechanism?ease((p-(intersectionWitness?.34:.12))/.18):0;

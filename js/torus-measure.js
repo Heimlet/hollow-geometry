@@ -1,6 +1,6 @@
 /** Drafting dimensions read actual world vertices, never a second animation clock. */
 import * as THREE from 'three';
-import { A,PHI } from './constants.js';
+import { A,PHI,GOLDEN_CYCLE_SCALE } from './constants.js';
 import { torusFrameFromAnchors } from './torus-math.js';
 const NS='http://www.w3.org/2000/svg';
 export const hasTorusHeight=recipe=>['birth','weave','golden','whole','cosmos'].includes(recipe?.torus);
@@ -27,9 +27,9 @@ export function placeHeightDimension(data,camera,viewport){
   }
   return {ends,supports:data.supports,height:data.height};
 }
-// Scene rebasing divides all rendered lengths by 9. Recover physical growth in
+// Scene rebasing divides all rendered lengths by φ⁴. Recover physical growth in
 // log space so the counter stays continuous, including an indefinite finale.
-export const heightGrowthLog=(height,units=0)=>Math.log(height/(2*A))+units*2*Math.log(3);
+export const heightGrowthLog=(height,units=0)=>Math.log(height/(2*A))+units*2*Math.log(GOLDEN_CYCLE_SCALE);
 export const formatGoldenHeight=log=>(Math.round(log/Math.log(PHI)*100)/100).toLocaleString('ru-RU',{maximumFractionDigits:2,useGrouping:false});
 export function formatHeightGrowth(log){
   if(log>=Math.log(.001)&&log<Math.log(1e6))return '×'+Math.exp(log).toLocaleString('ru-RU',{minimumFractionDigits:2,maximumFractionDigits:Math.max(2,-Math.floor(log/Math.LN10)+1)});

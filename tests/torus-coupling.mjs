@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from '../js/constants.js';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
@@ -63,7 +64,7 @@ endless=reduce(endless,{type:'tour/control',patch:{playing:true}});assert.equal(
 endless=reduce(endless,{type:'tour/restart'});endless=reduce(endless,{type:'tour/tick',seconds:3});assert.equal(endless.tour.index,0);
 
 // Full turns need an unwrapped angle: same orientation, different size.
-for(const ratio of [3,PHI])for(const seed of ORBIT_SEEDS)for(const turn of [-8,-1.25,0,.3,7]){
+for(const ratio of [PHI])for(const seed of ORBIT_SEEDS)for(const turn of [-8,-1.25,0,.3,7]){
  const p=spiralGuide(seed,turn,ratio),q=spiralGuide(seed,turn+1,ratio),r=spiralGuide(seed,turn+4,ratio);
  near(Math.hypot(q[0],q[1])/Math.hypot(p[0],p[1]),ratio,'Mirrored guides have the same radial growth');
  near(q[2]/p[2],ratio,'Height shares the same similarity');
@@ -137,12 +138,6 @@ assert.equal(heightGuide.visible,true);
 near(heightGuide.children[0].geometry.attributes.position.getZ(0)*heightGuide.scale.z,-future.scale.z*A,'Lower torus guide meets the current cube plane',1e-6);
 torus.update('whole',.3,0);assert.equal(heightGuide.visible,false,'Temporary height construction clears after the reveal');
 
-torus.update('inscription',.5,0,{rotation:0});
-const inscription=root.getObjectByName('Cube octahedron cube · exact factor three');assert.equal(inscription.visible,true);near(inscription.children[0].scale.x,3,'The old exact cube construction is retained');
-const faceMesh=inscription.children[1].children.find(o=>o.isMesh),facePositions=faceMesh.geometry.attributes.position;
-for(let i=0;i<facePositions.count;i+=3){const centroid=new THREE.Vector3();for(let j=0;j<3;j++)centroid.add(new THREE.Vector3().fromBufferAttribute(facePositions,i+j));centroid.multiplyScalar(inscription.children[1].scale.x/3);centroid.toArray().forEach(x=>near(Math.abs(x),A,'Actual face centroid is a small cube vertex',1e-6));}
-for(const seed of ORBIT_SEEDS)near(seed.point.reduce((sum,x)=>sum+Math.abs(x),0),3*A,'Current cube corners are on the outer octahedron faces');
-torus.update('spiral',.5,0);assert.equal(inscription.visible,false);
 const dodeca=new THREE.DodecahedronGeometry(CR),proof=dodecahedronWitness(dodeca);
 near(proof.diagonal[0].distanceTo(proof.diagonal[1])/proof.edge[0].distanceTo(proof.edge[1]),PHI,'Phi is measured on the rendered dodecahedron',1e-6);
 
@@ -168,10 +163,6 @@ for(const crossing of intersectionProof.children.filter(o=>o.isGroup)){
   near(mid.distanceTo(world),0,'The two original tetrahedron edges meet at their midpoint',1e-6);
  }
 }
-torus.update('inscription',.55,0);root.updateMatrixWorld(true);
-const faceProof=root.getObjectByName('Six cube faces to octahedron vertices');assert.equal(faceProof.visible,true);
-for(const face of faceProof.children){const dot=face.children.find(o=>o.geometry.type==='SphereGeometry'),p=dot.position.toArray();assert.equal(p.filter(x=>x!==0).length,1);near(Math.hypot(...p),3*A,'The external octahedron vertex is a current outer-cube face centre');}
-
 // A chapter boundary must agree in every actually drawn overlay, not only angle.
 function drawn(){const parts=[];root.updateMatrixWorld(true);root.traverseVisible(o=>{if(!o.material||o.material.opacity<1e-8||o.geometry.drawRange.count===0)return;parts.push({id:o.uuid,opacity:o.material.opacity,matrix:o.matrixWorld.elements.slice(),range:o.geometry.drawRange.count});});return parts;}
 const previewMesh=new THREE.Mesh(new THREE.OctahedronGeometry(A)),previewEdges=new THREE.LineSegments(new THREE.EdgesGeometry(previewMesh.geometry));
@@ -227,7 +218,7 @@ witness.dispose();source.mesh.geometry.dispose();source.edges.geometry.dispose()
 
 for(const turn of [-100000,-20,-2,0,2,20,100000]){
  const f=expansionAt({expansionFrom:2,expansionDuration:0},0,{turnOffset:turn,logOffset:turn*Math.log(PHI)});
- assert.ok(f.scale>=1&&f.scale<=9&&Number.isFinite(f.scale));near(f.logScale,Math.log(f.scale)+f.units*2*Math.log(3),'Rebasing retains the full physical scale',1e-9);
+ assert.ok(f.scale>=1&&f.scale<=9&&Number.isFinite(f.scale));near(f.logScale,Math.log(f.scale)+f.units*2*Math.log(GOLDEN_CYCLE_SCALE),'Rebasing retains the full physical scale',1e-9);
 }
 torus.dispose();dodeca.dispose();for(const object of Object.values(level.objs)){object.mesh.geometry.dispose();object.mesh.material.dispose();}
 assert.equal(scene.children.length,0);

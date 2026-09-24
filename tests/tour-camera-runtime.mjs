@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from '../js/constants.js';
 import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import {pathToFileURL} from 'node:url';
 const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64'),cache=new Map();
 globalThis.innerWidth=1280;globalThis.innerHeight=800;
@@ -68,7 +69,7 @@ for(const [x,y,z] of torusBounds()){
  const projected=new Vector3(x,z,-y).multiplyScalar(expansionAt(TOURS.torus.steps[finalIndex].scene,1).scale).project(scene.camera);
  assert.ok(projected.z>=-1&&projected.z<=1,'Expanded torus remains between the orthographic clipping planes');
 }
-console.log('PASS: ninefold enlarged finale remains fully visible after perspective flattens');
+console.log('PASS: golden-unit enlarged finale remains fully visible after perspective flattens');
 
 // The tour opener approaches from afar; ordinary transitions do not replay it.
 actions.startTour('platonic');rig.queueTourShot({entrance:true});rig.updateTourCamera(0,330,440);
@@ -111,8 +112,8 @@ for(const [width,screenHeight,panelHeight,panelWidth]of [[1280,800,390,440],[390
    assert.ok(Math.abs(point.x)<1&&Math.abs(point.y)<1&&Math.abs(point.z)<1,'All enlarged circles fit both screen sizes');
   }
  }
- assert.ok(scene.getViewHeight()>startHeight*2,'The view pulls back as the original network expands');
- assert.ok(3*startHeight/scene.getViewHeight()>1.3,'The visible growth is not cancelled by camera compensation');
+ assert.ok(scene.getViewHeight()>startHeight*Math.sqrt(GOLDEN_CYCLE_SCALE),'The view pulls back as the original network expands');
+ assert.ok(GOLDEN_CYCLE_SCALE*startHeight/scene.getViewHeight()>1.3,'The visible growth is not cancelled by camera compensation');
 }
 console.log('PASS: opening Metatron expansion remains centered, symmetric and visibly larger on desktop and phone');
 
@@ -133,9 +134,9 @@ actions.stopTour();rig.updateTourCamera(.025,360,366);assert.equal(scene.camera.
 console.log('PASS: paused orbit survives ultrawide, desktop and phone resize with matching stage framing');
 
 // Rebase the same growing object AND the camera at a render-unit boundary.
-// Both directions must cross without a ninefold flash or camera jump.
+// Both directions must cross without a golden-unit flash or camera jump.
 globalThis.innerWidth=1280;globalThis.innerHeight=800;
-const unitBoundary=10*(2*Math.log(3)/Math.log((1+Math.sqrt(5))/2)+1/90);
+const unitBoundary=10*(2*Math.log(GOLDEN_CYCLE_SCALE)/Math.log((1+Math.sqrt(5))/2)+1/90);
 const growthIndex=TOURS.torus.steps.findIndex(s=>s.scene.expansionFrom<=unitBoundary&&s.scene.expansionFrom+s.scene.expansionDuration>unitBoundary),growthStep=TOURS.torus.steps[growthIndex];
 actions.startTour('torus',growthIndex);actions.seekTour(unitBoundary-growthStep.scene.expansionFrom-.06);rig.queueTourShot();for(let i=0;i<65;i++)rig.updateTourCamera(.025,330,440);
 actions.tourControl({playing:true});let lastScreenRadius=null,seenUnits=new Set();
@@ -148,7 +149,7 @@ for(let i=0;i<18;i++){
 }
 assert.equal(seenUnits.size,2,'The test really crosses the unit boundary');
 actions.stopTour();rig.updateTourCamera(.025,330,440);
-console.log('PASS: forward/reverse ninefold coordinate rebasing preserves screen size and shared centre');
+console.log('PASS: forward/reverse golden-unit coordinate rebasing preserves screen size and shared centre');
 
 // Before the torus exists, preserve the destination cube in frame while the
 // original core visibly grows towards it; a future tall shell must not shrink it.

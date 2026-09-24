@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from './constants.js';
 /** Real spheres/cube/octahedron whose [111] orthographic view reveals the circles. */
 import * as THREE from 'three';
 import {fruitVolume,FRUIT_PLANAR} from './fruit-life.js';
@@ -22,12 +23,12 @@ export function createFruitScene(scene) {
     meridians.push([circle(center,u,axis,cyan,1),circle(center,v,axis,cyan,1)]);
   });
   const links=pairs=>pairs.flatMap(pair=>pair.map(i=>new THREE.Vector3(...data.centers[i])));
-  const cube=stroke(links(data.cubeEdges),cyan,2.3,32),inner=stroke(links(data.cubeEdges).map(p=>p.multiplyScalar(1/3)),cyan,2.3);
+  const cube=stroke(links(data.cubeEdges),cyan,2.3,32),inner=stroke(links(data.cubeEdges).map(p=>p.multiplyScalar(1/GOLDEN_CYCLE_SCALE)),cyan,2.3);
   const octa=stroke(links(data.octaEdges),gold,2.2),up=stroke(links(data.tetrahedra[0]),0xff8dbb,2.4),down=stroke(links(data.tetrahedra[1]),violet,2.4);
   // The two triangular silhouettes use the same vertices as the later solids.
   // Their central (depth-axis) vertices wait for the spatial reveal.
   const triangles=data.tetrahedra.map((edges,i)=>stroke(links(edges.filter(pair=>pair.every(k=>data.groups[k]!==0))),i?violet:0xff8dbb,2.6,32));
-  cube.name='Fruit cube';triangles.forEach((line,i)=>line.name=`Planar star ${i}`);
+  cube.name='Fruit cube';inner.name='Fruit inner golden cube';triangles.forEach((line,i)=>line.name=`Planar star ${i}`);
   const network=stroke(links(data.pairs),gold,1.8);
   network.name='Metatron network';
   const scaffold=[cube,inner,octa,up,down,network,...triangles];
@@ -41,7 +42,7 @@ export function createFruitScene(scene) {
     ray.name='Metatron scale correspondence';ray.position.copy(center);reference.add(ray);return ray;
   });
   function update(kind,p,viewDirection=axis,opacity=1,expansion=0) {
-    const growth=kind==='network'?Math.max(0,Math.min(1,expansion)):0,scale=3**growth;
+    const growth=kind==='network'?Math.max(0,Math.min(1,expansion)):0,scale=GOLDEN_CYCLE_SCALE**growth;
     const aligned=Math.abs(viewDirection.dot(axis)),tilt=Math.sqrt(Math.max(0,1-aligned*aligned));
     root.scale.setScalar(scale);reference.scale.setScalar(1/scale);reference.visible=!!kind&&growth>0;
     const ink=ease(growth/.22);

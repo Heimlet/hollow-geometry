@@ -459,14 +459,14 @@ All chapters from `torus-expansion` through the finale share `expansionFrom` / `
 guides and camera. Torus dimensions are measured from those actual world-space
 source vertices by `merkabaAnchors` / `torusFrameFromAnchors`. The clock does not
 restart on automatic chapter changes, reading or pause; explicit seeking restores
-the deterministic script. The visible figure doubles over most of a scale cycle; the camera then
+the deterministic script. The visible figure grows by φ over most of a scale cycle; the camera then
 retreats to make room for the next expansion. Its retreat remains monotonic in
 unnormalised world coordinates. Torus shells and their scale echoes remain hidden
 during cube growth and vertex tracing: the meridian sweep first draws them in
 `torus-birth`, after which they follow the same ongoing expansion.
 
 Expansion is stored logarithmically, including negative travel. At every factor
-of nine, objects and camera change units together; render scale stays in [1,9)
+of φ⁴, objects and camera change units together; render scale stays in [1,φ⁴)
 without clamping motion or changing any screen-space
 relationships. Eight pooled cube/torus reference contours flow through the visible
 scales; their endpoints fade before recycling. No geometry or materials are
@@ -543,7 +543,7 @@ point lattice (`dimension-scene.js`), then blends into the existing Metatron
 network. Its camera and opacity follow chapter time; seeking restores the same
 geometry. Detailed narration links and reading shortcuts wait until the final chapter.
 The existing construction keeps its timing, followed by an outward expansion:
-the same network grows threefold while a cyan reference retains the original
+the same network grows by φ² while a cyan reference retains the original
 world scale. Thirteen correspondence rays join matching centres. Camera framing
 retreats only partway, leaving a visible 35% increase on screen. This small fixed
 pool resets on exit and does not change laboratory recursion or source vertices.
@@ -561,10 +561,10 @@ chapters retain their timeline during transitions. The final chapter offers Rest
 then atomically enters chapter zero. Restart time is transient, supports pause,
 and never accumulates geometry. Tests cover replay, framing and adaptive stars.
 
-The finale alternates intersection emphasis, a full revolution of the original
-pair inside a circumscribing octahedron, the retained exact 3:1 cube/octahedron
-construction, and a dedicated golden-spiral explanation. Factor 3 is a static
-inscription ratio; the motion law remains φ per quarter-turn. These are distinct.
+The finale alternates intersection emphasis, the rotating pair, two golden steps
+from its actual vertices to the next contour, and a dedicated spiral explanation.
+The successor scale is always φ². The stable `torus-inscription` chapter ID now
+opens the golden-step proof; the former centroid-based construction is removed.
 
 `torus-cosmos.endless` completes narration but retains playback. Ticks continue
 unwrapped angle/log-scale offsets at the incoming angular speed, with a fixed
@@ -575,14 +575,15 @@ the construction to the opening. All other tours retain their normal completion.
 
 ### Finale construction and camera continuity
 
-The opening network survives into chapter two at its completed 3× size. The
+The opening network survives into chapter two at its completed φ² size. The
 source cube appears on the same corners, then returns to normal scale only after
 the network fades. The intersection chapter holds the canonical tetrahedra while six crossing
 edge pairs reveal the six computed intersection vertices and twelve octahedral
-edges. Rotation then resumes continuously. The inscription chapter separately constructs the
-outer octahedron from six cube-face centres, then shows its face medians and the
-smaller cube at their centroids. The golden outer construction and green live
-intersection are intentionally distinct.
+edges. Rotation then resumes continuously. The seventh chapter follows the
+actual vertices along two quarter-turns of the golden spiral. Markers at φ and φ²
+reveal in order, then the convex hull joins the eight future supports. It is a cube
+only at canonical alignments. Its geometry, highlighted contacts and camera bounds
+share the source pose and the observer transform. The buffers are reused.
 
 Late camera shots carry exact endpoints across chapters and include near-polar
 spiral views, side views of the torus meridian and oblique source-body views.
@@ -615,8 +616,8 @@ fitting a different set of bounds.
 `torus-pair` and `torus-orbits` provide two macro shots before surface birth.
 Their shared `torusMacroFocus` eases framing toward the actual source-body
 bounds, reveals source faces, and returns to the overview before either chapter
-ends. A restrained cube contour appears and fades with the same interval.
-The unrelated outer teaching octahedron stays in the inscription chapter.
+ends. The live outer contour appears with the same interval.
+Both the source contour and the golden successor contain their actual support points.
 
 The full spiral window needs more depth than the framed bodies. Only during the
 orthographic render, `withOrthographicDepth` moves the eye back along its own
@@ -710,4 +711,9 @@ OrbitControls behaviour, and restoration of the line after tilting away.
 
 `tests/torus-measure.mjs` verifies source contacts, true dimensions, camera
 projection, on-screen placement, golden notation and rebasing continuity, plus
-the independent display toggle. There are 30 regression suites.
+the independent display toggle. There are 31 regression suites.
+
+The opening Metatron growth, its chapter-two handoff, Fruit/Merkaba nested cubes,
+and continuous render-unit rebasing use golden powers. `GOLDEN_CYCLE_SCALE = φ²`
+is shared; one rebase spans φ⁴. Camera compensation and the height counter use
+the same unit conversion, including reverse and indefinite playback.

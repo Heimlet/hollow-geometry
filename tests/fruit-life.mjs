@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from '../js/constants.js';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {pathToFileURL} from 'node:url';
@@ -30,10 +31,9 @@ for(const a of [.1,1,3]) {
   for(const p of unique){const distances=unique.map(q=>Math.hypot(...p.map((v,k)=>v-q[k]))).filter(d=>d>1e-10);assert.ok(Math.abs(Math.min(...distances)-2*r)<1e-10,'Flower centres lie one enlarged radius apart');}
   assert.equal(f.cubeEdges.length,12);assert.equal(f.octaEdges.length,12);assert.equal(f.pairs.length,78);
   for(const tetra of f.tetrahedra){assert.equal(tetra.length,6);for(const [i,j]of tetra)assert.ok(Math.abs(Math.hypot(...f.centers[i].map((v,k)=>v-f.centers[j][k]))-2*Math.SQRT2*a)<1e-10);}
-  for(const corner of f.centers.slice(0,8))assert.ok(Math.abs(corner.reduce((sum,x)=>sum+Math.abs(x/3),0)-a)<1e-10,'Inner cube vertices touch outer octahedron faces');
 }
 const three=pathToFileURL(process.argv[2]).href,url=s=>'data:text/javascript;base64,'+Buffer.from(s).toString('base64');
-const source=(await readFile(new URL('../js/fruit-scene.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three)).replace("'./fruit-life.js'",JSON.stringify(new URL('../js/fruit-life.js',import.meta.url).href));
+const source=(await readFile(new URL('../js/fruit-scene.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three)).replace("'./constants.js'",JSON.stringify(new URL('../js/constants.js',import.meta.url).href)).replace("'./fruit-life.js'",JSON.stringify(new URL('../js/fruit-life.js',import.meta.url).href));
 const {createFruitScene}=await import(url(source)),{Scene,Vector3}=await import(three),scene=new Scene(),study=createFruitScene(scene),root=scene.children[0];
 const snapshot=()=>{const result=[];root.traverse(o=>{if(o.material)result.push({visible:o.visible,opacity:o.material.opacity,range:o.geometry.drawRange.count,scale:o.scale.toArray()});});return {rotation:root.rotation.toArray(),result};};
 for(const step of TOURS.fruit.steps){study.update(step.scene.fruit,.8);const end=snapshot();study.update(step.scene.fruit,.2);study.update(step.scene.fruit,.8);assert.deepEqual(snapshot(),end);}
@@ -54,6 +54,8 @@ for(const chapter of TOURS.fruit.steps.slice(0,4)){
  assert.ok(chapter.scene.camera.depth.every(k=>k[1]===0),'Flat construction is exactly orthographic');
  for(const p of [0,.3,.7,1]){study.update(chapter.scene.fruit,p);assert.ok(spheres.every(s=>s.visible&&s.material.opacity>0),'Real shells remain present throughout the flat constructions');}
 }
+const inner=root.getObjectByName('Fruit inner golden cube'),attr=inner.geometry.attributes.position;
+for(let i=0;i<attr.count;i++)for(const value of [attr.getX(i),attr.getY(i),attr.getZ(i)])assert.ok(Math.abs(Math.abs(value)-fruitVolume().halfSide/GOLDEN_CYCLE_SCALE)<1e-6,'Every inner cube vertex uses the golden cycle scale');
 const cube=root.children.find(o=>o.name==='Fruit cube'),triangles=root.children.filter(o=>o.name.startsWith('Planar star'));
 study.update('planar-cube',.12);assert.equal(cube.geometry.drawRange.count,0,'Centres appear before their connecting edges');
 assert.equal(centers.filter(c=>c.visible).length,7,'Eight cube corners have seven distinct projected centres');
@@ -93,12 +95,12 @@ const fixedResources=resources(),sourcePositions=Array.from(network.geometry.att
 assert.equal(rays.length,13);
 for(const growth of [0,.2,.5,1,.3,1]){
  study.update('network',1,undefined,1,growth);root.updateMatrixWorld(true);
- assert.equal(root.scale.x,3**growth);assert.ok(Math.abs(reference.getWorldScale(new Vector3()).x-1)<1e-12);
+ assert.equal(root.scale.x,GOLDEN_CYCLE_SCALE**growth);assert.ok(Math.abs(reference.getWorldScale(new Vector3()).x-1)<1e-12);
  assert.equal(reference.visible,growth>0);
  for(const [i,ray]of rays.entries()){
   const center=new Vector3(...f.centers[f.representatives[i]]),points=ray.geometry.attributes.position;
   assert.ok(new Vector3().fromBufferAttribute(points,0).applyMatrix4(ray.matrixWorld).distanceTo(center)<1e-6,'Each ray begins at the original node');
-  assert.ok(new Vector3().fromBufferAttribute(points,1).applyMatrix4(ray.matrixWorld).distanceTo(center.clone().multiplyScalar(3**growth))<1e-6,'Each ray ends at the same growing node');
+  assert.ok(new Vector3().fromBufferAttribute(points,1).applyMatrix4(ray.matrixWorld).distanceTo(center.clone().multiplyScalar(GOLDEN_CYCLE_SCALE**growth))<1e-6,'Each ray ends at the same growing node');
  }
  const expected=snapshot();study.update('flower',1);study.update('network',1,undefined,1,growth);assert.deepEqual(snapshot(),expected,'Seeking restores the same nested networks');
 }
@@ -106,4 +108,4 @@ assert.deepEqual(resources(),fixedResources,'Expansion reuses a fixed pool of ge
 assert.deepEqual(Array.from(network.geometry.attributes.position.array),sourcePositions,'Source vertices never change');
 study.update('fruit',.8);assert.equal(root.scale.x,1);assert.equal(reference.visible,false);assert.deepEqual(snapshot(),before,'Ordinary chapters clear expansion');
 study.update(null,0);assert.equal(root.visible,false);study.dispose();assert.equal(scene.children.length,0);
-console.log('PASS: Fruit of Life radii, tangencies, 60° symmetry, 78 pairs, menu order, 14 spheres → 13 circles, Flower of Life with 19 circles, nested cube contact, reversible spatial chapters and cleanup');
+console.log('PASS: Fruit of Life radii, tangencies, 60° symmetry, 78 pairs, menu order, 14 spheres → 13 circles, Flower of Life with 19 circles, golden nested cube scale, reversible spatial chapters and cleanup');

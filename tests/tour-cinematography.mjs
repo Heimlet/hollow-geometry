@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from '../js/constants.js';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
@@ -34,7 +35,7 @@ for(const tour of Object.values(TOURS))for(const chapter of tour.steps) {
 // Cubes precede octahedra, the paired tetrahedra precede the exact star.
 const intro=TOURS.merkaba.steps.slice(0,5).map(step=>step.scene);
 assert.deepEqual(intro[0].objects,['cube']);assert.deepEqual(intro[1].objects,['cube']);
-assert.equal(intro[1].depth,2);assert.equal(intro[1].scale,1/3);
+assert.equal(intro[1].depth,2);assert.equal(intro[1].scale,1/GOLDEN_CYCLE_SCALE);
 assert.deepEqual(intro[2].objects,['cube','octahedron']);
 assert.equal(tourObjectAlpha(intro[1],0,1,'cube'),0);assert.equal(tourObjectAlpha(intro[1],1,1,'cube'),1);
 assert.equal(tourObjectAlpha(intro[1],0,0,'cube'),1);

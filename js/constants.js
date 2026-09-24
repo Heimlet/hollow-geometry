@@ -7,6 +7,8 @@ import { COMPOUNDS, COMPONENT_COLORS } from './compound-data.js';
  */
 
 export const PHI = (1 + Math.sqrt(5)) / 2;
+// Two chosen golden growth steps: one complete relative turn of the pair.
+export const GOLDEN_CYCLE_SCALE = PHI ** 2;
 export const S3 = 1 / Math.sqrt(3);
 export const S2 = 1 / Math.sqrt(2);
 

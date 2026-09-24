@@ -1,9 +1,9 @@
 /** One fixed set of points: a line, a plane and a volume become visible in it. */
 import * as THREE from 'three';
-import { A } from './constants.js';
+import { A,GOLDEN_CYCLE_SCALE } from './constants.js';
 const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
 export function dimensionSequence(p,until=1){
-  const build=Math.min(1,p/until),expansion=until<1?ease((p-until)/((1-until)*.8)):0,scale=3**expansion;
+  const build=Math.min(1,p/until),expansion=until<1?ease((p-until)/((1-until)*.8)):0,scale=GOLDEN_CYCLE_SCALE**expansion;
   return {build,expansion,scale,framingScale:scale/(1+.35*expansion)};
 }
 export const dimensionFrame=p=>({line:ease((p-.08)/.16),plane:ease((p-.27)/.18),volume:ease((p-.49)/.2),network:ease((p-.75)/.2),ink:1-ease((p-.83)/.17)});

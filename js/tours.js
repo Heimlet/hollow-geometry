@@ -186,9 +186,9 @@ export function initTours() {
   }
   const premise=el('p','Геометрия не развивается — она раскрывается.','tour-premise');
   welcome.append(musicRow,premise,grid,finale);mountTorusPreface(welcome);
-  const credit=el('footer',null,'tour-credit'),author=el('a','Александр Пыхарев ↗');
-  author.href='https://pykharev.ru/';author.rel='author noopener noreferrer';author.target='_blank';author.setAttribute('aria-label','Автор — Александр Пыхарев · личный сайт, откроется в новой вкладке');
-  credit.append(el('span','Автор — '),author);welcome.append(credit);document.body.append(welcome);
+  const credit=el('footer',null,'tour-credit'),author=el('a','Автор');
+  author.href='https://pykharev.ru/';author.rel='author noopener noreferrer';author.target='_blank';author.setAttribute('aria-label','Автор · личный сайт, откроется в новой вкладке');
+  credit.append(author);welcome.append(credit);document.body.append(welcome);
   player=el('section',null,'tour-player');player.hidden=true;player.setAttribute('aria-label','Управление путешествием');
   const progress=el('nav',null,'tour-progress');progress.setAttribute('aria-label','Прогресс по главам');
   const head=el('div',null,'tour-player-head'),chapter=el('span',null,'tour-eyebrow');
@@ -233,7 +233,7 @@ export function initTours() {
     coupling.hidden=!reversible;reverse.disabled=state.tour.phase==='restarting'||state.tour.phase==='complete'&&!tourStep(state)?.scene.endless;
     const contracting=state.tour.motion?.direction===-1;
     reverse.setAttribute('aria-pressed',String(contracting));setControlText(reverse,contracting?'↷ Вернуть расширение':'↶ Обратный ход');
-    if(reversible){const ratio=tourStep(state).scene.expansionRatio;setControlText(law,`${tourStep(state).scene.referenceFrame?'180° между телами':'90°'} → ${contracting?'÷':'×'}${ratio===3?'3':'φ'} · ${contracting?'сжатие':'расширение'}`);law.dataset.golden=String(ratio!==3);}
+    if(reversible){setControlText(law,`${tourStep(state).scene.referenceFrame?'180° между телами':'90°'} → ${contracting?'÷':'×'}φ · ${contracting?'сжатие':'расширение'}`);law.dataset.golden='true';}
     if(!active){if(previousState?.tour.id){clearEffects();cancelCameraAnimation();cancelTourShot();}currentKey='';return;}
     const tour=TOURS[state.tour.id],step=tourStep(state),key=`${state.tour.id}:${state.tour.index}`;
     const chapterChanged=key!==currentKey || ['tour/start','tour/step'].includes(action.type) || action.type.startsWith('history/');

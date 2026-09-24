@@ -7,7 +7,7 @@ export const READING_DEMOS=[
   {topic:'torus',section:'Как поворот связан с расширением',label:'Увидеть золотой шаг и развернуть движение',tour:'torus',chapter:'torus-golden'},
   {topic:'torus',section:'От двух тетраэдров к тору',label:'Проследить путь вершин и рождение поверхности',tour:'torus',chapter:'torus-orbits'},
   {topic:'torus',section:'От внутреннего куба к внешнему',label:'Увидеть переход между вложенными кубами',tour:'torus',chapter:'torus-expansion'},
-  {topic:'torus',section:'От внутреннего куба к внешнему',label:'Рассмотреть кубы и октаэдр в точном положении',tour:'torus',chapter:'torus-inscription'},
+  {topic:'torus',section:'От внутреннего куба к внешнему',label:'Проследить два золотых шага от вершины к следующему масштабу',tour:'torus',chapter:'torus-inscription'},
   {topic:'torus',section:'Вселенная без края',label:'Вернуться к финалу: пространство без края',tour:'torus',chapter:'torus-cosmos'},
   {topic:'torus',section:'Что скрывает плоский рисунок',label:'Увидеть квадрат и шестиугольник одного куба',tour:'projections',chapter:'cube-square'},
   {topic:'torus',section:'Что скрывает плоский рисунок',label:'Увидеть тела за Звездой Давида',tour:'merkaba',chapter:'star-reveal'},

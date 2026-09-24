@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from './constants.js';
 import * as THREE from 'three';
 import { TORUS_AXIS,TORUS_POLE,ORBIT_SEEDS,torusBounds,expansionAt,expansionZoom,cubeWitnessView,traceEntrance,torusMacroFocus,torusReferenceYaw,EXPANSION_TARGET_SCALE } from './torus-math.js';
 import { fruitVolume,FRUIT_PLANAR } from './fruit-life.js';
@@ -29,7 +30,7 @@ function scenePoints() {
   const points=[];
   if(tourStep(getState())?.scene.networkHandoff){
     const handoff=torusOpeningHandoff(tourProgress(getState()));
-    const scale=3/1.35*handoff.bounds;
+    const scale=GOLDEN_CYCLE_SCALE/1.35*handoff.bounds;
     if(scale>0)points.push(...fruitVolume().flowerBounds.map(p=>new THREE.Vector3(...p).multiplyScalar(scale)));
   }
   if(tourStep(getState())?.scene.torus){
@@ -41,7 +42,11 @@ function scenePoints() {
       let target=e.scale*(1+(EXPANSION_TARGET_SCALE-1)*reveal)/((1+Math.sqrt(5))/2)**phase;
       if(r.torus==='traces'){target=THREE.MathUtils.lerp(e.scale*1.8,target,traceEntrance(tourProgress(getState())));target=THREE.MathUtils.lerp(target,e.scale*1.15,macro);}
       points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(referenceOrientation).multiplyScalar(target)));
-    }else if(['pair','inscription'].includes(r.torus))points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(referenceOrientation).multiplyScalar(e.scale*(3-1.85*macro))));
+    }else if(['pair','golden-step'].includes(r.torus)){
+      const span=r.torus==='golden-step'?EXPANSION_TARGET_SCALE:THREE.MathUtils.lerp(EXPANSION_TARGET_SCALE,1.15,macro);
+      // The supports can lie outside the canonical cube during relative rotation.
+      for(const seed of ORBIT_SEEDS){const q=new THREE.Vector3(...seed.point).applyAxisAngle(new THREE.Vector3(0,0,1),state.lab.rotation.up*Math.PI/180*seed.side);points.push(q.applyQuaternion(referenceOrientation).multiplyScalar(e.scale*span));}
+    }
     else if(r.torus==='spiral')points.push(...ORBIT_SEEDS.map(s=>new THREE.Vector3(...s.point).applyQuaternion(referenceOrientation).multiplyScalar(e.scale*1.8)));
     else points.push(...torusFramePoints.map(p=>p.clone().applyQuaternion(referenceRotation).multiplyScalar(e.scale)));
   }
@@ -82,7 +87,7 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   // Coordinate rebasing is shared by objects, torus and camera. This keeps
   // indefinite growth/reverse numerically small without clamping real motion.
   if(expansion.active&&expansionUnits!==null&&expansion.units!==expansionUnits){
-    const factor=3**(2*(expansionUnits-expansion.units));setViewHeight(getViewHeight()*factor);
+    const factor=GOLDEN_CYCLE_SCALE**(2*(expansionUnits-expansion.units));setViewHeight(getViewHeight()*factor);
     if(flight)flight.height*=factor;
     if(restartPose)restartPose.height*=factor;
   }
@@ -134,7 +139,7 @@ export function updateTourCamera(dt,panelHeight,panelWidth) {
   const goal=fitTourFrame(detailPoints,shot.direction,viewport,shot.depth,focus);
   // An explicit detail zoom can let the faded outer shell pass beyond the frame.
   // It never shifts the shared geometric centre.
-  goal.height/=recipe.expansionFrom!==undefined?(['growth','traces','pair','inscription','spiral'].includes(recipe.torus)?1:expansionZoom(expansionAt(recipe,p,state.tour.motion))):shot.zoom;
+  goal.height/=recipe.expansionFrom!==undefined?(['growth','traces','pair','golden-step','spiral'].includes(recipe.torus)?1:expansionZoom(expansionAt(recipe,p,state.tour.motion))):shot.zoom;
   if(recipe.goldenCoupling)goal.height/=1+1.1*smooth(p/.16)*(1-smooth((p-.55)/.25));
   let direction=shot.direction,height=goal.height,target=goal.center,depth=shot.depth;
   if(flight) {

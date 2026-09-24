@@ -1,3 +1,4 @@
+import { GOLDEN_CYCLE_SCALE } from './constants.js';
 /** Render-only surface choreography. Base laboratory opacity is never overwritten. */
 const ease=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 /** Temporary sky choreography follows tour time, never the saved display setting. */
@@ -45,5 +46,5 @@ export const torusSourceMix=(recipe,p)=>recipe.sourceSurfaces==='reveal'?ease(p/
 /** Keep the completed opening network at its last scale, reveal its cube there,
  * then carry that same cube to the normal scene size as the network dissolves. */
 export function torusOpeningHandoff(p){
-  return {network:1-ease(p/.18),scale:3**(1-ease((p-.18)/.2)),bounds:1-ease(p/.38)};
+  return {network:1-ease(p/.18),scale:GOLDEN_CYCLE_SCALE**(1-ease((p-.18)/.2)),bounds:1-ease(p/.38)};
 }
