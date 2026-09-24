@@ -186,9 +186,13 @@ export function initTours() {
   }
   const premise=el('p','Геометрия не развивается — она раскрывается.','tour-premise');
   welcome.append(musicRow,premise,grid,finale);mountTorusPreface(welcome);
-  const credit=el('footer',null,'tour-credit'),author=el('a','Автор');
-  author.href='https://pykharev.ru/';author.rel='author noopener noreferrer';author.target='_blank';author.setAttribute('aria-label','Автор · личный сайт, откроется в новой вкладке');
-  credit.append(author);welcome.append(credit);document.body.append(welcome);
+  const footer=el('footer',null,'tour-clock'),clock=el('time');
+  const clockFormat=new Intl.DateTimeFormat('ru-RU',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'});
+  clock.title='Местные дата и время браузера';
+  function updateClock(){const now=new Date();clock.dateTime=now.toISOString();clock.textContent=clockFormat.format(now);}
+  updateClock();setInterval(updateClock,1000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateClock();});
+  footer.append(clock);welcome.append(footer);document.body.append(welcome);
   player=el('section',null,'tour-player');player.hidden=true;player.setAttribute('aria-label','Управление путешествием');
   const progress=el('nav',null,'tour-progress');progress.setAttribute('aria-label','Прогресс по главам');
   const head=el('div',null,'tour-player-head'),chapter=el('span',null,'tour-eyebrow');
