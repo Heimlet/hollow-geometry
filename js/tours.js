@@ -74,7 +74,7 @@ export function updateTourStage(dt) {
   if(recipe?.effect==='recursion')for(const level of levels){level.group.scale.setScalar(recursionMoment(tourProgress(state),level.idx,state.recursion.scale).scale);level.group.updateMatrixWorld(true);}
   const expansion=expansionAt(recipe,tourProgress(state),state.tour.motion),scale=recipe?.networkHandoff?torusOpeningHandoff(tourProgress(state)).scale:expansion.scale;
   if(expansion.active||recipe?.worldScale||recipe?.networkHandoff){for(const level of levels){level.group.scale.setScalar(scale);level.group.updateMatrixWorld(true);}for(const owner of derivedObjects){owner.object.group.scale.setScalar(scale);owner.object.group.updateMatrixWorld(true);}}
-  applyTourReference(levels,derivedObjects,torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up),!!recipe?.axisGuide);
+  applyTourReference(levels,derivedObjects,torusReferenceYaw(recipe,tourProgress(state),state.lab.rotation.up),!!(recipe?.axisGuide||recipe?.referenceFrame));
   const bounds=player?.getBoundingClientRect();
   const layout=stageViewport(innerWidth,innerHeight,bounds?.height||220,bounds?.width||440);
   const layoutKey=`${layout.panelRight}:${layout.centerY}:${layout.compact}`;

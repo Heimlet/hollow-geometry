@@ -134,8 +134,9 @@ export function intersectionWitnessPhase(p,slope){
  * than making the blue body turn back to its initial orientation. */
 export function torusReferenceYaw(recipe={},p=0,angleDegrees=0){
   const ref=recipe.referenceFrame;if(!ref)return 0;
+  if(!ref.enter)return (angleDegrees-ref.anchor)*Math.PI/180;
   const elapsed=recipe.expansionDuration*Math.max(0,Math.min(1,p));
-  if(!ref.enter||elapsed>=ref.seconds)return (angleDegrees-ref.anchor)*Math.PI/180;
+  if(elapsed>=ref.seconds)return (angleDegrees-ref.anchor)*Math.PI/180;
   const t=elapsed/ref.seconds,w=ease(t),nominal=ref.start+ref.speed*elapsed;
   const integrated=ref.speed*ref.seconds*(t*t*t-.5*t*t*t*t);
   return (integrated+(angleDegrees-nominal)*w)*Math.PI/180;

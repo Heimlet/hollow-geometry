@@ -42,7 +42,7 @@ export function frameTour(state,elapsed) {
   if(['counter','tradition'].includes(recipe.effect)) {
     const tradition=recipe.effect==='tradition';
     lab={...lab,rotation:{...lab.rotation,mode:tradition?'tradition':'counter',running:false,
-      up:wrapAngle(elapsed*1.15*(tradition?34:18)),down:wrapAngle(-elapsed*1.15*(tradition?21:18))}};
+      up:wrapAngle(elapsed*(tradition?1.15*34:recipe.counterSpeed??1.15*18)),down:wrapAngle(-elapsed*(tradition?1.15*21:recipe.counterSpeed??1.15*18))}};
   }
   if(recipe.effect==='counterCycle') {
     // A half turn around the cube's vertical face axis restores each tetrahedron.

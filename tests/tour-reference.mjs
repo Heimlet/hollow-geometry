@@ -65,9 +65,41 @@ state=reduce(state,{type:'tour/reverse'});near(frame(state),frame(reduce(state,{
 state=reduce(state,{type:'tour/tick',seconds:10});near(frame(state),frame(before),'Reverse retraces the same observer pose');
 for(let tick=0;tick<240;tick++){state=reduce(state,{type:'tour/tick',seconds:10});near(blue(state).angleTo(fixedBlue),0,'Blue stays fixed through reverse, chapter boundaries and endless unit rebasing');}
 const paused=reduce(state,{type:'tour/control',patch:{playing:false}});assert.equal(reduce(paused,{type:'tour/tick',seconds:10}),paused);
+// Both Merkaba rotation chapters use the same vertical observer frame, without the finale's scale
+// growth. Check real source meshes and recalculated layers, including seeking.
+const merkabaChapter=TOURS.merkaba.steps[7];
+near(merkabaChapter.seconds*2*merkabaChapter.scene.counterSpeed,360,'The relative turn ends exactly at the canonical pair');
+for(const chapter of [7,8])for(const elapsed of [0,1,5,10,15,19.99,20,5]){
+ actions.startTour('merkaba',chapter);actions.seekTour(elapsed);
+ const s=getState();assert.equal(s.lab.rotation.upAxis,'y');assert.equal(s.lab.rotation.downAxis,'y');
+ applyTourReference(levels,derivedObjects,0,true);
+ for(const level of levels){level.group.scale.setScalar(1);level.group.updateMatrixWorld(true);}
+ for(const owner of derivedObjects){owner.object.group.scale.setScalar(1);owner.object.group.updateMatrixWorld(true);}
+ updateLab(0);
+ const objects=[levels[0].objs.merkaba_up.mesh,levels[0].objs.merkaba_down.mesh,...derivedObjects.filter(o=>o.object.vis).map(o=>o.object.mesh)];
+ const before=new Map(objects.map(o=>[o,sourcePoints(o)])),yaw=frame(s),q=new THREE.Quaternion().setFromAxisAngle(vertical,yaw);
+ applyTourReference(levels,derivedObjects,yaw,!!tourStep(s).scene.referenceFrame);
+ near(levels[0].objs.merkaba_down.group.getWorldQuaternion(new THREE.Quaternion()).angleTo(new THREE.Quaternion()),0,'Merkaba chapter keeps blue fixed');
+ near(levels[0].objs.merkaba_up.group.getWorldQuaternion(new THREE.Quaternion()).angleTo(new THREE.Quaternion().setFromAxisAngle(vertical,elapsed*18*Math.PI/180)),0,'Pink turns at the same relative speed and around the same axis as the torus finale');
+ for(const o of objects)sourcePoints(o).forEach((p,i)=>near(p.distanceTo(before.get(o)[i].clone().applyQuaternion(q)),0,'Merkaba hull and intersection follow the same frame as both source bodies'));
+ near(cubeHalfHeight(levels[0]),TORUS.height,'Observer motion does not introduce scale growth');
+ if(elapsed===20){
+  assert.equal(derivedObjects.find(o=>o.level===0&&o.kind==='hull').data.vertices.length,8);
+  assert.equal(derivedObjects.find(o=>o.level===0&&o.kind==='intersection').data.vertices.length,6);
+ }
+ const frozen=reduce(s,{type:'tour/control',patch:{playing:false}});assert.equal(reduce(frozen,{type:'tour/tick',seconds:2}),frozen);
+}
+let boundary=reduce(initialState(),{type:'tour/start',id:'merkaba',index:7});
+boundary=reduce(boundary,{type:'tour/tick',seconds:merkabaChapter.seconds});
+assert.equal(boundary.tour.index,8);near(boundary.lab.rotation.up,0,'Next chapter starts at the same canonical pose');near(boundary.lab.rotation.down,0,'Blue remains canonical at the next chapter');near(frame(boundary),0,'Observer frame clears after the full relative turn');
+boundary=reduce(boundary,{type:'tour/tick',seconds:TOURS.merkaba.steps[8].seconds});assert.equal(boundary.tour.index,9);near(boundary.lab.rotation.up,0,'Second full turn hands off to the canonical chapter');near(frame(boundary),0,'Canonical chapter clears the observer frame');
+const {shotAt}=await import(await load('tour-camera-math'));
+const firstShot=shotAt(TOURS.merkaba.steps[7].scene,new THREE.Vector3(...TOURS.merkaba.steps[7].scene.dir),1);
+const aboveRecipe=TOURS.merkaba.steps[8].scene,aboveStart=shotAt(aboveRecipe,new THREE.Vector3(...aboveRecipe.dir),0),aboveMiddle=shotAt(aboveRecipe,new THREE.Vector3(...aboveRecipe.dir),.5),aboveEnd=shotAt(aboveRecipe,new THREE.Vector3(...aboveRecipe.dir),1);
+near(firstShot.direction.distanceTo(aboveStart.direction),0,'Camera handoff begins at the exact previous angle');assert.ok(aboveMiddle.direction.y>.98,'The extra chapter shows the turn from above');near(aboveEnd.direction.distanceTo(new THREE.Vector3(1,1,1).normalize()),0,'Overhead chapter returns to the canonical diagonal');
 // Reset the rendering frame on exit; source laboratory rotation is untouched.
 actions.stopTour();updateLab(0);const localRotation=levels[0].objs.merkaba_down.group.quaternion.clone();applyTourReference(levels,derivedObjects,0);
 near(levels[0].group.quaternion.angleTo(new THREE.Quaternion()),0,'Leaving the tour clears the observer frame');
 near(levels[0].objs.merkaba_down.group.quaternion.angleTo(localRotation),0,'Laboratory keeps its own rotation');
 torus.dispose();assert.equal(testScene.children.length,0);
-console.log(`PASS: blue observer capture, ${tested} real rendered poses, common source/derived/guide transforms, torus contacts, relative golden law, reverse and endless rebasing`);
+console.log(`PASS: blue observer capture, ${tested} real rendered poses, common source/derived/guide transforms, torus contacts, relative golden law, reverse, endless rebasing and two Merkaba rotation chapters with a continuous overhead shot`);

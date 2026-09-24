@@ -648,6 +648,14 @@ this frame. Leaving the tour clears the transient parent rotation.
 teaching-layer matrices and torus contacts at 36 poses, as well as smooth capture,
 fixed blue orientation and the unchanged relative growth law.
 
+Merkaba chapters 8–9 reuse this observer frame with anchor zero and the same
+vertical rotation axis. Blue stays fixed while pink turns at 18°/s relative to it;
+source scale remains unchanged. Both computed layers share the observer transform.
+Each 20-second chapter completes a full relative turn. The second carries the
+preceding camera pose into an overhead view and returns to the diagonal; rotation
+continues through this move. The following canonical chapter starts at the same
+body pose. Narration, pause and seek follow this motion.
+
 ### Immediate playback control
 
 `tour-playback.js` stops a running film on primary pointer contact, before a

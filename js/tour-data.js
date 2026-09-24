@@ -4,6 +4,7 @@ import { PLATONIC_TYPES } from './mirror-data.js';
 import { CUBE_HOLD,expansionAt,expansionZoom } from './torus-math.js';
 import { COMPOUNDS } from './compound-data.js';
 const P=PLATONIC_TYPES,M=['merkaba_up','merkaba_down'];
+const merkabaTurn={objects:M,intersection:true,hull:true,effect:'counter',rotationAxis:'y',counterSpeed:9,referenceFrame:{anchor:0},continuousMotion:true,dir:[3,1.1,6],height:12};
 const members=id=>COMPOUNDS.find(c=>c.id===id).members;
 const step=(title,text,scene={},seconds=18)=>({title,text,seconds,scene});
 export const TOURS={
@@ -56,7 +57,8 @@ export const TOURS={
     {...step('И всё складывается в Звезду Давида','Камера выходит точно на диагональ кубов. Перспективная глубина плавно исчезает. Рёбра двух тетраэдров ложатся на встречные равносторонние треугольники, а внутри повторяется меньшая звезда. Мы ничего не подгоняли в фигурах: нужный ракурс раскрыл уже существующую связь.',{objects:['cube','octahedron',...M],depth:2,scale:1/3,starReveal:true,faces:false,dim:{cube:[.05,.5,.07],octahedron:[.05,.5,.1]}},20),id:'star-reveal'},
     step('Восемь вершин проявляют куб','Построим выпуклую оболочку по вершинам двух тетраэдров. В каноническом положении получается куб. Его рёбра соединяют крайние точки всей конструкции.',{objects:M,hull:true,effect:'faces',dir:[2,1,3],height:11}),
     {...step('Общий объём — октаэдр','Оставляем только пересечение. Видна область, которая принадлежит сразу обоим тетраэдрам. В каноническом положении это правильный октаэдр.',{objects:M,intersection:true,source:false,height:7,dir:[3,2,4]},20),id:'intersection'},
-    step('Относительный поворот меняет пересечение','Теперь вращаем отдельные тетраэдры навстречу. Пересечение пересчитывается по их плоскостям, а выпуклая оболочка — по вершинам. Формы меняются непрерывно.',{objects:M,intersection:true,hull:true,effect:'counter',height:12},22),
+    {...step('Относительный поворот меняет пересечение','Голубой тетраэдр сохраняет ориентацию, а розовый вращается вокруг общей вертикальной оси. Их общий объём меняется непрерывно: он принадлежит сразу обоим телам. Внешняя оболочка следует за крайними вершинами пары. Когда розовый завершает оборот, внутри снова раскрывается октаэдр, а снаружи — куб.',{...merkabaTurn},23),id:'relative-rotation'},
+    {...step('Тот же поворот — взгляд сверху','Сверху особенно хорошо виден поворот вокруг общего центра. Голубой контур остаётся ориентиром, розовый проходит через него. Когда грани сближаются, пересечение растёт; затем снова уменьшается. Простое вращение перебирает целое семейство форм, сохраняя размеры обоих тетраэдров.',{...merkabaTurn},23),id:'relative-rotation-above'},
     step('Снова каноническая звезда','Возвращаем углы к нулю. Пересечение снова октаэдр, оболочка снова куб. Сама гексаграмма появляется при правильном ракурсе и взаимном положении тел.',{objects:M,intersection:true,hull:true,dir:[1,1,1],height:10},18),
     step('Эзотерическая схема Друнвало','В этой современной традиции описаны три целые тетраэдрические звезды: одна неподвижная, две вращаются навстречу в отношении 34:21. Здесь показана схема учения с условной скоростью, отдельно от геометрических свойств.',{objects:M,effect:'tradition',orbit:true,height:12},26),
     step('34:21 и золотое отношение','34 и 21 — соседние числа Фибоначчи. Их отношение 1,61905 близко к φ ≈ 1,61803, но не равно ему точно. Голубая и золотая звёзды показывают два встречных вращения целых соединений.',{objects:M,effect:'tradition',faces:false,dir:[1,1,1],height:11},24),
@@ -187,6 +189,10 @@ for(const tour of Object.values(TOURS))for(const chapter of tour.steps) {
   else if(r.effect==='explode'){r.orbit=true;r.camera={mode:'guided',arc:.5,depth:[[0,0],[.4,.35],[1,.35]]};}
   else r.camera={mode:'guided',depth:[[0,0],[1,0]],...(!r.golden&&!r.dir?{releaseAt:.8}:{})};
 }
+// Continue the same rotation while the camera rises; begin at the preceding
+// chapter's exact view and end on the next canonical chapter's diagonal.
+TOURS.merkaba.steps.find(s=>s.id==='relative-rotation-above').scene.camera={mode:'guided',cut:true,
+  path:[{at:0,dir:merkabaTurn.dir},{at:.3,dir:[0,1,.15]},{at:.76,dir:[0,1,.15]},{at:1,dir:[1,1,1]}],depth:[[0,0],[1,0]]};
 let finalAngle=0,expansionTime=null,expansionAngle=0,expansionLog=0,expansionRatio=PHI;
 for(const chapter of TOURS.torus.steps){const r=chapter.scene;if(r.effect!=='counterCycle')continue;
   r.continuousMotion=true;r.rotationFrom=finalAngle;r.rotationTo=finalAngle+180;
