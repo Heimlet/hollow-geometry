@@ -38,9 +38,13 @@ const {createFruitScene}=await import(url(source)),{Scene,Vector3}=await import(
 const snapshot=()=>{const result=[];root.traverse(o=>{if(o.material)result.push({visible:o.visible,opacity:o.material.opacity,range:o.geometry.drawRange.count,scale:o.scale.toArray()});});return {rotation:root.rotation.toArray(),result};};
 for(const step of TOURS.fruit.steps){study.update(step.scene.fruit,.8);const end=snapshot();study.update(step.scene.fruit,.2);study.update(step.scene.fruit,.8);assert.deepEqual(snapshot(),end);}
 const spheres=root.children.filter(o=>o.isMesh);
+const centers=root.getObjectByName('Fruit sphere centers').children;
+assert.equal(centers.length,20);
+for(const [i,center]of centers.entries())assert.deepEqual(center.position.toArray(),fruitVolume().allCenters[i],'Markers occupy the actual sphere centres');
 study.update('opening',0);const opening=snapshot();
 for(const p of [.01,.2,.5,.8,1]){study.update('opening',p);assert.deepEqual(snapshot(),opening,'The first chapter remains a fully drawn, static Flower of Life');}
-assert.ok(spheres.every(o=>!o.visible&&o.material.opacity===0),'The first chapter cannot reveal shaded spheres');
+assert.ok(spheres.every(o=>o.visible&&o.material.opacity>0),'The opening circles are already real translucent spheres');
+assert.ok(centers.every(o=>!o.visible),'The opening ornament has no premature centre markers');
 const visibleLines=()=>root.children.filter(o=>o.isLineSegments&&o.visible&&o.material.opacity>1e-8);
 assert.equal(visibleLines().length,19,'Only the 19 gold circles are visible: no meridians, scaffold or duplicate central contour');
 assert.ok(visibleLines().every(o=>o.scale.x===2));
@@ -48,9 +52,12 @@ assert.deepEqual(TOURS.fruit.steps.slice(0,5).map(s=>s.scene.fruit),['opening','
 for(const chapter of TOURS.fruit.steps.slice(0,4)){
  assert.ok(chapter.scene.camera.path.every(k=>JSON.stringify(k.dir)==='[1,1,1]'),'Flat construction never tilts the camera');
  assert.ok(chapter.scene.camera.depth.every(k=>k[1]===0),'Flat construction is exactly orthographic');
- for(const p of [0,.3,.7,1]){study.update(chapter.scene.fruit,p);assert.ok(spheres.every(s=>!s.visible),'Shaded volume waits until after the return to circles');}
+ for(const p of [0,.3,.7,1]){study.update(chapter.scene.fruit,p);assert.ok(spheres.every(s=>s.visible&&s.material.opacity>0),'Real shells remain present throughout the flat constructions');}
 }
 const cube=root.children.find(o=>o.name==='Fruit cube'),triangles=root.children.filter(o=>o.name.startsWith('Planar star'));
+study.update('planar-cube',.12);assert.equal(cube.geometry.drawRange.count,0,'Centres appear before their connecting edges');
+assert.equal(centers.filter(c=>c.visible).length,7,'Eight cube corners have seven distinct projected centres');
+assert.ok(centers.slice(8).every(c=>!c.visible),'Face centres wait for the octahedron');
 study.update('planar-cube',.4);const drawn=cube.geometry.drawRange.count;study.update('planar-cube',.5);assert.ok(cube.geometry.drawRange.count>drawn,'Cube edges draw progressively');
 study.update('planar-star',.3);assert.ok(triangles[0].geometry.drawRange.count>0);assert.equal(triangles[1].geometry.drawRange.count,0,'The two triangles appear in order');
 study.update('planar-star',1);assert.ok(triangles.every(o=>o.geometry.drawRange.count===o.geometry.attributes.position.count));
@@ -62,12 +69,21 @@ for(const tetra of fruitVolume().tetrahedra){
 study.update('return',1);assert.deepEqual(snapshot(),opening,'The general view returns to the original circles before revealing depth');
 study.update('spheres',0);assert.deepEqual(snapshot(),opening,'The spatial chapter begins with exactly the restored circles');
 study.update('spheres',.45,new Vector3(3,1,-1).normalize());
-assert.ok(spheres.some(o=>o.visible&&o.material.opacity>0),'Only the spatial chapter reveals volume');
+assert.ok(spheres.some(o=>o.visible&&o.material.opacity>0),'The spatial chapter strengthens the existing shells');
+assert.ok(centers.every(o=>!o.visible),'Depth is revealed before centres for the spatial construction');
+study.update('spheres',.6);assert.equal(centers.filter(c=>c.visible).length,13,'The octahedron adds six face centres');
 study.update('spheres',1);assert.equal(spheres.filter(o=>o.visible).length,14);assert.ok(spheres.every(o=>o.scale.x===1));
-study.update('opening',.5);assert.deepEqual(snapshot(),opening,'Going back removes every trace of the volume');
+study.update('opening',.5);assert.deepEqual(snapshot(),opening,'Going back clears later constructions and centres');
+const frontOpacity=spheres[1].material.opacity;
+study.update('opening',.5,new Vector3(3,1,-1).normalize());
+assert.ok(spheres[1].material.opacity>frontOpacity,'Manual orbit reveals the same spheres even in the first chapter');
+assert.ok(visibleLines().length>19,'Meridians reveal depth immediately when the user turns the opening scene');
+assert.ok(centers.every(o=>!o.visible),'Orbit alone cannot reveal centres ahead of the story');
 study.update('fruit',1);assert.equal(spheres.filter(o=>o.visible).length,14);
 study.update('flower',1);assert.equal(spheres.filter(o=>o.visible).length,20);assert.ok(spheres.every(o=>o.scale.x===2));
 study.update('network',1);assert.equal(spheres.filter(o=>o.visible).length,14);assert.ok(spheres.every(o=>o.scale.x===1));
+assert.equal(centers.filter(o=>o.visible).length,13,'Metatron links connect the thirteen visible centres');
+study.update('network',1,new Vector3(3,1,-1).normalize());assert.equal(centers.filter(o=>o.visible).length,14,'Orbit separates the two projected central markers');
 study.update('fruit',.8);const before=snapshot();study.update('flower',1);study.update('fruit',.8);assert.deepEqual(snapshot(),before,'Chapter re-entry restores all radii and visibility');
 // The opener enlarges the same network, keeping its source scale in world space.
 const network=root.getObjectByName('Metatron network'),reference=root.getObjectByName('Previous Metatron scale');
