@@ -2,6 +2,10 @@
 import * as THREE from 'three';
 import { A } from './constants.js';
 const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+export function dimensionSequence(p,until=1){
+  const build=Math.min(1,p/until),expansion=until<1?ease((p-until)/((1-until)*.8)):0,scale=3**expansion;
+  return {build,expansion,scale,framingScale:scale/(1+.35*expansion)};
+}
 export const dimensionFrame=p=>({line:ease((p-.08)/.16),plane:ease((p-.27)/.18),volume:ease((p-.49)/.2),network:ease((p-.75)/.2),ink:1-ease((p-.83)/.17)});
 export function createDimensionScene(scene) {
   const root=new THREE.Group();root.name='Dimensions unfolding';root.visible=false;scene.add(root);

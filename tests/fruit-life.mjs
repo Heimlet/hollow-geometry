@@ -69,5 +69,25 @@ study.update('fruit',1);assert.equal(spheres.filter(o=>o.visible).length,14);
 study.update('flower',1);assert.equal(spheres.filter(o=>o.visible).length,20);assert.ok(spheres.every(o=>o.scale.x===2));
 study.update('network',1);assert.equal(spheres.filter(o=>o.visible).length,14);assert.ok(spheres.every(o=>o.scale.x===1));
 study.update('fruit',.8);const before=snapshot();study.update('flower',1);study.update('fruit',.8);assert.deepEqual(snapshot(),before,'Chapter re-entry restores all radii and visibility');
+// The opener enlarges the same network, keeping its source scale in world space.
+const network=root.getObjectByName('Metatron network'),reference=root.getObjectByName('Previous Metatron scale');
+const rays=reference.children.filter(o=>o.name==='Metatron scale correspondence'),f=fruitVolume();
+const resources=()=>{const set=new Set();root.traverse(o=>{if(o.geometry)set.add(o.geometry);if(o.material)set.add(o.material);});return set;};
+const fixedResources=resources(),sourcePositions=Array.from(network.geometry.attributes.position.array);
+assert.equal(rays.length,13);
+for(const growth of [0,.2,.5,1,.3,1]){
+ study.update('network',1,undefined,1,growth);root.updateMatrixWorld(true);
+ assert.equal(root.scale.x,3**growth);assert.ok(Math.abs(reference.getWorldScale(new Vector3()).x-1)<1e-12);
+ assert.equal(reference.visible,growth>0);
+ for(const [i,ray]of rays.entries()){
+  const center=new Vector3(...f.centers[f.representatives[i]]),points=ray.geometry.attributes.position;
+  assert.ok(new Vector3().fromBufferAttribute(points,0).applyMatrix4(ray.matrixWorld).distanceTo(center)<1e-6,'Each ray begins at the original node');
+  assert.ok(new Vector3().fromBufferAttribute(points,1).applyMatrix4(ray.matrixWorld).distanceTo(center.clone().multiplyScalar(3**growth))<1e-6,'Each ray ends at the same growing node');
+ }
+ const expected=snapshot();study.update('flower',1);study.update('network',1,undefined,1,growth);assert.deepEqual(snapshot(),expected,'Seeking restores the same nested networks');
+}
+assert.deepEqual(resources(),fixedResources,'Expansion reuses a fixed pool of geometry and materials');
+assert.deepEqual(Array.from(network.geometry.attributes.position.array),sourcePositions,'Source vertices never change');
+study.update('fruit',.8);assert.equal(root.scale.x,1);assert.equal(reference.visible,false);assert.deepEqual(snapshot(),before,'Ordinary chapters clear expansion');
 study.update(null,0);assert.equal(root.visible,false);study.dispose();assert.equal(scene.children.length,0);
 console.log('PASS: Fruit of Life radii, tangencies, 60° symmetry, 78 pairs, menu order, 14 spheres → 13 circles, Flower of Life with 19 circles, nested cube contact, reversible spatial chapters and cleanup');

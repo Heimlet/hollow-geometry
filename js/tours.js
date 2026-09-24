@@ -7,7 +7,7 @@ import { tourFaceOpacity,recursionMoment,tourObjectAlpha } from './tour-effects.
 import { expansionAt,cubeWitnessInk } from './torus-math.js';
 import { createTorusScene } from './torus-scene.js';
 import { createFruitScene } from './fruit-scene.js';
-import { createDimensionScene,dimensionFrame } from './dimension-scene.js';
+import { createDimensionScene,dimensionFrame,dimensionSequence } from './dimension-scene.js';
 import { createTourHistory } from './tour-history.js';
 import { createMetatronStudy } from './metatron-study.js';
 import { derivedObjects,traditionalFields } from './lab.js';
@@ -78,8 +78,9 @@ export function applyTourEffects() {
   const state=getState(),recipe=tourStep(state)?.scene;
   nodeStudy.update(levels[0]?.mc,recipe?.nodeStudy,tourProgress(state));
   const progress=tourProgress(state),intro=recipe?.dimensions;
-  dimensionScene.update(!!intro,progress);
-  fruitScene.update(recipe?.fruit,intro?Math.max(0,(progress-.75)/.25):progress,camera.position.clone().sub(controls.target).normalize(),intro?dimensionFrame(progress).network:1);
+  const sequence=dimensionSequence(progress,recipe?.dimensionUntil);
+  dimensionScene.update(!!intro,sequence.build);
+  fruitScene.update(recipe?.fruit,intro?Math.max(0,(sequence.build-.75)/.25):progress,camera.position.clone().sub(controls.target).normalize(),intro?dimensionFrame(sequence.build).network:1,intro?sequence.expansion:0);
   const expansion=expansionAt(recipe,tourProgress(state));
   torusScene.update(recipe?.torus||(recipe?.cubeWitness?'cage':null),tourProgress(state),expansion.active?expansion.time:state.tour.elapsed,{axis:!!recipe?.axisGuide,rotation:state.lab.rotation.up*Math.PI/180,startRotation:(recipe?.rotationFrom||0)*Math.PI/180,scale:expansion.scale,expansion:expansion.active?expansion:null});
   if(!recipe)return;

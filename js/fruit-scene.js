@@ -26,10 +26,26 @@ export function createFruitScene(scene) {
   const triangles=data.tetrahedra.map((edges,i)=>stroke(links(edges.filter(pair=>pair.every(k=>data.groups[k]!==0))),i?violet:0xff8dbb,2.6,32));
   cube.name='Fruit cube';triangles.forEach((line,i)=>line.name=`Planar star ${i}`);
   const network=stroke(links(data.pairs),gold,1.8);
+  network.name='Metatron network';
   const scaffold=[cube,inner,octa,up,down,network,...triangles];
-  function update(kind,p,viewDirection=axis,opacity=1) {
-    root.visible=!!kind;if(!kind)return;
+  // Keep the previous scale as a quiet witness. The original network itself grows.
+  const reference=new THREE.Group();reference.name='Previous Metatron scale';root.add(reference);reference.visible=false;
+  const oldNetwork=network.clone();oldNetwork.material=network.material.clone();oldNetwork.material.color.set(cyan);reference.add(oldNetwork);
+  const oldRings=rings.slice(0,14).map(ring=>{const copy=ring.clone();copy.material=ring.material.clone();copy.material.color.set(cyan);reference.add(copy);return copy;});
+  const rays=data.representatives.map(index=>{
+    const center=new THREE.Vector3(...data.centers[index]);
+    const ray=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),center]),new THREE.LineBasicMaterial({color:cyan,transparent:true,opacity:0,linewidth:1.4,depthWrite:false}));
+    ray.name='Metatron scale correspondence';ray.position.copy(center);reference.add(ray);return ray;
+  });
+  function update(kind,p,viewDirection=axis,opacity=1,expansion=0) {
+    const growth=kind==='network'?Math.max(0,Math.min(1,expansion)):0,scale=3**growth;
     const aligned=Math.abs(viewDirection.dot(axis)),tilt=Math.sqrt(Math.max(0,1-aligned*aligned));
+    root.scale.setScalar(scale);reference.scale.setScalar(1/scale);reference.visible=!!kind&&growth>0;
+    const ink=ease(growth/.22);
+    oldNetwork.material.opacity=.34*ink;
+    oldRings.forEach((ring,i)=>{ring.material.opacity=.42*ink*(i===0?1-aligned**20:1);});
+    rays.forEach(ray=>{ray.scale.setScalar(scale-1);ray.material.opacity=.26*ink;});
+    root.visible=!!kind;if(!kind)return;
     const flat=FRUIT_PLANAR.includes(kind),unfold=kind==='spheres';
     const flower=flat?1:unfold?1-ease((p-.35)/.4):kind==='flower'?ease(p/.32):kind==='network'?1-ease(p/.2):0;
     const radiusScale=1+flower,extra=flat?1:unfold?flower:kind==='flower'?ease((p-.3)/.3):kind==='network'?1-ease(p/.18):0;
@@ -62,7 +78,7 @@ export function createFruitScene(scene) {
     if(kind==='geometry'){cube.material.opacity=.3;inner.material.opacity=.3;octa.material.opacity=.55;reveal(up,p/.25);reveal(down,(p-.28)/.25);}
     if(kind==='fruit'){cube.material.opacity=octa.material.opacity=.12*(1-ease(p/.5));up.material.opacity=down.material.opacity=.15*(1-ease(p/.5));}
     if(kind==='flower'){cube.material.opacity=.09;octa.material.opacity=.07;}
-    if(kind==='network'){reveal(network,(p-.2)/.48,.64);}
+    if(kind==='network'){reveal(network,(p-.2)/.48,.64+.16*growth);}
     if(kind==='free') {
       network.material.opacity=.15;
       cube.material.opacity=inner.material.opacity=.25+.5*Math.sin(Math.PI*p)**2;

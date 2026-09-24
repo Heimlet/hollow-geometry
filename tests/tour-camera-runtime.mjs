@@ -93,3 +93,25 @@ assert.equal(getState().tour.index,finalIndex);
 for(let i=0;i<3;i++)frame();assert.equal(getState().tour.index,0);assert.equal(getState().tour.phase,'watch');
 assert.equal(getState().tour.restartElapsed,undefined);assert.equal(getState().tour.playing,true);
 console.log('PASS: fast distant entry, exact flat axes, ordinary return scale, paused point collapse and automatic replay');
+
+// The completed opening network really grows on screen while its camera retreats.
+const {fruitVolume}=await import(await load('fruit-life')),{dimensionSequence}=await import(await load('dimension-scene'));
+const intro=TOURS.torus.steps[0],fruit=fruitVolume();
+for(const [width,screenHeight,panelHeight,panelWidth]of [[1280,800,390,440],[390,844,360,366]]){
+ globalThis.innerWidth=width;globalThis.innerHeight=screenHeight;
+ actions.startTour('torus');rig.queueTourShot();let startHeight;
+ for(const progress of [intro.scene.dimensionUntil,.8,1]){
+  actions.seekTour(intro.seconds*progress);for(let i=0;i<65;i++)rig.updateTourCamera(.025,panelHeight,panelWidth);
+  if(startHeight===undefined)startHeight=scene.getViewHeight();
+  assert.equal(scene.projectionDepth,0);assert.ok(scene.controls.target.length()<1e-10);
+  assert.ok(scene.camera.position.clone().normalize().distanceTo(new Vector3(1,1,1).normalize())<1e-10);
+  const scale=dimensionSequence(progress,intro.scene.dimensionUntil).scale;
+  for(const center of fruit.centers)for(let i=0;i<64;i++){
+   const angle=i*Math.PI/32,point=new Vector3(...center).addScaledVector(new Vector3(1,0,-1).normalize(),fruit.radius*Math.cos(angle)).addScaledVector(new Vector3(-1,2,-1).normalize(),fruit.radius*Math.sin(angle)).multiplyScalar(scale).project(scene.camera);
+   assert.ok(Math.abs(point.x)<1&&Math.abs(point.y)<1&&Math.abs(point.z)<1,'All enlarged circles fit both screen sizes');
+  }
+ }
+ assert.ok(scene.getViewHeight()>startHeight*2,'The view pulls back as the original network expands');
+ assert.ok(3*startHeight/scene.getViewHeight()>1.3,'The visible growth is not cancelled by camera compensation');
+}
+console.log('PASS: opening Metatron expansion remains centered, symmetric and visibly larger on desktop and phone');

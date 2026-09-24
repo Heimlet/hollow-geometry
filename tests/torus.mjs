@@ -92,13 +92,22 @@ source=source.replace("'three'",JSON.stringify(three)).replace("'./torus-math.js
 const {createTorusScene}=await import(url(source)),THREE=await import(three),scene=new THREE.Scene(),study=createTorusScene(scene),root=scene.children[0];
 // The opening reveals successive dimensions in fixed coordinates, before the network.
 const dimensionsSource=(await readFile(new URL('../js/dimension-scene.js',import.meta.url),'utf8')).replace("'three'",JSON.stringify(three)).replace("'./constants.js'",JSON.stringify(new URL('../js/constants.js',import.meta.url).href));
-const {createDimensionScene,dimensionFrame}=await import(url(dimensionsSource));
+const {createDimensionScene,dimensionFrame,dimensionSequence}=await import(url(dimensionsSource));
 const openingScene=new THREE.Scene(),opening=createDimensionScene(openingScene),openingRoot=openingScene.children[0];
 assert.equal(TOURS.torus.steps[0].scene.dimensions,true);
 assert.equal(dimensionFrame(.25).line,1);assert.equal(dimensionFrame(.25).plane,0);
 assert.equal(dimensionFrame(.46).plane,1);assert.equal(dimensionFrame(.46).volume,0);
 assert.equal(dimensionFrame(.72).volume,1);assert.equal(dimensionFrame(.72).network,0);
 assert.equal(dimensionFrame(1).ink,0);assert.equal(dimensionFrame(1).network,1);
+const opener=TOURS.torus.steps[0],until=opener.scene.dimensionUntil;
+assert.ok(Math.abs(opener.seconds*until-18/1.15)<.01,'The existing point-to-network sequence retains its timing');
+for(const p of [0,.2,.49,.72,1]){
+ const frame=dimensionSequence(p*until,until);
+ assert.ok(Math.abs(frame.build-p)<1e-12);assert.equal(frame.expansion,0,'Growth waits for the completed network');
+}
+const grown=dimensionSequence(1,until);assert.equal(grown.scale,3);assert.equal(grown.build,1);
+assert.ok(grown.framingScale>1&&grown.framingScale<grown.scale,'The camera retreats less than the network grows');
+assert.deepEqual(opener.scene.camera.path.filter(k=>k.at>=until).map(k=>k.dir),[[1,1,1],[1,1,1]],'The growth retains the exact symmetric projection');
 const originalPositions=new Map();openingRoot.traverse(o=>{if(o.geometry)originalPositions.set(o.geometry,Array.from(o.geometry.attributes.position.array));});
 const openingSnapshot=()=>{const result=[];openingRoot.traverse(o=>result.push([o.visible,o.position.toArray(),o.scale.toArray(),o.material?.opacity]));return result;};
 for(const p of [0,.2,.4,.6,.8,1]){opening.update(true,p);const expected=openingSnapshot();opening.update(true,.9);opening.update(true,p);assert.deepEqual(openingSnapshot(),expected,'Opening seeks and pauses deterministically');}
