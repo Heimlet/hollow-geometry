@@ -7,6 +7,7 @@ import { tourFaceOpacity,recursionMoment,tourObjectAlpha,tetraWitnessAppearance,
 import { expansionAt,cubeWitnessInk,torusMacroFocus,spiralGuideRadius,torusReferenceYaw } from './torus-math.js';
 import { applyTourReference } from './tour-reference.js';
 import { bindTourPlayback,setControlText } from './tour-playback.js';
+import { mountTourPanel } from './tour-panel.js';
 import { createTorusHeightMeasure,hasTorusHeight } from './torus-measure.js';
 import { geometryFigure } from './geometry-figures.js';
 import { withOrthographicDepth } from './projection.js';
@@ -204,7 +205,7 @@ export function initTours() {
   playKey.setAttribute('aria-hidden','true');play.type='button';play.setAttribute('aria-keyshortcuts','Space');play.append(playLabel,playKey);controlsRow.append(play);
   bindTourPlayback(play,()=>getState().tour.playing,playing=>actions.tourControl({playing}));
   const restart=button(controlsRow,'↻ Начать заново',()=>actions.restartTour());restart.className='tour-restart';restart.setAttribute('aria-label','Начать заново');restart.hidden=true;
-  const next=button(controlsRow,'Дальше →',()=>actions.tourStep(getState().tour.index+1));next.setAttribute('aria-label','Следующая глава');
+  const next=button(controlsRow,'Дальше →',()=>actions.tourStep(getState().tour.index+1));next.className='tour-next';next.setAttribute('aria-label','Следующая глава');
   returnCamera=button(controlsRow,'↶ Ракурс',resetTourCamera);returnCamera.className='tour-return';returnCamera.title='Вернуть ракурс тура';returnCamera.setAttribute('aria-label',returnCamera.title);
   const coupling=el('div',null,'tour-coupling'),law=el('span');
   const reverse=button(coupling,'↶ Обратный ход',()=>actions.reverseTour());reverse.className='tour-reverse';reverse.title='Поменять направления вращения и роста, сохранив текущее положение';coupling.prepend(law);
@@ -220,12 +221,14 @@ export function initTours() {
   status=el('p',null,'tour-status');
   const states=el('div',null,'tour-states');animationState=el('span');cameraState=el('span');states.append(animationState,cameraState);
   player.append(progress,head,title,text,reading,coupling,measureRow,controlsRow,states,status,options,inspect);document.body.append(player);
+  const panel=mountTourPanel(player,{head,content:[text,reading,coupling,measureRow],extras:[states,status,options,inspect],secondary:[phi]});
   let currentKey='',currentTour='';
   function render(state,previousState,action={}) {
     if(state.tour.phase==='complete'&&history.complete(state.tour.id))markViewed(state.tour.id);
     const simple=state.ui.mode==='simple',active=!!state.tour.id;
     document.body.classList.toggle('mode-simple',simple);document.body.classList.toggle('mode-advanced',!simple);document.body.classList.toggle('touring',simple&&active);
     welcome.hidden=!simple||active;player.hidden=!simple||!active;
+    if(active&&(!previousState?.tour.id||previousState.tour.id!==state.tour.id))panel.expand();
     const quietFinale=state.tour.id==='torus'&&state.tour.index<TOURS.torus.steps.length-1;
     reading.hidden=quietFinale||!(tourStep(state)?.scene.reading||TOURS[state.tour.id]?.reading);phi.hidden=quietFinale;
     setControlText(reading,tourStep(state)?.scene.readingLabel||(tourStep(state)?.scene.reading==='vortex'?'Вихревое движение · формулы и физика':'О торе: тело, космос, физика'));
